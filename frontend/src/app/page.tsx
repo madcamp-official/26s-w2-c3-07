@@ -4,20 +4,12 @@ import { MenuButton } from "@/components/home/MenuButton";
 import { StickyNote } from "@/components/home/StickyNote";
 import { SuspectPolaroids } from "@/components/home/SuspectPolaroids";
 import { TestimonyCard } from "@/components/home/TestimonyCard";
+import { AlleyBackground } from "@/components/layout/AlleyBackground";
 
 export default function HomePage() {
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-noir-950">
-      {/* 배경: 야간 골목 분위기 연출 */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 30%, rgba(120,95,55,0.22) 0%, rgba(30,22,15,0.75) 45%, rgba(8,6,5,0.96) 75%, #050403 100%)",
-        }}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.65)_0%,transparent_18%,transparent_82%,rgba(0,0,0,0.65)_100%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(0,0,0,0.15)_0px,transparent_1px,transparent_2px)] opacity-30" />
+      <AlleyBackground />
 
       <div className="relative flex flex-1 flex-col justify-between gap-8 px-6 py-10 md:px-16 md:py-12">
         {/* 상단 영역 */}
