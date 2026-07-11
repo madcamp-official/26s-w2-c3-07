@@ -29,7 +29,7 @@ export default function HomePage() {
           </p>
 
           <nav className="mt-10 flex w-full flex-col gap-4">
-            <MenuButton label="사건 수사 시작" />
+            <MenuButton label="사건 수사 시작" href="/login" />
             <MenuButton label="수사 기록 보기" />
             <MenuButton label="사투리 기록집" />
           </nav>
