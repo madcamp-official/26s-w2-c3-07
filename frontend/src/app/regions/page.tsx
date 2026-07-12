@@ -4,16 +4,18 @@ import { useState } from "react";
 import { BackButton } from "@/components/ui/BackButton";
 import { CaseArchiveCard } from "@/features/region/components/CaseArchiveCard";
 import { CasePanel } from "@/features/region/components/CasePanel";
+import { DifficultySelector } from "@/features/region/components/DifficultySelector";
 import { RegionMap } from "@/features/region/components/RegionMap";
 import { RegionSidebarHeader } from "@/features/region/components/RegionSidebarHeader";
 import { SelectedRegionInfo } from "@/features/region/components/SelectedRegionInfo";
 import { TipBar } from "@/features/region/components/TipBar";
 import { REGIONS } from "@/features/region/constants";
-import type { RegionId } from "@/features/region/types";
+import type { DifficultyId, RegionId } from "@/features/region/types";
 import { AlleyBackground } from "@/components/layout/AlleyBackground";
 
 export default function RegionsPage() {
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId>(REGIONS[0].id);
+  const [selectedDifficultyId, setSelectedDifficultyId] = useState<DifficultyId>("normal");
   const selectedRegion = REGIONS.find((region) => region.id === selectedRegionId) ?? null;
 
   return (
@@ -43,11 +45,19 @@ export default function RegionsPage() {
             <SelectedRegionInfo region={selectedRegion} />
           </div>
 
-          {selectedRegion && <CasePanel region={selectedRegion} />}
+          {selectedRegion && (
+            <CasePanel region={selectedRegion} selectedDifficultyId={selectedDifficultyId} />
+          )}
         </div>
 
-        {/* 하단 TIP */}
-        <TipBar />
+        {/* 하단 TIP + 난이도 선택 */}
+        <div className="flex flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between">
+          <TipBar />
+          <DifficultySelector
+            selectedDifficultyId={selectedDifficultyId}
+            onSelectDifficulty={setSelectedDifficultyId}
+          />
+        </div>
       </div>
     </main>
   );

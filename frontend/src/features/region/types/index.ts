@@ -1,13 +1,19 @@
 export type RegionId = "gyeongsang" | "jeolla" | "chungcheong" | "jeju";
 
-export type CaseDifficulty = 1 | 2 | 3;
+export type DifficultyId = "easy" | "normal" | "hard";
+
+export type DifficultyOption = {
+  id: DifficultyId;
+  label: string;
+  questionsPerSuspect: number;
+  description: string;
+};
 
 export type CaseSummary = {
   id: string;
   title: string;
   subtitle: string;
   description: string;
-  difficulty: CaseDifficulty;
 };
 
 export type Region = {

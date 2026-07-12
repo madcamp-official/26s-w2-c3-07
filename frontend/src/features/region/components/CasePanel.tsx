@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { DifficultyStars } from "@/features/region/components/DifficultyStars";
-import type { Region } from "@/features/region/types";
+import { DIFFICULTY_OPTIONS } from "@/features/region/constants";
+import type { DifficultyId, Region } from "@/features/region/types";
 
 type CasePanelProps = {
   region: Region;
+  selectedDifficultyId: DifficultyId;
 };
 
-export function CasePanel({ region }: CasePanelProps) {
+export function CasePanel({ region, selectedDifficultyId }: CasePanelProps) {
   const { case: caseInfo } = region;
+  const difficulty = DIFFICULTY_OPTIONS.find((option) => option.id === selectedDifficultyId)!;
 
   return (
     <div className="relative border border-brass-600/40 bg-[#e9dfc7] text-noir-900 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
@@ -15,7 +17,6 @@ export function CasePanel({ region }: CasePanelProps) {
         <span className="border-2 border-evidence-red px-3 py-1 font-display text-lg font-bold text-evidence-red">
           {region.name}
         </span>
-        <p className="text-sm text-noir-900/60">발생 순 ▾</p>
       </div>
 
       <div className="flex flex-col gap-6 p-6 md:flex-row">
@@ -30,13 +31,17 @@ export function CasePanel({ region }: CasePanelProps) {
           </div>
 
           <div className="flex items-center justify-between gap-4">
-            <div className="text-sm">
-              <p className="mb-1 text-noir-900/60">난이도</p>
-              <DifficultyStars level={caseInfo.difficulty} />
+            <div className="text-sm text-noir-900/70">
+              <p className="mb-1 font-bold text-noir-900">
+                난이도: {difficulty.label}
+              </p>
+              <p>
+                용의자당 질문 {difficulty.questionsPerSuspect}회 · {difficulty.description}
+              </p>
             </div>
             <Link
-              href={`/episodes/${caseInfo.id}`}
-              className="bg-noir-900 px-6 py-3 font-display text-sm font-bold text-parchment-100 transition-colors hover:bg-noir-800"
+              href={`/episodes/${caseInfo.id}?difficulty=${difficulty.id}`}
+              className="shrink-0 bg-noir-900 px-6 py-3 font-display text-sm font-bold text-parchment-100 transition-colors hover:bg-noir-800"
             >
               사건 선택
             </Link>
