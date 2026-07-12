@@ -5,4 +5,5 @@ export type Suspect = {
   age: number;
   occupation: string;
   summary: string;
+  openingTestimony: string;
 };
