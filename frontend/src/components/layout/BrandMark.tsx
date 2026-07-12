@@ -1,7 +1,16 @@
-export function RegionSidebarHeader() {
+type BrandMarkProps = {
+  showIcon?: boolean;
+};
+
+export function BrandMark({ showIcon = false }: BrandMarkProps) {
   return (
     <div className="text-left">
       <p className="font-display text-xl text-parchment-100 md:text-2xl">
+        {showIcon && (
+          <span aria-hidden className="mr-2">
+            🕵️
+          </span>
+        )}
         탐정님,
         <br />
         <span className="font-bold">그 뜻이 아니예라</span>

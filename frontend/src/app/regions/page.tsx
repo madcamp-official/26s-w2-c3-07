@@ -6,12 +6,12 @@ import { CaseArchiveCard } from "@/features/region/components/CaseArchiveCard";
 import { CasePanel } from "@/features/region/components/CasePanel";
 import { DifficultySelector } from "@/features/region/components/DifficultySelector";
 import { RegionMap } from "@/features/region/components/RegionMap";
-import { RegionSidebarHeader } from "@/features/region/components/RegionSidebarHeader";
 import { SelectedRegionInfo } from "@/features/region/components/SelectedRegionInfo";
 import { TipBar } from "@/features/region/components/TipBar";
 import { REGIONS } from "@/features/region/constants";
 import type { DifficultyId, RegionId } from "@/features/region/types";
 import { AlleyBackground } from "@/components/layout/AlleyBackground";
+import { BrandMark } from "@/components/layout/BrandMark";
 
 export default function RegionsPage() {
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId>(REGIONS[0].id);
@@ -25,7 +25,7 @@ export default function RegionsPage() {
       <div className="relative flex flex-col gap-8 px-6 py-8 md:px-12 md:py-10">
         {/* 상단 헤더 */}
         <div className="flex items-start justify-between gap-6">
-          <RegionSidebarHeader />
+          <BrandMark />
 
           <div className="flex flex-1 flex-col items-center text-center">
             <h1 className="font-display text-3xl font-bold text-parchment-100 md:text-4xl">지역 및 사건 선택</h1>

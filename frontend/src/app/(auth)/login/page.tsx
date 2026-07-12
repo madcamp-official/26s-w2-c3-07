@@ -1,10 +1,10 @@
-import { BrandMark } from "@/components/auth/BrandMark";
 import { CaseFileTeaser } from "@/components/auth/CaseFileTeaser";
 import { CaseSummaryCard } from "@/components/auth/CaseSummaryCard";
 import { LoginPanel } from "@/components/auth/LoginPanel";
 import { MagnifierBadge } from "@/components/auth/MagnifierBadge";
 import { StickyNote } from "@/components/home/StickyNote";
 import { AlleyBackground } from "@/components/layout/AlleyBackground";
+import { BrandMark } from "@/components/layout/BrandMark";
 
 export default function LoginPage() {
   return (
@@ -14,7 +14,7 @@ export default function LoginPage() {
       <div className="relative flex flex-1 flex-col justify-between gap-8 px-6 py-10 md:px-16 md:py-12">
         {/* 상단 영역 */}
         <div className="flex items-start justify-between gap-6">
-          <BrandMark />
+          <BrandMark showIcon />
           <CaseFileTeaser />
         </div>
 
