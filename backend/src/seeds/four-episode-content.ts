@@ -30,6 +30,25 @@ type EpisodeSpec = {
 
 const id = (group: number, item: number) => `${group.toString(16).padStart(8, '0')}-0000-4000-8000-${item.toString(16).padStart(12, '0')}`;
 
+const suspectImagePaths: Record<string, string> = {
+  'GS-01-S1': '/images/suspects/lee-sunim.png',
+  'GS-01-S2': '/images/suspects/kim-dohyeon.png',
+  'GS-01-S3': '/images/suspects/park-malsun.png',
+  'GS-01-S4': '/images/suspects/kim-panseok.png',
+  'JL-01-S1': '/images/suspects/jeong-chunsam.png',
+  'JL-01-S2': '/images/suspects/choi-malja.png',
+  'JL-01-S3': '/images/suspects/seo-jiyoung.png',
+  'JL-01-S4': '/images/suspects/o-gapsu.png',
+  'CC-01-S1': '/images/suspects/no-bangseok.png',
+  'CC-01-S2': '/images/suspects/maeng-yongsik.png',
+  'CC-01-S3': '/images/suspects/mok-seonggu.png',
+  'CC-01-S4': '/images/suspects/pyo-seongdu.png',
+  'JJ-01-S1': '/images/suspects/moon-taeo.png',
+  'JJ-01-S2': '/images/suspects/kang-yunho.png',
+  'JJ-01-S3': '/images/suspects/yang-jaewoo.png',
+  'JJ-01-S4': '/images/suspects/o-minseok.png'
+};
+
 const specs: EpisodeSpec[] = [
   {
     code: 'GS-01', regionCode: 'GS', regionName: '경상도', title: '종가의 밤', location: '안동 인근 종가 고택',
@@ -119,7 +138,7 @@ export const fourEpisodeContent = (): SeedTables => {
       const suspectId = suspectIds[index];
       const code = `${spec.code}-S${index + 1}`;
       const factId = id(group, 100 + index);
-      tables.suspects.push({ id: suspectId, episode_id: episodeId, code, name: suspect.name, age: suspect.age, occupation: suspect.occupation, public_profile: { summary: suspect.profile }, personality: { summary: suspect.profile }, speech_style: { guidance: suspect.response }, victim_relation: suspect.occupation, actual_route: [], claimed_route: [], initial_emotion: 'NEUTRAL', display_order: index + 1, image_url: null, is_active: true });
+      tables.suspects.push({ id: suspectId, episode_id: episodeId, code, name: suspect.name, age: suspect.age, occupation: suspect.occupation, public_profile: { summary: suspect.profile }, personality: { summary: suspect.profile }, speech_style: { guidance: suspect.response }, victim_relation: suspect.occupation, actual_route: [], claimed_route: [], initial_emotion: 'NEUTRAL', display_order: index + 1, image_url: suspectImagePaths[code], is_active: true });
       tables.suspect_facts.push({ id: factId, suspect_id: suspectId, code: `${code}-FACT`, fact_type: 'KNOWN', content: suspect.fact, disclosure_level: 'LLM_ALLOWED', priority: 10, metadata: {} });
       tables.suspect_lies.push({ id: id(group, 110 + index), suspect_id: suspectId, code: `${code}-LIE`, topic: '알리바이', true_content: suspect.fact, claimed_content: suspect.lie, reveal_conditions: {} });
       tables.suspect_response_rules.push({ id: id(group, 120 + index), suspect_id: suspectId, question_type: 'Q-OTHER', response_policy: { guidance: suspect.response }, allowed_fact_refs: [factId], hidden_fact_refs: [], evasion_type: 'PARTIAL_ANSWER', difficulty_overrides: {} });

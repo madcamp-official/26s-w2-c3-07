@@ -46,6 +46,12 @@ describe('content seed', () => {
   });
   it('validates the difficulty exception and episode invariants', () => expect(validateContent(fixture())).toEqual({ valid: true, errors: [] }));
   it('validates the four PDF-derived episode specifications', () => expect(validateContent(fourEpisodeContent())).toEqual({ valid: true, errors: [] }));
+  it('assigns a unique local portrait asset to every suspect', () => {
+    const paths = fourEpisodeContent().suspects.map((suspect) => suspect.image_url);
+    expect(paths).toHaveLength(16);
+    expect(paths.every((path) => typeof path === 'string' && path.startsWith('/images/suspects/'))).toBe(true);
+    expect(new Set(paths).size).toBe(paths.length);
+  });
   it('makes every CORE clue reachable and uses interaction conditions', () => {
     const tables = fourEpisodeContent();
     expect(validateContent(tables)).toEqual({ valid: true, errors: [] });
