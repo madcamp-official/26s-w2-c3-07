@@ -14,6 +14,10 @@ export const createUserTokenClient = (accessToken: string) =>
     global: { headers: { Authorization: `Bearer ${accessToken}` } }
   });
 
+export const anonClient = createClient<Database>(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+  auth: serverAuth
+});
+
 export const verifyUserToken = async (accessToken: string) => {
   const { data, error } = await createUserTokenClient(accessToken).auth.getUser(accessToken);
   if (error || !data.user) return null;

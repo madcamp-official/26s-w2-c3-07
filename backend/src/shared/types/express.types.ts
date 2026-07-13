@@ -1,8 +1,18 @@
 import type { Request } from 'express';
 
+export type AuthenticatedUser = {
+  id: string;
+  email: string | null;
+};
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthenticatedUser;
+    }
+  }
+}
+
 export type AuthedRequest = Request & {
-  user?: {
-    id: string;
-    email?: string;
-  };
+  user?: AuthenticatedUser;
 };

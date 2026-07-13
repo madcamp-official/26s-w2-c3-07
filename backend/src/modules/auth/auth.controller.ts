@@ -1,9 +1,14 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { authService } from './auth.service.js';
 
+const execute = (handler: (req: Request) => unknown) => async (req: Request, res: Response, next: NextFunction) => {
+  try { res.json({ success: true, data: await handler(req) }); } catch (error) { next(error); }
+};
+
 export const authController = {
-  async signIn(req: Request, res: Response) {
-    const user = await authService.signIn(req.body.email);
-    res.json({ success: true, data: user });
-  }
+  signIn: execute((req) => authService.signIn(req.body)),
+  me: execute((req) => authService.me(req.user)),
+  updateMe: execute((req) => authService.updateMe(req.user, req.body)),
+  settings: execute((req) => authService.settings(req.user)),
+  updateSettings: execute((req) => authService.updateSettings(req.user, req.body))
 };
