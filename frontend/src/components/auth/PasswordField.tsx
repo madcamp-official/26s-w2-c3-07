@@ -2,19 +2,25 @@
 
 import { useState } from "react";
 
-export function PasswordField() {
+type PasswordFieldProps = {
+  id?: string;
+  label?: string;
+  placeholder?: string;
+};
+
+export function PasswordField({ id = "password", label = "비밀번호", placeholder = "비밀번호를 입력하세요" }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
 
   return (
     <div className="text-left">
-      <label htmlFor="password" className="mb-2 block text-sm text-parchment-300">
-        비밀번호
+      <label htmlFor={id} className="mb-2 block text-sm text-parchment-300">
+        {label}
       </label>
       <div className="relative">
         <input
-          id="password"
+          id={id}
           type={visible ? "text" : "password"}
-          placeholder="비밀번호를 입력하세요"
+          placeholder={placeholder}
           className="w-full border border-brass-600/30 bg-noir-900/80 px-4 py-3 pr-11 text-sm text-parchment-100 placeholder:text-parchment-300/40 focus:border-brass-400 focus:outline-none"
         />
         <button
