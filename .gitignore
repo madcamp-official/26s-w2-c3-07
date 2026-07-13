@@ -11,17 +11,17 @@ next-env.d.ts
 # Build outputs
 dist/
 build/
+coverage/
 
 # Environment
 .env
-.env*.local
+.env.*
+!.env.example
+!.env.local.example
 
 # Logs
 *.log
 npm-debug.log*
-
-# Testing
-coverage/
 
 # Editor / OS
 .DS_Store
