@@ -36,3 +36,19 @@ export function createSession(sessionId: string, caseId: string, difficulty: Dif
   saveSession(session);
   return session;
 }
+
+export function loadAllSessions(): GameSession[] {
+  if (typeof window === "undefined") return [];
+  const sessions: GameSession[] = [];
+  for (let i = 0; i < window.sessionStorage.length; i++) {
+    const key = window.sessionStorage.key(i);
+    if (!key?.startsWith("game-session:")) continue;
+    try {
+      const raw = window.sessionStorage.getItem(key);
+      if (raw) sessions.push(JSON.parse(raw) as GameSession);
+    } catch {
+      // 손상된 항목은 건너뜀
+    }
+  }
+  return sessions;
+}
