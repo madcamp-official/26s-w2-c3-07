@@ -7,6 +7,7 @@ const execute = (handler: (req: Request) => unknown) => async (req: Request, res
 
 export const authController = {
   signIn: execute((req) => authService.signIn(req.body)),
+  signUp: execute((req) => authService.signUp(req.body)),
   me: execute((req) => authService.me(req.user)),
   updateMe: execute((req) => authService.updateMe(req.user, req.body)),
   settings: execute((req) => authService.settings(req.user)),
