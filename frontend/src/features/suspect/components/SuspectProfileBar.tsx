@@ -1,4 +1,4 @@
-import type { Suspect } from "@/features/suspect/types";
+import type { Suspect } from "@/features/case/types";
 
 export function SuspectProfileBar({ suspect }: { suspect: Suspect }) {
   return (
@@ -12,10 +12,10 @@ export function SuspectProfileBar({ suspect }: { suspect: Suspect }) {
       <p className="text-sm text-parchment-200 md:text-base">
         <span className="font-display font-bold text-parchment-100">{suspect.name}</span>
         <span className="mx-2 text-brass-500/60">|</span>
-        {suspect.gender}, {suspect.age}세<span className="mx-2 text-brass-500/60">|</span>
-        {suspect.occupation}
+        {suspect.age}세<span className="mx-2 text-brass-500/60">|</span>
+        {suspect.job}
         <span className="mx-2 text-brass-500/60">|</span>
-        {suspect.summary}
+        {suspect.relationship}
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { Suspect } from "@/features/suspect/types";
+import type { Suspect } from "@/features/case/types";
 
 type SuspectSelectCardProps = {
   suspect: Suspect;

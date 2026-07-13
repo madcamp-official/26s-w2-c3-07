@@ -10,6 +10,7 @@ import { SelectedRegionInfo } from "@/features/region/components/SelectedRegionI
 import { TipBar } from "@/features/region/components/TipBar";
 import { REGIONS } from "@/features/region/constants";
 import type { DifficultyId, RegionId } from "@/features/region/types";
+import { getCaseByRegionId } from "@/features/case/data";
 import { AlleyBackground } from "@/components/layout/AlleyBackground";
 import { BrandMark } from "@/components/layout/BrandMark";
 
@@ -17,6 +18,7 @@ export default function RegionsPage() {
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId>(REGIONS[0].id);
   const [selectedDifficultyId, setSelectedDifficultyId] = useState<DifficultyId>("normal");
   const selectedRegion = REGIONS.find((region) => region.id === selectedRegionId) ?? null;
+  const selectedCase = getCaseByRegionId(selectedRegionId);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-noir-950">
@@ -45,8 +47,8 @@ export default function RegionsPage() {
             <SelectedRegionInfo region={selectedRegion} />
           </div>
 
-          {selectedRegion && (
-            <CasePanel region={selectedRegion} selectedDifficultyId={selectedDifficultyId} />
+          {selectedCase && (
+            <CasePanel caseData={selectedCase} selectedDifficultyId={selectedDifficultyId} />
           )}
         </div>
 

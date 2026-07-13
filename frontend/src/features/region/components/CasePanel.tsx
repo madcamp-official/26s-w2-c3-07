@@ -1,21 +1,21 @@
 import Link from "next/link";
 import { DIFFICULTY_OPTIONS } from "@/features/region/constants";
-import type { DifficultyId, Region } from "@/features/region/types";
+import type { DifficultyId } from "@/features/region/types";
+import type { CaseData } from "@/features/case/types";
 
 type CasePanelProps = {
-  region: Region;
+  caseData: CaseData;
   selectedDifficultyId: DifficultyId;
 };
 
-export function CasePanel({ region, selectedDifficultyId }: CasePanelProps) {
-  const { case: caseInfo } = region;
+export function CasePanel({ caseData, selectedDifficultyId }: CasePanelProps) {
   const difficulty = DIFFICULTY_OPTIONS.find((option) => option.id === selectedDifficultyId)!;
 
   return (
     <div className="relative border border-brass-600/40 bg-[#e9dfc7] text-noir-900 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
       <div className="flex items-center justify-between border-b border-noir-900/15 px-6 py-4">
         <span className="border-2 border-evidence-red px-3 py-1 font-display text-lg font-bold text-evidence-red">
-          {region.name}
+          {caseData.regionName}
         </span>
       </div>
 
@@ -25,22 +25,22 @@ export function CasePanel({ region, selectedDifficultyId }: CasePanelProps) {
         <div className="flex flex-1 flex-col justify-between gap-4">
           <div>
             <p className="text-sm font-bold tracking-widest text-evidence-red">CASE 01</p>
-            <h3 className="mt-1 font-display text-2xl font-bold text-noir-900">{caseInfo.title}</h3>
-            <p className="mt-1 text-sm text-noir-900/60">{caseInfo.subtitle}</p>
-            <p className="mt-3 text-sm leading-relaxed text-noir-900/80">{caseInfo.description}</p>
+            <h3 className="mt-1 font-display text-2xl font-bold text-noir-900">{caseData.title}</h3>
+            <p className="mt-1 text-sm text-noir-900/60">
+              {caseData.location} · {caseData.victim.name} ({caseData.victim.age}세, {caseData.victim.job}) 사망 사건
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-noir-900/80">{caseData.summary}</p>
           </div>
 
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm text-noir-900/70">
-              <p className="mb-1 font-bold text-noir-900">
-                난이도: {difficulty.label}
-              </p>
+              <p className="mb-1 font-bold text-noir-900">난이도: {difficulty.label}</p>
               <p>
                 용의자당 질문 {difficulty.questionsPerSuspect}회 · {difficulty.description}
               </p>
             </div>
             <Link
-              href={`/episodes/${caseInfo.id}?difficulty=${difficulty.id}`}
+              href={`/episodes/${caseData.id}/suspects?difficulty=${difficulty.id}`}
               className="shrink-0 bg-noir-900 px-6 py-3 font-display text-sm font-bold text-parchment-100 transition-colors hover:bg-noir-800"
             >
               사건 선택

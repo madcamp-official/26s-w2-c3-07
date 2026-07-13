@@ -1,15 +1,26 @@
 "use client";
 
+import { notFound, useParams, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { BackButton } from "@/components/ui/BackButton";
+import { getCaseById } from "@/features/case/data";
 import { SelectSuspectButton } from "@/features/suspect/components/SelectSuspectButton";
 import { SuspectProfileBar } from "@/features/suspect/components/SuspectProfileBar";
 import { SuspectSelectCard } from "@/features/suspect/components/SuspectSelectCard";
-import { SUSPECTS } from "@/features/suspect/constants";
 
 export default function SuspectsPage() {
-  const [selectedSuspectId, setSelectedSuspectId] = useState(SUSPECTS[0].id);
-  const selectedSuspect = SUSPECTS.find((s) => s.id === selectedSuspectId)!;
+  const params = useParams<{ episodeId: string }>();
+  const searchParams = useSearchParams();
+  const difficulty = searchParams.get("difficulty") ?? "normal";
+  const caseData = getCaseById(params.episodeId);
+
+  const [selectedSuspectId, setSelectedSuspectId] = useState(caseData?.suspects[0]?.id ?? "");
+
+  if (!caseData) {
+    notFound();
+  }
+
+  const selectedSuspect = caseData.suspects.find((s) => s.id === selectedSuspectId) ?? caseData.suspects[0];
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_50%_20%,#1c1712_0%,#0a0806_65%,#050403_100%)]">
@@ -32,7 +43,7 @@ export default function SuspectsPage() {
 
         {/* 용의자 그리드 */}
         <div className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
-          {SUSPECTS.map((suspect) => (
+          {caseData.suspects.map((suspect) => (
             <SuspectSelectCard
               key={suspect.id}
               suspect={suspect}
@@ -44,9 +55,11 @@ export default function SuspectsPage() {
 
         {/* 하단 프로필 바 + 액션 */}
         <div className="mt-auto flex flex-col items-stretch gap-4 md:flex-row md:items-center">
-          <BackButton label="뒤로가기" />
+          <BackButton label="뒤로가기" href="/regions" />
           <SuspectProfileBar suspect={selectedSuspect} />
-          <SelectSuspectButton href={`/game/session-mock/interrogation/${selectedSuspect.id}`} />
+          <SelectSuspectButton
+            href={`/game/${caseData.id}/interrogation/${selectedSuspect.id}?difficulty=${difficulty}`}
+          />
         </div>
       </div>
     </main>

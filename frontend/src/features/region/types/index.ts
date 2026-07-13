@@ -9,17 +9,9 @@ export type DifficultyOption = {
   description: string;
 };
 
-export type CaseSummary = {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-};
-
 export type Region = {
   id: RegionId;
   name: string;
   /** SVG viewBox 기준 지역 마커 좌표 (%) */
   markerPosition: { top: string; left: string };
-  case: CaseSummary;
 };
