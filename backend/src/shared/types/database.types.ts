@@ -21,7 +21,7 @@ export type Database = {
       session_evidence: Table<Id & { session_id: string; evidence_id: string; discovered_at: string; viewed_at: string | null }>;
       session_clues: Table<Id & { session_id: string; clue_id: string; unlocked_at: string; source: string | null }>;
       session_notes: Table<Id & { session_id: string; user_id: string; note_type: string; content: string; suspect_id: string | null; related_ref: Json } & Audit>;
-      game_results: Table<Id & { session_id: string; selected_suspect_id: string; is_correct: boolean; score: number; ending_id: string | null; result_data: Json; created_at: string }>;
+      game_results: Table<Id & { session_id: string; selected_suspect_id: string; is_correct: boolean; score: number; ending_id: string | null; result_data: Json; report_text: string | null; aftermath_text: string | null; report_status: string; report_attempt_count: number; report_last_attempt_at: string | null; report_generated_at: string | null; created_at: string }>;
       user_episode_progress: Table<Id & { user_id: string; episode_id: string; status: string; best_score: number | null; play_count: number; completed_at: string | null; updated_at: string }>;
       user_dialect_unlocks: Table<Id & { user_id: string; dialect_expression_id: string; unlocked_at: string }>;
     };
@@ -39,6 +39,9 @@ export type Database = {
       evaluate_session_clues: { Args: { p_user_id: string; p_session_id: string; p_source?: string }; Returns: string[] };
       view_session_evidence: { Args: { p_user_id: string; p_session_id: string; p_evidence_id: string }; Returns: Json };
       submit_final_deduction: { Args: { p_user_id: string; p_session_id: string; p_suspect_id: string }; Returns: Json };
+      claim_ending_report_generation: { Args: { p_user_id: string; p_session_id: string }; Returns: Json };
+      complete_ending_report_generation: { Args: { p_user_id: string; p_session_id: string; p_report_text: string; p_aftermath_text: string }; Returns: Json };
+      fail_ending_report_generation: { Args: { p_user_id: string; p_session_id: string }; Returns: undefined };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
@@ -60,7 +63,7 @@ export type Database = {
       suspect_response_rules: Table<Id & { suspect_id: string; rule_type: string; trigger_data: Json; response_guidance: string; priority: number }>;
       suspect_emotion_rules: Table<Id & { suspect_id: string; trigger_type: string; trigger_data: Json; emotion: string; intensity: number }>;
       suspect_relationships: Table<Id & { suspect_id: string; related_suspect_id: string | null; victim_id: string | null; relationship_type: string; description: string; visibility: string; unlock_clue_id: string | null }>;
-      endings: Table<Id & { episode_id: string; code: string; ending_type: string; title: string; narrative: string; conditions: Json; sort_order: number }>;
+      endings: Table<Id & { episode_id: string; code: string; ending_type: string; title: string; narrative: string; conditions: Json; asset_url: string | null; sort_order: number }>;
     };
     Views: Record<never, never>; Functions: Record<never, never>; Enums: Record<never, never>; CompositeTypes: Record<never, never>;
   };
