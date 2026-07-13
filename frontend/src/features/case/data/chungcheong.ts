@@ -158,7 +158,7 @@ export const chungcheongCase: CaseData = {
           normal: "돈은 제 사정이에유.",
           hard: "…아니어유.",
           emotion: "hostile",
-          clueIds: [],
+          clueIds: ["c7"],
         },
         {
           trigger: ["라이터", "녹색", "테이프"],

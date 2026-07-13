@@ -25,6 +25,8 @@ export const gyeongsangCase: CaseData = {
     { id: "c4", title: "박말순의 '신음 소리' 증언", description: "21시경 사랑채에서 들었으나 무시하고 지나갔다는 증언. 사망 시각 추정에 사용.", isKey: true },
     { id: "c5", title: "옥비녀가 이순임 것이라는 물증 확인", description: "사건 당일 밤 사랑채에 다시 들어갔다는 물증이다.", isKey: false },
     { id: "c6", title: "뒷산에서 약초 캤다는 제3자 증언", description: "초오의 입수 경로를 확인시켜준다.", isKey: false },
+    { id: "c7", title: "박말순의 신분(이복 누나)", description: "그녀의 침묵 동기를 살인이 아닌 다른 이유로 재해석하게 함.", isKey: false },
+    { id: "c8", title: "사투리 해석 — \"속이 다 시커멓다\"", description: "이순임이 반복하는 표현. 오랜 세월 마음이 썩어들었다는 뜻.", isKey: false },
   ],
   culpritId: "lee-sunim",
   truth:
@@ -40,6 +42,10 @@ export const gyeongsangCase: CaseData = {
     "park-malsun": {
       wrongLine: "내가… 내가 그 집 딸인데도 그런 취급 받았다! 근데 내가 왜 죽이겠노!",
       culpritMockLine: "(침묵 속에 안도의 한숨을 내쉰다)",
+    },
+    "kim-panseok": {
+      wrongLine: "이게 무슨 소리고! 내가 위토답 욕심 좀 냈다고 사람을 죽이겠나! 억울하다카이!",
+      culpritMockLine: "쯧… 문중회장 체면이 뭐가 되겠노. 근데 나는 아이라꼬.",
     },
   },
   dialectGuide: [
@@ -96,7 +102,7 @@ export const gyeongsangCase: CaseData = {
           normal: "…그 얘긴 하기 싫습니다. 집안 일이다.",
           hard: "…됐다 고마. 그 얘기는.",
           emotion: "sad",
-          clueIds: ["c1"],
+          clueIds: ["c1", "c8"],
         },
         {
           trigger: ["뒷산", "약초", "초오", "캐", "독초"],
@@ -196,7 +202,7 @@ export const gyeongsangCase: CaseData = {
           normal: "…그건 진짜 사연이라예. 말하기 싫어예.",
           hard: "…몰라.",
           emotion: "sad",
-          clueIds: [],
+          clueIds: ["c7"],
         },
         {
           trigger: ["반지", "유품"],

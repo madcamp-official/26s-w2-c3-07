@@ -25,6 +25,8 @@ export const jeollaCase: CaseData = {
     { id: "c4", title: "최말자가 본 진단서", description: "그녀의 침묵을 살인이 아닌 다른 이유로 재해석.", isKey: true },
     { id: "c5", title: "서지영의 마지막 통화 내용", description: "상속이 아니라 화해 목적이었다는 반전.", isKey: false },
     { id: "c6", title: "오갑수·정춘삼의 은밀한 통화", description: "인수 협상 정황(살인과는 분리해서 판단).", isKey: false },
+    { id: "c7", title: "창고 열쇠 소지자 압축", description: "창고 열쇠 소지자가 사장·정춘삼·최말자뿐이라는 사실(용의자 압축).", isKey: false },
+    { id: "c8", title: "정춘삼의 습관어 \"거시기\"", description: "얼버무릴 때 나오는 습관어. 뭔가 숨기고 있다는 심리적 단서.", isKey: false },
   ],
   culpritId: "jeong-chunsam",
   truth:
@@ -40,6 +42,10 @@ export const jeollaCase: CaseData = {
     "choi-malja": {
       wrongLine: "내가 그것 땜에 그랬간디! 사장님 부탁이라 말 못 한 것뿐이여!",
       culpritMockLine: "(안도한 기색을 애써 감춘다)",
+    },
+    "o-gapsu": {
+      wrongLine: "내가요?! 목포에 있었당께요! 증인이 몇인디 이러시요!",
+      culpritMockLine: "(먼 곳에서 이 소식을 전해 듣고 씁쓸하게 웃는다)",
     },
   },
   dialectGuide: [
@@ -78,7 +84,7 @@ export const jeollaCase: CaseData = {
         {
           trigger: ["알리바이", "그날", "저녁", "사무실", "창고"],
           easy: "…사실은… 창고 쪽에 잠깐 갔다 왔당께. 근디 그건 그냥 확인차 갔던 것 뿐이여, 다른 뜻은 없었어야.",
-          normal: "…잠깐 왔다 갔다는 했는디, 별일 아니었어.",
+          normal: "…아 그것이… 잠깐 왔다 갔다는 했는디, 별일 아니었어.",
           hard: "…거시기… 몰것는디… 그냥… 아니여, 고것이.",
           emotion: "nervous",
           clueIds: ["c3"],
