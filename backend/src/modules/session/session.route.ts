@@ -1,9 +1,1 @@
-import { Router } from 'express';
-import { validateBody } from '../../middlewares/validate.middleware.js';
-import { sessionController } from './session.controller.js';
-import { createSessionSchema } from './session.schema.js';
-
-export const sessionRoute = Router();
-
-sessionRoute.get('/', sessionController.list);
-sessionRoute.post('/', validateBody(createSessionSchema), sessionController.create);
+import{Router}from'express';import{requireAuth}from'../../middlewares/auth.middleware.js';import{validateBody}from'../../middlewares/validate.middleware.js';import{sessionController as c}from'./session.controller.js';import{createSessionSchema,selectSuspectSchema}from'./session.schema.js';export const sessionRoute=Router();sessionRoute.use(requireAuth);sessionRoute.post('/',validateBody(createSessionSchema),c.create);sessionRoute.get('/active',c.active);sessionRoute.get('/:sessionId',c.get);sessionRoute.patch('/:sessionId/current-suspect',validateBody(selectSuspectSchema),c.select);sessionRoute.post('/:sessionId/enter-deduction',c.deduction);sessionRoute.post('/:sessionId/abandon',c.abandon);
