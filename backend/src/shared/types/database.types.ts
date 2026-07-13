@@ -22,7 +22,7 @@ export type Database = {
       session_clues: Table<Id & { session_id: string; clue_id: string; unlocked_at: string; source: string | null }>;
       session_notes: Table<Id & { session_id: string; user_id: string; note_type: string; content: string; suspect_id: string | null; related_ref: Json } & Audit>;
       game_results: Table<Id & { session_id: string; selected_suspect_id: string; is_correct: boolean; score: number; ending_id: string | null; result_data: Json; report_text: string | null; aftermath_text: string | null; report_status: string; report_attempt_count: number; report_last_attempt_at: string | null; report_generated_at: string | null; created_at: string }>;
-      user_episode_progress: Table<Id & { user_id: string; episode_id: string; status: string; best_score: number | null; play_count: number; completed_at: string | null; updated_at: string }>;
+      user_episode_progress: Table<Id & { user_id: string; episode_id: string; status: string; best_difficulty: string | null; best_score: number | null; play_count: number; first_cleared_at: string | null; last_played_at: string | null; unlocked_at: string; completed_at: string | null; updated_at: string }>;
       user_dialect_unlocks: Table<Id & { user_id: string; dialect_expression_id: string; unlocked_at: string }>;
     };
     Views: Record<never, never>;
@@ -57,7 +57,7 @@ export type Database = {
       evidence: Table<Id & { episode_id: string; code: string; title: string; description: string; evidence_type: string; metadata: Json; is_initial: boolean; sort_order: number }>;
       clues: Table<Id & { episode_id: string; code: string; title: string; description: string; clue_type: string; metadata: Json; sort_order: number }>;
       clue_unlock_conditions: Table<Id & { clue_id: string; condition_type: string; condition_data: Json; group_no: number; operator: string; sort_order: number }>;
-      dialect_expressions: Table<Id & { region_id: string; code: string; standard_text: string; dialect_text: string; meaning: string | null; usage_context: string | null; difficulty: number }>;
+      dialect_expressions: Table<Id & { region_id: string; episode_id: string | null; code: string; standard_text: string; dialect_text: string; meaning: string | null; usage_context: string | null; difficulty: number }>;
       suspect_facts: Table<Id & { suspect_id: string; fact_key: string; content: string; is_public: boolean; sort_order: number }>;
       suspect_lies: Table<Id & { suspect_id: string; lie_key: string; claim: string; truth: string; exposure_data: Json }>;
       suspect_response_rules: Table<Id & { suspect_id: string; rule_type: string; trigger_data: Json; response_guidance: string; priority: number }>;

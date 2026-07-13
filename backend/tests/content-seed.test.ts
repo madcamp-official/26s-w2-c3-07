@@ -48,4 +48,19 @@ describe('content seed', () => {
     expect(second.inserted).toBe(0);
     expect(writer.rows.size).toBe(rowCount);
   });
+  it('persists the dialect episode reference while stripping seed-only metadata', async () => {
+    const tables = fixture();
+    const episodeId = String(tables.episodes[0].id);
+    tables.dialect_expressions.push({
+      id: uuid(700), code: 'GS-D1', region_id: tables.episodes[0].region_id,
+      _episode_id: episodeId, _related_clue_id: tables.clues[0].id,
+      dialect_text: '마', standard_text: '그만'
+    });
+    const writer = new MemoryWriter();
+    await runContentSeed(tables, writer);
+    const stored = writer.rows.get('dialect_expressions:GS-D1');
+    expect(stored?.episode_id).toBe(episodeId);
+    expect(stored?._episode_id).toBeUndefined();
+    expect(stored?._related_clue_id).toBeUndefined();
+  });
 });
