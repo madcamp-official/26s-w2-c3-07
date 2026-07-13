@@ -1,8 +1,12 @@
 "use client";
 
+import { notFound, useParams, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { AlleyBackground } from "@/components/layout/AlleyBackground";
 import { BrandMark } from "@/components/layout/BrandMark";
+import { getCaseById } from "@/features/case/data";
+import type { Difficulty } from "@/features/case/types";
+import { QUESTIONS_PER_SUSPECT } from "@/features/case/types";
 import { ClueListPanel } from "@/features/records/components/ClueListPanel";
 import { InterrogationProgressCard } from "@/features/records/components/InterrogationProgressCard";
 import { RecordsHeaderActions } from "@/features/records/components/RecordsHeaderActions";
@@ -10,18 +14,28 @@ import { StepNavigation } from "@/features/records/components/StepNavigation";
 import { StepTabs } from "@/features/records/components/StepTabs";
 import { SuspectListPanel } from "@/features/records/components/SuspectListPanel";
 import { TestimonyLogPanel } from "@/features/records/components/TestimonyLogPanel";
-import {
-  CLUES,
-  RECORD_STEPS,
-  SUSPECTS,
-  TESTIMONIES,
-  TOTAL_CLUE_SLOTS,
-  TOTAL_QUESTIONS,
-} from "@/features/records/constants";
+import { RECORD_STEPS } from "@/features/records/constants";
+import { useGameSession } from "@/features/session/hooks/useGameSession";
 
 export default function RecordsPage() {
-  const [selectedSuspectId, setSelectedSuspectId] = useState(SUSPECTS[2].id);
+  const params = useParams<{ sessionId: string }>();
+  const searchParams = useSearchParams();
+  const difficulty = (searchParams.get("difficulty") as Difficulty | null) ?? "normal";
+
+  const caseData = getCaseById(params.sessionId);
+  const { session } = useGameSession(params.sessionId, params.sessionId, difficulty);
+
+  const [selectedSuspectId, setSelectedSuspectId] = useState(caseData?.suspects[0]?.id ?? "");
   const [activeStepId, setActiveStepId] = useState(1);
+
+  if (!caseData) {
+    notFound();
+  }
+
+  const questionsPerSuspect = QUESTIONS_PER_SUSPECT[difficulty];
+  const totalQuestions = questionsPerSuspect * caseData.suspects.length;
+  const totalQuestionsUsed = session?.conversations.reduce((acc, c) => acc + c.questionsUsed, 0) ?? 0;
+  const foundClueIds = session?.foundClueIds ?? [];
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-noir-950">
@@ -38,7 +52,7 @@ export default function RecordsPage() {
           </div>
 
           <div className="flex shrink-0 items-start gap-3">
-            <InterrogationProgressCard answered={6} total={TOTAL_QUESTIONS} />
+            <InterrogationProgressCard answered={totalQuestionsUsed} total={totalQuestions} />
             <RecordsHeaderActions />
           </div>
         </div>
@@ -49,12 +63,16 @@ export default function RecordsPage() {
         {/* 본문 3단 레이아웃 */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr_320px]">
           <SuspectListPanel
-            suspects={SUSPECTS}
+            suspects={caseData.suspects}
             selectedSuspectId={selectedSuspectId}
             onSelectSuspect={setSelectedSuspectId}
           />
-          <TestimonyLogPanel entries={TESTIMONIES} suspects={SUSPECTS} highlightedSuspectId={selectedSuspectId} />
-          <ClueListPanel clues={CLUES} totalSlots={TOTAL_CLUE_SLOTS} />
+          <TestimonyLogPanel
+            conversations={session?.conversations ?? []}
+            suspects={caseData.suspects}
+            highlightedSuspectId={selectedSuspectId}
+          />
+          <ClueListPanel clues={caseData.clues} foundClueIds={foundClueIds} />
         </div>
 
         {/* 하단 네비게이션 */}

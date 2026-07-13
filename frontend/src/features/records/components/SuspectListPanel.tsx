@@ -1,4 +1,4 @@
-import type { Suspect } from "@/features/records/types";
+import type { Suspect } from "@/features/case/types";
 
 type SuspectListPanelProps = {
   suspects: Suspect[];
@@ -26,11 +26,11 @@ export function SuspectListPanel({ suspects, selectedSuspectId, onSelectSuspect 
                 <span className="h-12 w-12 shrink-0 bg-[radial-gradient(circle_at_35%_30%,#5a4f40_0%,#2a2318_60%,#100d09_100%)]" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-display text-sm font-bold text-noir-900">
-                    {suspect.name} ({suspect.gender}, {suspect.age}세)
+                    {suspect.name} ({suspect.age}세)
                   </span>
                   <span className="mt-0.5 block truncate text-xs text-noir-900/60">
                     {isSelected ? "● " : ""}
-                    {suspect.occupation}
+                    {suspect.job}
                   </span>
                 </span>
                 {isSelected && (

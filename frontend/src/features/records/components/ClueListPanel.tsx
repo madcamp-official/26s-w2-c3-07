@@ -1,45 +1,60 @@
-import type { Clue } from "@/features/records/types";
+import type { Clue } from "@/features/case/types";
 
 type ClueListPanelProps = {
   clues: Clue[];
-  totalSlots: number;
+  foundClueIds: string[];
 };
 
-export function ClueListPanel({ clues, totalSlots }: ClueListPanelProps) {
-  const emptySlots = Math.max(totalSlots - clues.length, 0);
+export function ClueListPanel({ clues, foundClueIds }: ClueListPanelProps) {
+  const foundSet = new Set(foundClueIds);
+  const foundCount = clues.filter((c) => foundSet.has(c.id)).length;
 
   return (
     <div className="border border-brass-600/40 bg-noir-800/80 p-4">
       <p className="mb-4 font-display text-lg text-parchment-100">
-        단서 목록 ({clues.length} / {totalSlots})
+        단서 목록 ({foundCount} / {clues.length})
       </p>
 
       <div className="grid grid-cols-2 gap-4">
-        {clues.map((clue) => (
-          <figure key={clue.id} className="-rotate-1 bg-parchment-100 p-2 pb-3 shadow-[0_8px_20px_rgba(0,0,0,0.5)]">
-            <div className="aspect-square w-full bg-[radial-gradient(circle_at_35%_30%,#4a3f30_0%,#241e17_60%,#100d09_100%)]" />
-            <figcaption className="mt-2 text-center text-xs font-medium text-noir-900">{clue.label}</figcaption>
-            <p className="mt-1 text-center">
-              <span
-                className={`inline-block px-2 py-0.5 text-[10px] font-bold ${
-                  clue.status === "analyzed" ? "bg-evidence-red/15 text-evidence-red" : "bg-noir-900/10 text-noir-900/50"
+        {clues.map((clue) => {
+          const isFound = foundSet.has(clue.id);
+          return (
+            <figure
+              key={clue.id}
+              className={`-rotate-1 p-2 pb-3 shadow-[0_8px_20px_rgba(0,0,0,0.5)] ${
+                isFound ? "bg-parchment-100" : "bg-noir-900/40"
+              }`}
+            >
+              <div
+                className={`aspect-square w-full ${
+                  isFound
+                    ? "bg-[radial-gradient(circle_at_35%_30%,#4a3f30_0%,#241e17_60%,#100d09_100%)]"
+                    : "flex items-center justify-center border border-dashed border-brass-600/30 text-2xl text-parchment-300/30"
                 }`}
               >
-                {clue.status === "analyzed" ? "분석 완료" : "미분석"}
-              </span>
-            </p>
-          </figure>
-        ))}
-
-        {Array.from({ length: emptySlots }, (_, i) => (
-          <div
-            key={`empty-${i}`}
-            className="flex aspect-[0.85] flex-col items-center justify-center gap-1 border border-dashed border-brass-600/40 text-parchment-300/40"
-          >
-            <span className="text-2xl">?</span>
-            <span className="text-xs">추가 단서</span>
-          </div>
-        ))}
+                {!isFound && "?"}
+              </div>
+              <figcaption
+                className={`mt-2 text-center text-xs font-medium ${isFound ? "text-noir-900" : "text-parchment-300/40"}`}
+              >
+                {isFound ? clue.title : "미발견 단서"}
+              </figcaption>
+              <p className="mt-1 text-center">
+                <span
+                  className={`inline-block px-2 py-0.5 text-[10px] font-bold ${
+                    isFound
+                      ? clue.isKey
+                        ? "bg-evidence-red/15 text-evidence-red"
+                        : "bg-brass-600/15 text-brass-400"
+                      : "bg-noir-900/30 text-parchment-300/40"
+                  }`}
+                >
+                  {isFound ? (clue.isKey ? "핵심 단서" : "보조 단서") : "미발견"}
+                </span>
+              </p>
+            </figure>
+          );
+        })}
       </div>
 
       <button
