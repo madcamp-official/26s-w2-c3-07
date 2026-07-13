@@ -58,7 +58,7 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
       const config = difficulties.find((row) => text(row, 'difficulty') === difficulty);
       if (!config) errors.push(`${code}: ${difficulty} difficulty is missing`);
       const expected = difficulty === 'easy' ? 12 : difficulty === 'normal' ? 8 : code === 'JJ-01' ? 6 : 4;
-      if (config?.questions_per_suspect !== expected) errors.push(`${code}: ${difficulty} must allow ${expected} total questions`);
+      if (config?.total_questions !== expected) errors.push(`${code}: ${difficulty} must allow ${expected} total questions`);
     }
 
     const clues = rowsForEpisode(tables.clues, episodeId);

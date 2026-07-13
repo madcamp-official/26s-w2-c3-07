@@ -12,7 +12,7 @@ const fixture = (): SeedTables => {
     tables.episodes.push({ id: episodeId, code, region_id: uuid(900 + episodeIndex), title: code, _culprit_suspect_id: suspectIds[0] });
     tables.victims.push({ id: uuid(200 + episodeIndex), episode_id: episodeId, name: 'fixture' });
     suspectIds.forEach((id, index) => tables.suspects.push({ id, episode_id: episodeId, code: `${code}-S${index + 1}`, name: 'fixture' }));
-    for (const difficulty of ['easy', 'normal', 'hard']) tables.episode_difficulty_configs.push({ id: uuid(300 + tables.episode_difficulty_configs.length), episode_id: episodeId, difficulty, questions_per_suspect: difficulty === 'easy' ? 12 : difficulty === 'normal' ? 8 : code === 'JJ-01' ? 6 : 4 });
+    for (const difficulty of ['easy', 'normal', 'hard']) { const total = difficulty === 'easy' ? 12 : difficulty === 'normal' ? 8 : code === 'JJ-01' ? 6 : 4; tables.episode_difficulty_configs.push({ id: uuid(300 + tables.episode_difficulty_configs.length), episode_id: episodeId, difficulty, questions_per_suspect: difficulty === 'easy' ? 3 : difficulty === 'normal' ? 2 : 1, total_questions: total }); }
     tables.clues.push({ id: uuid(500 + episodeIndex), episode_id: episodeId, code: `${code}-CORE`, title: 'fixture', clue_type: 'CORE' });
   });
   return tables;

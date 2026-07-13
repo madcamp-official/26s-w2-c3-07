@@ -33,11 +33,11 @@ export type Database = {
   game_content: {
     Tables: {
       regions: Table<Id & { code: string; name: string; description: string | null; dialect_name: string | null; image_url: string | null; sort_order: number; is_active: boolean } & Audit>;
-      episodes: Table<Id & { region_id: string; code: string; title: string; synopsis: string | null; scene_description: string | null; culprit_suspect_id: string | null; default_difficulty: string; is_published: boolean; sort_order: number } & Audit>;
-      episode_difficulty_configs: Table<Id & { episode_id: string; difficulty: string; questions_per_suspect: number; time_limit_seconds: number | null; score_multiplier: number; config: Json }>;
+      episodes: Table<Id & { region_id: string; code: string; title: string; synopsis: string | null; scene_description: string | null; culprit_suspect_id: string | null; default_difficulty: string; is_published: boolean; sort_order: number; location: string | null; incident_type: string | null; estimated_play_minutes: number; status: string; image_url: string | null } & Audit>;
+      episode_difficulty_configs: Table<Id & { episode_id: string; difficulty: string; questions_per_suspect: number; total_questions: number; time_limit_seconds: number | null; dialect_level: string; hint_limit: number; score_multiplier: number; config: Json }>;
       victims: Table<Id & { episode_id: string; name: string; age: number | null; occupation: string | null; profile: Json }>;
       suspects: Table<Id & { episode_id: string; code: string; name: string; age: number | null; occupation: string | null; hometown: string | null; personality: string | null; speech_style: string | null; motive: string | null; is_culprit: boolean; profile: Json; sort_order: number }>;
-      episode_timelines: Table<Id & { episode_id: string; occurred_at: string; title: string; description: string; is_secret: boolean; sort_order: number }>;
+      episode_timelines: Table<Id & { episode_id: string; occurred_at: string; title: string; description: string; is_secret: boolean; visibility: string; sort_order: number }>;
       evidence: Table<Id & { episode_id: string; code: string; title: string; description: string; evidence_type: string; metadata: Json; is_initial: boolean; sort_order: number }>;
       clues: Table<Id & { episode_id: string; code: string; title: string; description: string; clue_type: string; metadata: Json; sort_order: number }>;
       clue_unlock_conditions: Table<Id & { clue_id: string; condition_type: string; condition_data: Json; sort_order: number }>;
