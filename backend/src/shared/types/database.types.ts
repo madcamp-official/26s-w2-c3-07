@@ -20,7 +20,7 @@ export type Database = {
       interrogation_messages: Table<Id & { session_id: string; suspect_id: string; request_id: string; question: string; answer: string | null; dialect_response: string | null; response_metadata: Json; status: string; created_at: string }>;
       session_evidence: Table<Id & { session_id: string; evidence_id: string; discovered_at: string; viewed_at: string | null }>;
       session_clues: Table<Id & { session_id: string; clue_id: string; unlocked_at: string; source: string | null }>;
-      session_notes: Table<Id & { session_id: string; user_id: string; content: string } & Audit>;
+      session_notes: Table<Id & { session_id: string; user_id: string; note_type: string; content: string; suspect_id: string | null; related_ref: Json } & Audit>;
       game_results: Table<Id & { session_id: string; selected_suspect_id: string; is_correct: boolean; score: number; ending_id: string | null; result_data: Json; created_at: string }>;
       user_episode_progress: Table<Id & { user_id: string; episode_id: string; status: string; best_score: number | null; play_count: number; completed_at: string | null; updated_at: string }>;
       user_dialect_unlocks: Table<Id & { user_id: string; dialect_expression_id: string; unlocked_at: string }>;
@@ -49,7 +49,7 @@ export type Database = {
       episode_difficulty_configs: Table<Id & { episode_id: string; difficulty: string; questions_per_suspect: number; total_questions: number; time_limit_seconds: number | null; dialect_level: string; hint_limit: number; score_multiplier: number; config: Json }>;
       victims: Table<Id & { episode_id: string; name: string; age: number | null; occupation: string | null; profile: Json }>;
       suspects: Table<Id & { episode_id: string; code: string; name: string; age: number | null; occupation: string | null; hometown: string | null; personality: string | null; speech_style: string | null; motive: string | null; is_culprit: boolean; profile: Json; public_profile: Json; public_personality: string | null; victim_relation: string | null; initial_emotion: string; image_url: string | null; sort_order: number }>;
-      episode_timelines: Table<Id & { episode_id: string; occurred_at: string; title: string; description: string; is_secret: boolean; visibility: string; sort_order: number }>;
+      episode_timelines: Table<Id & { episode_id: string; occurred_at: string; title: string; description: string; is_secret: boolean; visibility: string; unlock_clue_id: string | null; sort_order: number }>;
       evidence: Table<Id & { episode_id: string; code: string; title: string; description: string; evidence_type: string; metadata: Json; is_initial: boolean; sort_order: number }>;
       clues: Table<Id & { episode_id: string; code: string; title: string; description: string; clue_type: string; metadata: Json; sort_order: number }>;
       clue_unlock_conditions: Table<Id & { clue_id: string; condition_type: string; condition_data: Json; group_no: number; operator: string; sort_order: number }>;
@@ -58,7 +58,7 @@ export type Database = {
       suspect_lies: Table<Id & { suspect_id: string; lie_key: string; claim: string; truth: string; exposure_data: Json }>;
       suspect_response_rules: Table<Id & { suspect_id: string; rule_type: string; trigger_data: Json; response_guidance: string; priority: number }>;
       suspect_emotion_rules: Table<Id & { suspect_id: string; trigger_type: string; trigger_data: Json; emotion: string; intensity: number }>;
-      suspect_relationships: Table<Id & { suspect_id: string; related_suspect_id: string | null; victim_id: string | null; relationship_type: string; description: string }>;
+      suspect_relationships: Table<Id & { suspect_id: string; related_suspect_id: string | null; victim_id: string | null; relationship_type: string; description: string; visibility: string; unlock_clue_id: string | null }>;
       endings: Table<Id & { episode_id: string; code: string; ending_type: string; title: string; narrative: string; conditions: Json; sort_order: number }>;
     };
     Views: Record<never, never>; Functions: Record<never, never>; Enums: Record<never, never>; CompositeTypes: Record<never, never>;
