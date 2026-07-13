@@ -38,6 +38,7 @@ export type Database = {
       };
       evaluate_session_clues: { Args: { p_user_id: string; p_session_id: string; p_source?: string }; Returns: string[] };
       view_session_evidence: { Args: { p_user_id: string; p_session_id: string; p_evidence_id: string }; Returns: Json };
+      submit_final_deduction: { Args: { p_user_id: string; p_session_id: string; p_suspect_id: string }; Returns: Json };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
