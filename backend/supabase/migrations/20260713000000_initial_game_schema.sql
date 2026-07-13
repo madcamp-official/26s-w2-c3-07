@@ -182,6 +182,9 @@ alter table public.game_results enable row level security;
 alter table public.user_episode_progress enable row level security;
 alter table public.user_dialect_unlocks enable row level security;
 
+revoke all on public.profiles, public.user_settings, public.game_sessions, public.session_suspect_states,
+  public.interrogation_messages, public.session_evidence, public.session_clues, public.session_notes,
+  public.game_results, public.user_episode_progress, public.user_dialect_unlocks from anon, authenticated;
 grant usage on schema public to authenticated;
 grant select on public.profiles, public.user_settings, public.game_sessions, public.session_suspect_states,
   public.interrogation_messages, public.session_evidence, public.session_clues, public.session_notes,
