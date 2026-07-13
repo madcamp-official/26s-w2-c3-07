@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { serviceRoleClient } from '../src/config/supabase.js';
 import { episodeCodes, loadContentDocuments, runContentSeed, type ContentSeedWriter, type ContentTable, type SeedRow } from '../src/seeds/content-seed.js';
+import { fourEpisodeContent } from '../src/seeds/four-episode-content.js';
 
 const contentDirectory = resolve(fileURLToPath(new URL('../supabase/seed/content', import.meta.url)));
 const contentClient = serviceRoleClient.schema('game_content');
@@ -24,7 +25,8 @@ const writer: ContentSeedWriter = {
   }
 };
 
-const tables = await loadContentDocuments(contentDirectory);
+const loaded = await loadContentDocuments(contentDirectory);
+const tables = loaded.episodes.length > 0 ? loaded : fourEpisodeContent();
 const result = await runContentSeed(tables, writer);
 console.log(`Content seed: inserted=${result.inserted}, updated=${result.updated}`);
 if (result.validationErrors.length > 0) {
