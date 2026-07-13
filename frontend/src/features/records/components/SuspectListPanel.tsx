@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Suspect } from "@/features/case/types";
 
 type SuspectListPanelProps = {
@@ -23,7 +24,15 @@ export function SuspectListPanel({ suspects, selectedSuspectId, onSelectSuspect 
                   isSelected ? "border-evidence-red" : "border-transparent hover:border-brass-500/60"
                 }`}
               >
-                <span className="h-12 w-12 shrink-0 bg-[radial-gradient(circle_at_35%_30%,#5a4f40_0%,#2a2318_60%,#100d09_100%)]" />
+                <span className="relative h-12 w-12 shrink-0 overflow-hidden bg-[radial-gradient(circle_at_35%_30%,#5a4f40_0%,#2a2318_60%,#100d09_100%)]">
+                  <Image
+                    src={`/images/suspects/${suspect.id}.png`}
+                    alt={suspect.name}
+                    fill
+                    sizes="48px"
+                    className="object-cover object-top"
+                  />
+                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-display text-sm font-bold text-noir-900">
                     {suspect.name} ({suspect.age}세)

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Suspect } from "@/features/case/types";
 
@@ -19,7 +20,15 @@ export function SuspectStatusCard({ suspect, questionsUsed, questionsPerSuspect,
         exhausted ? "border-brass-600/20 opacity-70" : "border-brass-600/30 hover:border-brass-500/60"
       }`}
     >
-      <div className="aspect-[16/10] w-full bg-[radial-gradient(circle_at_40%_28%,#3a322a_0%,#1a1510_55%,#0a0806_100%)]" />
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[radial-gradient(circle_at_40%_28%,#3a322a_0%,#1a1510_55%,#0a0806_100%)]">
+        <Image
+          src={`/images/suspects/${suspect.id}.png`}
+          alt={suspect.name}
+          fill
+          sizes="(min-width: 640px) 50vw, 100vw"
+          className="object-cover object-top"
+        />
+      </div>
 
       <div className="p-4">
         <div className="border border-brass-600/30 bg-noir-800/60 px-4 py-2 text-center font-display text-lg text-parchment-200">

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ConversationRecord, Suspect } from "@/features/case/types";
 
 type TestimonyLogPanelProps = {
@@ -41,7 +42,17 @@ export function TestimonyLogPanel({ conversations, suspects, highlightedSuspectI
                     className="absolute -right-2 -top-2 h-3 w-3 rounded-full bg-evidence-red shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
                   />
                 )}
-                <span className="h-12 w-12 shrink-0 bg-[radial-gradient(circle_at_35%_30%,#5a4f40_0%,#2a2318_60%,#100d09_100%)]" />
+                <span className="relative h-12 w-12 shrink-0 overflow-hidden bg-[radial-gradient(circle_at_35%_30%,#5a4f40_0%,#2a2318_60%,#100d09_100%)]">
+                  {suspect && (
+                    <Image
+                      src={`/images/suspects/${suspect.id}.png`}
+                      alt={suspect.name}
+                      fill
+                      sizes="48px"
+                      className="object-cover object-top"
+                    />
+                  )}
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-display text-base font-bold text-noir-900">{suspect?.name}</p>
                   <p className="mt-1 text-sm leading-relaxed text-noir-900/80">&ldquo;{message.text}&rdquo;</p>

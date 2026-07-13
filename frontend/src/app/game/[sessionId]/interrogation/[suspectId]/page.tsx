@@ -59,7 +59,7 @@ export default function InterrogationPage() {
       <div className="relative mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-6 py-12">
         <InterrogationTitle />
 
-        <SuspectPortrait />
+        <SuspectPortrait suspectId={suspect.id} name={suspect.name} />
 
         <div className="mx-auto text-center">
           <p className="font-display text-xl text-parchment-100">{suspect.name}</p>
