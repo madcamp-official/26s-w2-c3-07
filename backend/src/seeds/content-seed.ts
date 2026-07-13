@@ -67,6 +67,33 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
     const suspectIds = new Set(suspects.map((row) => text(row, 'id')));
     if (!clues.some((row) => row._is_core === true || text(row, 'clue_type') === 'CORE')) errors.push(`${code}: CORE clue is missing`);
 
+    const initialEvidenceIds = new Set(rowsForEpisode(tables.evidence, episodeId).filter((row) => row.is_initial === true).map((row) => text(row, 'id')));
+    const reachableClues = new Set<string>();
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const clue of clues.filter((row) => text(row, 'clue_type') === 'CORE')) {
+        const clueId = text(clue, 'id');
+        if (!clueId || reachableClues.has(clueId)) continue;
+        const groups = new Map<number, SeedRow[]>();
+        for (const condition of tables.clue_unlock_conditions.filter((row) => text(row, 'clue_id') === clueId)) {
+          const groupNo = typeof condition.group_no === 'number' ? condition.group_no : 1;
+          groups.set(groupNo, [...(groups.get(groupNo) ?? []), condition]);
+        }
+        const reachable = [...groups.values()].some((conditions) => conditions.every((condition) => {
+          const kind = text(condition, 'condition_type');
+          if (kind === 'EVIDENCE_VIEWED') return initialEvidenceIds.has(text(condition, '_target_evidence_id'));
+          if (kind === 'CLUE_ACQUIRED') return reachableClues.has(text(condition, '_target_clue_id') ?? '');
+          return ['QUESTION_TYPE_ASKED', 'FACT_USED', 'SUSPECT_INTERROGATED', 'MESSAGE_EXISTS', 'EMOTION_REACHED'].includes(kind ?? '');
+        }));
+        if (reachable) { reachableClues.add(clueId); changed = true; }
+      }
+    }
+    for (const clue of clues.filter((row) => text(row, 'clue_type') === 'CORE')) {
+      const clueId = text(clue, 'id');
+      if (clueId && !reachableClues.has(clueId)) errors.push(`${code}: CORE clue ${text(clue, 'code') ?? clueId} is not reachable`);
+    }
+
     for (const condition of tables.clue_unlock_conditions.filter((row) => clueIds.has(text(row, 'clue_id')))) {
       for (const [key, targets] of [['_target_clue_id', clueIds], ['_target_evidence_id', evidenceIds], ['_target_suspect_id', suspectIds]] as const) {
         const target = text(condition, key);
