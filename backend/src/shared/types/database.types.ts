@@ -15,7 +15,7 @@ export type Database = {
     Tables: {
       profiles: Table<{ user_id: string; display_name: string | null; avatar_url: string | null } & Audit>;
       user_settings: Table<{ user_id: string; sound_enabled: boolean; music_enabled: boolean; text_speed: string; locale: string; updated_at: string }>;
-      game_sessions: Table<Id & { user_id: string; episode_id: string; difficulty_config_id: string; difficulty: string; status: string; remaining_questions: number; started_at: string; expires_at: string; current_suspect_id: string | null; completed_at: string | null; created_at: string }>;
+      game_sessions: Table<Id & { user_id: string; episode_id: string; difficulty_config_id: string; difficulty: string; status: string; remaining_questions: number; started_at: string; expires_at: string; current_suspect_id: string | null; last_activity_at: string; completed_at: string | null; created_at: string }>;
       session_suspect_states: Table<Id & { session_id: string; suspect_id: string; emotion: string; emotion_intensity: number; questions_asked: number; state: Json; updated_at: string }>;
       interrogation_messages: Table<Id & { session_id: string; suspect_id: string; request_id: string; question: string; answer: string | null; dialect_response: string | null; response_metadata: Json; status: string; created_at: string }>;
       session_evidence: Table<Id & { session_id: string; evidence_id: string; discovered_at: string }>;
@@ -26,7 +26,17 @@ export type Database = {
       user_dialect_unlocks: Table<Id & { user_id: string; dialect_expression_id: string; unlocked_at: string }>;
     };
     Views: Record<never, never>;
-    Functions: { initialize_game_session: { Args: { p_user_id: string; p_episode_id: string; p_difficulty: string }; Returns: string } };
+    Functions: {
+      initialize_game_session: { Args: { p_user_id: string; p_episode_id: string; p_difficulty: string }; Returns: string };
+      finalize_interrogation: {
+        Args: {
+          p_user_id: string; p_session_id: string; p_request_id: string; p_suspect_id: string;
+          p_question: string; p_dialect_response: string; p_question_type: string; p_emotion: string;
+          p_used_fact_ids: string[]; p_evasion_type: string; p_consistency_status: string;
+        };
+        Returns: Json;
+      };
+    };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
   };
@@ -53,7 +63,7 @@ export type Database = {
   };
   game_private: {
     Tables: {
-      llm_request_logs: Table<Id & { session_id: string; user_id: string; request_id: string; model: string; prompt_hash: string | null; input_tokens: number | null; output_tokens: number | null; latency_ms: number | null; status: string; error_code: string | null; created_at: string }>;
+      llm_request_logs: Table<Id & { session_id: string; user_id: string; request_id: string; model: string; purpose: string; prompt_hash: string | null; input_tokens: number | null; output_tokens: number | null; latency_ms: number | null; status: string; error_code: string | null; created_at: string }>;
     };
     Views: Record<never, never>; Functions: Record<never, never>; Enums: Record<never, never>; CompositeTypes: Record<never, never>;
   };
