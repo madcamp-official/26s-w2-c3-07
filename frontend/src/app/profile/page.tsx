@@ -1,55 +1,13 @@
-"use client";
-
-import { BackButton } from "@/components/ui/BackButton";
-import { AlleyBackground } from "@/components/layout/AlleyBackground";
-import { BrandMark } from "@/components/layout/BrandMark";
-import { ALL_CASES } from "@/features/case/data";
-import { ProfileMenuLink } from "@/features/progress/components/ProfileMenuLink";
-import { ProfileSummaryCard } from "@/features/progress/components/ProfileSummaryCard";
-import { usePlayHistory } from "@/features/session/hooks/usePlayHistory";
-
-export default function ProfilePage() {
-  const records = usePlayHistory();
-  const clearedCount = records.filter((r) => r.isCleared).length;
-
-  return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_50%_10%,#1c1712_0%,#0a0806_65%,#050403_100%)]">
-      <AlleyBackground />
-
-      <div className="relative mx-auto flex min-h-screen max-w-2xl flex-col gap-8 px-6 py-12">
-        <div className="flex items-center justify-between">
-          <BackButton href="/" label="홈으로" />
-        </div>
-
-        <div className="text-center">
-          <p className="text-xs font-bold tracking-widest text-evidence-red">DETECTIVE PROFILE</p>
-          <h1 className="mt-2 font-display text-3xl font-bold text-parchment-100 md:text-4xl">내 프로필</h1>
-        </div>
-
-        <ProfileSummaryCard nickname="탐정" clearedCount={clearedCount} totalCount={ALL_CASES.length} />
-
-        <div className="flex flex-col gap-4">
-          <ProfileMenuLink
-            href="/profile/progress"
-            icon="🗺️"
-            title="지역별 진행도"
-            description="지역별 사건 해결 현황을 확인하세요."
-          />
-          <ProfileMenuLink
-            href="/profile/history"
-            icon="📖"
-            title="플레이 기록"
-            description="지금까지 수사한 사건들의 기록을 확인하세요."
-          />
-        </div>
-
-        <button
-          type="button"
-          className="mt-4 border border-brass-600/40 bg-noir-900/60 py-3 text-sm text-parchment-300/70 transition-colors hover:border-brass-400 hover:text-parchment-100"
-        >
-          ⏻ 로그아웃
-        </button>
-      </div>
-    </main>
-  );
-}
+'use client';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState, type FormEvent } from 'react';
+import { AuthGuard, useAuth } from '@/features/auth/AuthProvider';
+import { useApiResource } from '@/features/api/useApiResource';
+import { api } from '@/lib/api-client';
+import { ErrorState, LoadingState } from '@/components/ui/ApiState';
+import type { UserSettings } from '@/types/auth';
+import type { ProgressSummary } from '@/types/progress';
+import { ApiError } from '@/types/api';
+export default function ProfilePage(){const auth=useAuth();const router=useRouter();const progress=useApiResource<ProgressSummary>('/progress');const settings=useApiResource<UserSettings>('/auth/settings');const[error,setError]=useState<ApiError|null>(null);const[saving,setSaving]=useState(false);async function save(event:FormEvent<HTMLFormElement>){event.preventDefault();const data=new FormData(event.currentTarget);setSaving(true);try{await api.patch('/auth/me',{displayName:data.get('displayName')});await api.patch('/auth/settings',{soundEnabled:data.get('soundEnabled')==='on',musicEnabled:data.get('musicEnabled')==='on',textSpeed:data.get('textSpeed'),locale:data.get('locale')});await Promise.all([auth.refreshProfile(),settings.reload()])}catch(e){setError(e as ApiError)}finally{setSaving(false)}}async function logout(){await auth.signOut();router.replace('/login')}
+return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-3xl space-y-6"><Link href="/regions">← 사건 목록</Link><header><p className="text-xs text-evidence-red">DETECTIVE PROFILE</p><h1 className="font-display text-4xl">{auth.profile?.displayName??'탐정'}님의 기록</h1></header>{progress.loading||settings.loading?<LoadingState/>:progress.error?<ErrorState error={progress.error}/>:settings.error?<ErrorState error={settings.error}/>:progress.data&&settings.data&&<><section className="grid grid-cols-2 gap-3 md:grid-cols-4">{[['플레이',progress.data.playedEpisodeCount],['완료',progress.data.completedEpisodeCount],['해결',progress.data.solvedEpisodeCount],['완전 해결',progress.data.fullResolutionCount]].map(([l,v])=><div key={l} className="border p-4 text-center"><b className="text-2xl text-brass-400">{v}</b><p>{l}</p></div>)}</section><nav className="grid gap-3 md:grid-cols-3"><Link className="border p-4" href="/profile/progress">지역별 진행도</Link><Link className="border p-4" href="/profile/history">플레이 이력</Link><Link className="border p-4" href="/profile/dialects">사투리 기록집 ({progress.data.unlockedDialectCount})</Link></nav><form onSubmit={save} className="space-y-4 border border-brass-600/30 p-5"><h2 className="font-display text-2xl">프로필과 설정</h2><label className="block">탐정 이름<input name="displayName" defaultValue={auth.profile?.displayName??''} required maxLength={50} className="mt-1 w-full bg-noir-900 p-3"/></label><div className="flex gap-6"><label><input name="soundEnabled" type="checkbox" defaultChecked={settings.data.soundEnabled}/> 효과음</label><label><input name="musicEnabled" type="checkbox" defaultChecked={settings.data.musicEnabled}/> 음악</label></div><label className="block">텍스트 속도<select name="textSpeed" defaultValue={settings.data.textSpeed} className="ml-3 bg-noir-900 p-2"><option value="slow">느림</option><option value="normal">보통</option><option value="fast">빠름</option></select></label><label className="block">언어<select name="locale" defaultValue={settings.data.locale} className="ml-3 bg-noir-900 p-2"><option value="ko">한국어</option><option value="en">English</option></select></label><button disabled={saving} className="bg-evidence-red px-5 py-2">{saving?'저장 중...':'설정 저장'}</button></form></>}{error&&<ErrorState error={error}/>}<button onClick={logout} className="w-full border border-brass-600/30 py-3">로그아웃</button></div></main></AuthGuard>}
