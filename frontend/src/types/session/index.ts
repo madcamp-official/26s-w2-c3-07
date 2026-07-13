@@ -1,0 +1,2 @@
+export type SessionStatus = 'READY' | 'INVESTIGATING' | 'INTERROGATING' | 'DEDUCTION' | 'COMPLETED' | 'ABANDONED' | 'EXPIRED';
+export type SessionView = { sessionId: string; episodeId: string; difficulty: string; status: SessionStatus; startedAt: string; expiresAt: string; remainingSeconds: number; remainingQuestions: number; currentSuspectId: string | null; suspectStates: { suspectId: string; emotion: string; questionsAsked: number }[]; viewedEvidenceIds: string[]; acquiredClueCount: number };

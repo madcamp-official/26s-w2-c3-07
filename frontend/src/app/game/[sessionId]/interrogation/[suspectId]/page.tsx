@@ -1,100 +1,29 @@
-"use client";
-
-import Link from "next/link";
-import { notFound, useParams, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { getCaseById } from "@/features/case/data";
-import { getResponse } from "@/features/case/services/responseEngine";
-import type { Difficulty, Message } from "@/features/case/types";
-import { QUESTIONS_PER_SUSPECT } from "@/features/case/types";
-import { useGameSession } from "@/features/session/hooks/useGameSession";
-import { ConversationLog } from "@/features/interrogation/components/ConversationLog";
-import { InterrogationTitle } from "@/features/interrogation/components/InterrogationTitle";
-import { QuestionInputBar } from "@/features/interrogation/components/QuestionInputBar";
-import { QuestionsLeftBadge } from "@/features/interrogation/components/QuestionsLeftBadge";
-import { SuspectPortrait } from "@/features/interrogation/components/SuspectPortrait";
+'use client';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useState, type FormEvent } from 'react';
+import { AuthGuard } from '@/features/auth/AuthProvider';
+import { useApiResource } from '@/features/api/useApiResource';
+import { api } from '@/lib/api-client';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/ApiState';
+import type { PublicSuspect } from '@/types/content';
+import type { InterrogationMessage } from '@/types/interrogation';
+import type { SessionView } from '@/types/session';
+import type { Clue } from '@/types/clue';
+import { ApiError } from '@/types/api';
 
 export default function InterrogationPage() {
-  const params = useParams<{ sessionId: string; suspectId: string }>();
-  const searchParams = useSearchParams();
-  const difficulty = (searchParams.get("difficulty") as Difficulty | null) ?? "normal";
-
-  const caseData = getCaseById(params.sessionId);
-  const suspect = caseData?.suspects.find((s) => s.id === params.suspectId);
-  const { session, addExchange } = useGameSession(params.sessionId, params.sessionId, difficulty);
-
-  const [msgIdCounter, setMsgIdCounter] = useState(0);
-  const [isWaiting, setIsWaiting] = useState(false);
-
-  if (!caseData || !suspect) {
-    notFound();
-  }
-
-  const messages: Message[] =
-    session?.conversations.find((c) => c.suspectId === suspect.id)?.messages ?? [];
-
-  const questionsPerSuspect = QUESTIONS_PER_SUSPECT[difficulty];
-  const questionsUsed = messages.filter((m) => m.role === "detective").length;
-  const questionsLeft = questionsPerSuspect - questionsUsed;
-  const exhausted = questionsLeft <= 0;
-
-  const handleAskQuestion = (question: string) => {
-    if (exhausted || isWaiting) return;
-    setIsWaiting(true);
-
-    const { text, emotion, clueIds } = getResponse(suspect, question, difficulty);
-
-    const detectiveMsg: Message = { id: msgIdCounter, role: "detective", text: question, emotion: "calm", clueIds: [] };
-    const suspectMsg: Message = { id: msgIdCounter + 1, role: "suspect", text, emotion, clueIds };
-
-    window.setTimeout(() => {
-      addExchange(suspect.id, detectiveMsg, suspectMsg);
-      setMsgIdCounter((id) => id + 2);
-      setIsWaiting(false);
-    }, 500);
-  };
-
-  return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_50%_15%,#1c1712_0%,#0a0806_65%,#050403_100%)]">
-      <div className="relative mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-6 py-12">
-        <InterrogationTitle />
-
-        <SuspectPortrait />
-
-        <div className="mx-auto text-center">
-          <p className="font-display text-xl text-parchment-100">{suspect.name}</p>
-          <p className="mt-1 text-sm text-parchment-300/60">
-            {suspect.age}세 · {suspect.job}
-          </p>
-        </div>
-
-        <QuestionsLeftBadge left={Math.max(questionsLeft, 0)} total={questionsPerSuspect} />
-
-        <ConversationLog messages={messages} />
-
-        {exhausted ? (
-          <div className="flex flex-col items-center gap-3 border border-evidence-red/60 bg-evidence-red/10 px-6 py-4 text-center text-sm text-parchment-100">
-            이 용의자에 대한 질문 횟수를 모두 소진했습니다.
-            <Link
-              href={`/game/${params.sessionId}?difficulty=${difficulty}`}
-              className="border border-brass-600/50 bg-noir-800/80 px-5 py-2 text-xs font-bold text-parchment-100 transition-colors hover:border-brass-400"
-            >
-              다른 용의자 심문하기 →
-            </Link>
-          </div>
-        ) : (
-          <>
-            <QuestionInputBar onSubmit={handleAskQuestion} disabled={isWaiting} />
-            <p className="text-center text-xs text-parchment-300/40">⚠ 무의미한 질문도 횟수가 차감됩니다.</p>
-          </>
-        )}
-
-        <div className="text-center">
-          <Link href={`/game/${params.sessionId}?difficulty=${difficulty}`} className="text-xs text-parchment-300/50 underline-offset-2 hover:underline">
-            ← 용의자 목록으로
-          </Link>
-        </div>
-      </div>
-    </main>
-  );
+  const { sessionId, suspectId } = useParams<{ sessionId: string; suspectId: string }>();
+  const session = useApiResource<SessionView>(`/sessions/${sessionId}`); const suspect = useApiResource<PublicSuspect>(session.data ? `/episodes/${session.data.episodeId}/suspects/${suspectId}` : null);
+  const messages = useApiResource<InterrogationMessage[]>(`/sessions/${sessionId}/suspects/${suspectId}/interrogations`); const clues = useApiResource<Clue[]>(`/sessions/${sessionId}/clues`);
+  const [question, setQuestion] = useState(''); const [requestId, setRequestId] = useState<string | null>(null); const [sending, setSending] = useState(false); const [error, setError] = useState<ApiError | null>(null); const [notice, setNotice] = useState('');
+  const state = session.data?.suspectStates.find((item) => item.suspectId === suspectId); const disabled = sending || !session.data || session.data.remainingQuestions <= 0 || !['READY','INVESTIGATING','INTERROGATING'].includes(session.data.status);
+  async function send(event: FormEvent) { event.preventDefault(); if (disabled || question.trim().length < 2) return; const id = requestId ?? crypto.randomUUID(); setRequestId(id); setSending(true); setError(null); const before = clues.data?.length ?? 0; try { await api.post<InterrogationMessage>(`/sessions/${sessionId}/interrogations`, { requestId: id, suspectId, question: question.trim() }); setQuestion(''); setRequestId(null); await Promise.all([messages.reload(), session.reload(), clues.reload()]); const after = (await clues.reload())?.length ?? before; if (after > before) setNotice(`새 단서 ${after - before}개를 획득했습니다.`); } catch (cause) { setError(cause as ApiError); } finally { setSending(false); } }
+  return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-3xl space-y-6"><Link href={`/game/${sessionId}`}>← 용의자 목록</Link>
+    {suspect.loading || session.loading ? <LoadingState /> : suspect.error ? <ErrorState error={suspect.error} /> : suspect.data && session.data && <><header className="text-center"><p className="text-xs text-evidence-red">INTERROGATION</p><h1 className="font-display text-4xl">{suspect.data.name}</h1><p className="opacity-60">{suspect.data.occupation} · 감정 {state?.emotion ?? suspect.data.initialEmotion}</p><p className="mt-2">전체 남은 질문 {session.data.remainingQuestions}회</p></header>
+      {notice && <p role="status" className="border border-brass-400 p-3">{notice}</p>}
+      <section aria-label="심문 기록" className="space-y-4">{!messages.data?.length ? <EmptyState label="아직 심문 기록이 없습니다." /> : messages.data.map((message) => <article key={message.id} className="space-y-2"><div className="ml-auto max-w-[85%] bg-[#e9dfc7] p-3 text-noir-900">{message.question}</div><div className="max-w-[85%] border border-brass-600/30 bg-noir-900 p-4"><p>{message.dialectResponse}</p><p className="mt-2 text-xs opacity-50">감정 {message.emotion} · {message.questionType}{message.evasionType === 'PROMPT_REJECTION' ? ' · 안전하지 않은 요청 차단' : ''}</p></div></article>)}</section>
+      {error && <ErrorState error={error} retry={() => void send({ preventDefault() {} } as FormEvent)} />}
+      <form onSubmit={send} className="flex gap-2"><input aria-label="질문" value={question} onChange={(e) => setQuestion(e.target.value)} disabled={disabled} maxLength={500} className="flex-1 border border-brass-600/40 bg-noir-900 px-4 py-3" placeholder={session.data.remainingQuestions ? '질문을 입력하세요' : '질문 횟수를 모두 사용했습니다'} /><button disabled={disabled || question.trim().length < 2} className="bg-evidence-red px-6 font-bold disabled:opacity-40">{sending ? '전송 중' : '질문'}</button></form>
+    </>}</div></main></AuthGuard>;
 }
