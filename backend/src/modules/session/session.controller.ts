@@ -1,12 +1,1 @@
-import type { Request, Response } from 'express';
-import { sessionService } from './session.service.js';
-
-export const sessionController = {
-  async create(req: Request, res: Response) {
-    const session = await sessionService.createSession(req.body.userId, req.body.episodeId);
-    res.status(201).json({ success: true, data: session });
-  },
-  async list(_req: Request, res: Response) {
-    res.json({ success: true, data: await sessionService.listSessions() });
-  }
-};
+import type{NextFunction,Request,Response}from'express';import{sessionService as s}from'./session.service.js';const send=(code:number,fn:(r:Request)=>unknown)=>async(r:Request,res:Response,n:NextFunction)=>{try{res.status(code).json({success:true,data:await fn(r)})}catch(e){n(e)}};const uid=(r:Request)=>r.user!.id;export const sessionController={create:send(201,r=>s.create(uid(r),r.body)),get:send(200,r=>s.get(r.params.sessionId,uid(r))),active:send(200,r=>s.active(uid(r))),select:send(200,r=>s.selectSuspect(r.params.sessionId,uid(r),r.body.suspectId)),deduction:send(200,r=>s.deduction(r.params.sessionId,uid(r))),abandon:send(200,r=>s.abandon(r.params.sessionId,uid(r)))};

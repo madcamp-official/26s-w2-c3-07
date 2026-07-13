@@ -1,6 +1,3 @@
 import { z } from 'zod';
-
-export const createSessionSchema = z.object({
-  userId: z.string().min(1),
-  episodeId: z.string().min(1)
-});
+export const createSessionSchema = z.object({ episodeId: z.string().uuid(), difficulty: z.enum(['easy','normal','hard']) });
+export const selectSuspectSchema = z.object({ suspectId: z.string().uuid() });

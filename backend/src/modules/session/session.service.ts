@@ -1,10 +1,6 @@
-import { sessionRepository } from './session.repository.js';
-
-export const sessionService = {
-  async createSession(userId: string, episodeId: string) {
-    return sessionRepository.create(userId, episodeId);
-  },
-  async listSessions() {
-    return sessionRepository.findAll();
-  }
-};
+import { sessionRepository as repo } from './session.repository.js'; import { AppError } from '../../shared/errors/app-error.js'; import type { SessionStatus,SessionView } from './session.types.js';
+const terminal=new Set(['COMPLETED','ABANDONED','EXPIRED']);
+export const remainingSeconds=(expiresAt:string,now=Date.now())=>Math.max(0,Math.ceil((new Date(expiresAt).getTime()-now)/1000));
+async function view(row:Record<string,unknown>,userId:string):Promise<SessionView>{let status=String(row.status) as SessionStatus;const seconds=remainingSeconds(String(row.expires_at));if(seconds===0&&!terminal.has(status)){await repo.transition(String(row.id),userId,'EXPIRED');status='EXPIRED';}const [states,evidence,count]=await Promise.all([repo.states(String(row.id)),repo.evidence(String(row.id)),repo.clueCount(String(row.id))]);return{sessionId:String(row.id),episodeId:String(row.episode_id),difficulty:String(row.difficulty),status,startedAt:String(row.started_at),expiresAt:String(row.expires_at),remainingSeconds:seconds,remainingQuestions:Number(row.remaining_questions),currentSuspectId:row.current_suspect_id as string|null,suspectStates:states.map(x=>({suspectId:x.suspect_id,emotion:x.emotion,questionsAsked:x.questions_asked})),viewedEvidenceIds:evidence,acquiredClueCount:count};}
+async function owned(id:string,userId:string){const row=await repo.findOwned(id,userId);if(!row)throw new AppError(404,'Session not found','SESSION_NOT_FOUND');return row as unknown as Record<string,unknown>;}
+export const sessionService={async create(userId:string,input:{episodeId:string;difficulty:string}){const id=await repo.initialize(userId,input.episodeId,input.difficulty);return view(await owned(id,userId),userId);},async get(id:string,userId:string){return view(await owned(id,userId),userId);},async active(userId:string){const row=await repo.findActive(userId);return row?view(row as unknown as Record<string,unknown>,userId):null;},async selectSuspect(id:string,userId:string,suspectId:string){const row=await owned(id,userId);if(remainingSeconds(String(row.expires_at))===0)throw new AppError(409,'Session expired','SESSION_EXPIRED');if(!await repo.suspectBelongs(String(row.episode_id),suspectId))throw new AppError(400,'Suspect not in episode','SUSPECT_NOT_IN_EPISODE');await repo.transition(id,userId,'INTERROGATING',suspectId);return this.get(id,userId);},async deduction(id:string,userId:string){const row=await owned(id,userId);if(String(row.status)==='DEDUCTION')throw new AppError(409,'Already in deduction','SESSION_ALREADY_IN_DEDUCTION');if(terminal.has(String(row.status)))throw new AppError(409,'Invalid session state','SESSION_STATE_INVALID');await repo.transition(id,userId,'DEDUCTION');return this.get(id,userId);},async abandon(id:string,userId:string){const row=await owned(id,userId);if(terminal.has(String(row.status)))throw new AppError(409,'Invalid session state','SESSION_STATE_INVALID');await repo.transition(id,userId,'ABANDONED');return this.get(id,userId);}};
