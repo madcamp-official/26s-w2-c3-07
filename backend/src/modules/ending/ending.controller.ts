@@ -1,11 +1,13 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { endingService } from './ending.service.js';
 
+const handle = (action: (request: Request) => Promise<unknown>) =>
+  async (request: Request, response: Response, next: NextFunction) => {
+    try { response.json({ success: true, data: await action(request) }); }
+    catch (error) { next(error); }
+  };
+
 export const endingController = {
-  async create(req: Request, res: Response) {
-    res.status(201).json({ success: true, data: await endingService.createEnding(req.body.sessionId, req.body.score) });
-  },
-  async list(_req: Request, res: Response) {
-    res.json({ success: true, data: await endingService.listEndings() });
-  }
+  ending: handle(request => endingService.ending(request.params.sessionId, request.user!.id)),
+  report: handle(request => endingService.report(request.params.sessionId, request.user!.id))
 };
