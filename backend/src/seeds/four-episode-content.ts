@@ -92,7 +92,7 @@ export const fourEpisodeContent = (): SeedTables => {
     tables.victims.push({ id: victimId, episode_id: episodeId, ...spec.victim, profile: { description: spec.victim.profile } });
     spec.suspects.forEach((suspect, index) => {
       const suspectId = suspectIds[index]; const code = `${spec.code}-S${index + 1}`;
-      tables.suspects.push({ id: suspectId, episode_id: episodeId, code, name: suspect.name, age: suspect.age, occupation: suspect.occupation, personality: suspect.profile, is_culprit: suspect.culprit ?? false, profile: { description: suspect.profile }, sort_order: index + 1 });
+      tables.suspects.push({ id: suspectId, episode_id: episodeId, code, name: suspect.name, age: suspect.age, occupation: suspect.occupation, personality: suspect.profile, public_personality: suspect.profile, victim_relation: suspect.occupation, initial_emotion: suspect.emotion, image_url: null, public_profile: { summary: suspect.profile }, is_culprit: suspect.culprit ?? false, profile: { description: suspect.profile }, sort_order: index + 1 });
       tables.suspect_facts.push({ id: id(group, 100 + index), suspect_id: suspectId, fact_key: `${code}-FACT`, content: suspect.fact, is_public: false, sort_order: 1 });
       tables.suspect_lies.push({ id: id(group, 110 + index), suspect_id: suspectId, lie_key: `${code}-LIE`, claim: suspect.lie, truth: suspect.fact, exposure_data: {} });
       tables.suspect_response_rules.push({ id: id(group, 120 + index), suspect_id: suspectId, rule_type: 'scenario_guidance', trigger_data: {}, response_guidance: suspect.response, priority: 10 });
