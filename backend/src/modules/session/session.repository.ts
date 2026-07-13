@@ -1,5 +1,6 @@
 import { serviceRoleClient } from '../../config/supabase.js';
 import { toAppError } from '../../shared/utils/supabase.js';
+import type { DbSessionStatus } from './session.types.js';
 
 const cols = 'id, user_id, episode_id, difficulty_config_id, status, remaining_questions, started_at, expires_at, current_suspect_id';
 
@@ -16,7 +17,7 @@ export const sessionRepository = {
   },
   async findActive(userId: string) {
     const { data, error } = await serviceRoleClient.from('game_sessions').select(cols).eq('user_id', userId)
-      .in('status', ['READY', 'INVESTIGATING', 'INTERROGATING', 'DEDUCTION']).order('started_at', { ascending: false }).limit(1).maybeSingle();
+      .in('status', ['CREATED', 'INTRO_VIEWING', 'INTERROGATING', 'READY_TO_DEDUCE', 'SUBMITTED']).order('started_at', { ascending: false }).limit(1).maybeSingle();
     if (error) throw toAppError(error);
     return data;
   },
@@ -46,8 +47,8 @@ export const sessionRepository = {
     if (error) throw toAppError(error);
     return Boolean(data);
   },
-  async transition(id: string, userId: string, status: string, currentSuspectId?: string | null, allowedStatuses?: string[]) {
-    const changes: { status: string; current_suspect_id?: string | null } = { status };
+  async transition(id: string, userId: string, status: DbSessionStatus, currentSuspectId?: string | null, allowedStatuses?: DbSessionStatus[]) {
+    const changes: { status: DbSessionStatus; current_suspect_id?: string | null } = { status };
     if (currentSuspectId !== undefined) changes.current_suspect_id = currentSuspectId;
     let query = serviceRoleClient.from('game_sessions').update(changes).eq('id', id).eq('user_id', userId);
     if (allowedStatuses?.length) query = query.in('status', allowedStatuses);

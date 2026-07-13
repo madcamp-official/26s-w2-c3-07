@@ -1,19 +1,34 @@
 import { sessionRepository as repo } from './session.repository.js';
 import { AppError } from '../../shared/errors/app-error.js';
-import type { SessionStatus, SessionView } from './session.types.js';
+import type { DbSessionStatus, SessionStatus, SessionView } from './session.types.js';
 
-const terminal = new Set(['COMPLETED', 'ABANDONED', 'EXPIRED']);
-const selectable = ['READY', 'INVESTIGATING', 'INTERROGATING'];
+const terminal = new Set<DbSessionStatus>(['COMPLETED', 'ABANDONED', 'EXPIRED', 'ERROR']);
+const active = ['CREATED', 'INTRO_VIEWING', 'INTERROGATING', 'READY_TO_DEDUCE', 'SUBMITTED'] satisfies DbSessionStatus[];
+const selectable = ['CREATED', 'INTRO_VIEWING', 'INTERROGATING'] satisfies DbSessionStatus[];
+
+export function toApiSessionStatus(status: DbSessionStatus): SessionStatus {
+  switch (status) {
+    case 'CREATED': return 'READY';
+    case 'INTRO_VIEWING': return 'INVESTIGATING';
+    case 'INTERROGATING': return 'INTERROGATING';
+    case 'READY_TO_DEDUCE':
+    case 'SUBMITTED': return 'DEDUCTION';
+    case 'COMPLETED': return 'COMPLETED';
+    case 'EXPIRED': return 'EXPIRED';
+    case 'ABANDONED': return 'ABANDONED';
+    case 'ERROR': throw new AppError(500, 'Session is in an error state', 'SESSION_STATE_ERROR');
+  }
+}
 
 export const remainingSeconds = (expiresAt: string, now = Date.now()) =>
   Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now) / 1000));
 
 async function view(row: Record<string, unknown>, userId: string): Promise<SessionView> {
-  let status = String(row.status) as SessionStatus;
+  let databaseStatus = String(row.status) as DbSessionStatus;
   const seconds = remainingSeconds(String(row.expires_at));
-  if (seconds === 0 && !terminal.has(status)) {
-    await repo.transition(String(row.id), userId, 'EXPIRED', undefined, selectable.concat('DEDUCTION'));
-    status = 'EXPIRED';
+  if (seconds === 0 && !terminal.has(databaseStatus)) {
+    await repo.transition(String(row.id), userId, 'EXPIRED', undefined, active);
+    databaseStatus = 'EXPIRED';
   }
   const difficultyRequest = typeof row.difficulty === 'string'
     ? Promise.resolve(row.difficulty)
@@ -23,7 +38,7 @@ async function view(row: Record<string, unknown>, userId: string): Promise<Sessi
     difficultyRequest
   ]);
   return {
-    sessionId: String(row.id), episodeId: String(row.episode_id), difficulty, status,
+    sessionId: String(row.id), episodeId: String(row.episode_id), difficulty, status: toApiSessionStatus(databaseStatus),
     startedAt: String(row.started_at), expiresAt: String(row.expires_at), remainingSeconds: seconds,
     remainingQuestions: Number(row.remaining_questions), currentSuspectId: row.current_suspect_id as string | null,
     suspectStates: states.map((state) => ({ suspectId: state.suspect_id, emotion: state.current_emotion, questionsAsked: state.questions_used })),
@@ -50,7 +65,7 @@ export const sessionService = {
   async selectSuspect(id: string, userId: string, suspectId: string) {
     const row = await owned(id, userId);
     if (remainingSeconds(String(row.expires_at)) === 0) throw new AppError(409, 'Session expired', 'SESSION_EXPIRED');
-    if (!selectable.includes(String(row.status))) throw new AppError(409, 'Session cannot return to interrogation', 'SESSION_ALREADY_TERMINATED');
+    if (!selectable.some((status) => status === String(row.status))) throw new AppError(409, 'Session cannot return to interrogation', 'SESSION_ALREADY_TERMINATED');
     if (Number(row.remaining_questions) <= 0) throw new AppError(409, 'No questions remaining', 'QUESTION_LIMIT_EXCEEDED');
     if (!await repo.suspectBelongs(String(row.episode_id), suspectId)) throw new AppError(400, 'Suspect not in episode', 'SUSPECT_NOT_IN_EPISODE');
     const updated = await repo.transition(id, userId, 'INTERROGATING', suspectId, selectable);
@@ -59,15 +74,15 @@ export const sessionService = {
   },
   async deduction(id: string, userId: string) {
     const row = await owned(id, userId);
-    if (String(row.status) === 'DEDUCTION') throw new AppError(409, 'Already in deduction', 'SESSION_ALREADY_IN_DEDUCTION');
-    if (terminal.has(String(row.status))) throw new AppError(409, 'Invalid session state', 'SESSION_STATE_INVALID');
-    await repo.transition(id, userId, 'DEDUCTION', undefined, selectable);
+    if (['READY_TO_DEDUCE', 'SUBMITTED'].includes(String(row.status))) throw new AppError(409, 'Already in deduction', 'SESSION_ALREADY_IN_DEDUCTION');
+    if (terminal.has(String(row.status) as DbSessionStatus)) throw new AppError(409, 'Invalid session state', 'SESSION_STATE_INVALID');
+    await repo.transition(id, userId, 'READY_TO_DEDUCE', undefined, selectable);
     return this.get(id, userId);
   },
   async abandon(id: string, userId: string) {
     const row = await owned(id, userId);
-    if (terminal.has(String(row.status))) throw new AppError(409, 'Invalid session state', 'SESSION_STATE_INVALID');
-    await repo.transition(id, userId, 'ABANDONED', undefined, selectable.concat('DEDUCTION'));
+    if (terminal.has(String(row.status) as DbSessionStatus)) throw new AppError(409, 'Invalid session state', 'SESSION_STATE_INVALID');
+    await repo.transition(id, userId, 'ABANDONED', undefined, active);
     return this.get(id, userId);
   }
 };
