@@ -32,7 +32,7 @@ export type Database = {
   };
   game_content: {
     Tables: {
-      regions: Table<Id & { code: string; name: string; description: string | null; dialect_name: string | null; sort_order: number; is_active: boolean } & Audit>;
+      regions: Table<Id & { code: string; name: string; description: string | null; dialect_name: string | null; image_url: string | null; sort_order: number; is_active: boolean } & Audit>;
       episodes: Table<Id & { region_id: string; code: string; title: string; synopsis: string | null; scene_description: string | null; culprit_suspect_id: string | null; default_difficulty: string; is_published: boolean; sort_order: number } & Audit>;
       episode_difficulty_configs: Table<Id & { episode_id: string; difficulty: string; questions_per_suspect: number; time_limit_seconds: number | null; score_multiplier: number; config: Json }>;
       victims: Table<Id & { episode_id: string; name: string; age: number | null; occupation: string | null; profile: Json }>;
