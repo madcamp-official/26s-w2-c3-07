@@ -12,11 +12,14 @@ const fixture = (): SeedTables => {
     tables.episodes.push({ id: episodeId, code, region_id: uuid(900 + episodeIndex), title: code, _culprit_suspect_id: suspectIds[0] });
     tables.victims.push({ id: uuid(200 + episodeIndex), episode_id: episodeId, name: 'fixture' });
     suspectIds.forEach((id, index) => tables.suspects.push({ id, episode_id: episodeId, code: `${code}-S${index + 1}`, name: 'fixture' }));
-    for (const difficulty of ['easy', 'normal', 'hard']) { const total = difficulty === 'easy' ? 12 : difficulty === 'normal' ? 8 : code === 'JJ-01' ? 6 : 4; tables.episode_difficulty_configs.push({ id: uuid(300 + tables.episode_difficulty_configs.length), episode_id: episodeId, difficulty, questions_per_suspect: difficulty === 'easy' ? 3 : difficulty === 'normal' ? 2 : 1, total_questions: total }); }
-    tables.clues.push({ id: uuid(500 + episodeIndex), episode_id: episodeId, code: `${code}-CORE`, title: 'fixture', clue_type: 'CORE' });
+    for (const difficulty of ['easy', 'normal', 'hard']) {
+      const total = difficulty === 'easy' ? 12 : difficulty === 'normal' ? 8 : code === 'JJ-01' ? 6 : 4;
+      tables.episode_difficulty_configs.push({ id: uuid(300 + tables.episode_difficulty_configs.length), episode_id: episodeId, difficulty, questions_per_suspect: difficulty === 'easy' ? 3 : difficulty === 'normal' ? 2 : 1, total_questions: total });
+    }
+    tables.clues.push({ id: uuid(500 + episodeIndex), episode_id: episodeId, code: `${code}-CORE`, title: 'fixture', importance: 'CORE' });
     const evidenceId = uuid(600 + episodeIndex);
-    tables.evidence.push({ id: evidenceId, episode_id: episodeId, code: `${code}-E1`, title: 'fixture', is_initial: true });
-    tables.clue_unlock_conditions.push({ id: uuid(650 + episodeIndex), clue_id: uuid(500 + episodeIndex), condition_type: 'EVIDENCE_VIEWED', condition_data: { evidence_id: evidenceId }, group_no: 1, operator: 'EQ', _target_evidence_id: evidenceId });
+    tables.evidence.push({ id: evidenceId, episode_id: episodeId, code: `${code}-E1`, title: 'fixture', initial_visible: true });
+    tables.clue_unlock_conditions.push({ id: uuid(650 + episodeIndex), clue_id: uuid(500 + episodeIndex), condition_type: 'EVIDENCE_VIEWED', target_ref: evidenceId, group_no: 1, operator: 'EQ', _target_evidence_id: evidenceId });
   });
   return tables;
 };
@@ -24,7 +27,8 @@ const fixture = (): SeedTables => {
 class MemoryWriter implements ContentSeedWriter {
   rows = new Map<string, SeedRow>();
   async upsert(table: string, rows: SeedRow[], conflictKey: 'code' | 'id') {
-    let inserted = 0; let updated = 0;
+    let inserted = 0;
+    let updated = 0;
     for (const row of rows) {
       const key = `${table}:${String(row[conflictKey])}`;
       this.rows.has(key) ? updated++ : inserted++;
@@ -42,15 +46,11 @@ describe('content seed', () => {
   });
   it('validates the difficulty exception and episode invariants', () => expect(validateContent(fixture())).toEqual({ valid: true, errors: [] }));
   it('validates the four PDF-derived episode specifications', () => expect(validateContent(fourEpisodeContent())).toEqual({ valid: true, errors: [] }));
-  it('makes every CORE clue reachable and does not rely only on viewed evidence', () => {
+  it('makes every CORE clue reachable and uses interaction conditions', () => {
     const tables = fourEpisodeContent();
     expect(validateContent(tables)).toEqual({ valid: true, errors: [] });
     const types = new Set(tables.clue_unlock_conditions.map((row) => row.condition_type));
-    expect(types.has('EVIDENCE_VIEWED')).toBe(true);
-    expect(types.has('QUESTION_TYPE_ASKED')).toBe(true);
-    expect(types.has('FACT_USED')).toBe(true);
-    expect(types.has('SUSPECT_INTERROGATED')).toBe(true);
-    expect(types.has('CLUE_ACQUIRED')).toBe(true);
+    expect(types).toEqual(new Set(['EVIDENCE_VIEWED', 'QUESTION_TYPE_ASKED', 'FACT_USED', 'SUSPECT_INTERROGATED', 'CLUE_ACQUIRED']));
   });
   it('does not increase row count on a second run', async () => {
     const writer = new MemoryWriter();
@@ -61,18 +61,19 @@ describe('content seed', () => {
     expect(second.inserted).toBe(0);
     expect(writer.rows.size).toBe(rowCount);
   });
-  it('persists the dialect episode reference while stripping seed-only metadata', async () => {
+  it('persists dialect references while stripping seed-only metadata', async () => {
     const tables = fixture();
     const episodeId = String(tables.episodes[0].id);
     tables.dialect_expressions.push({
-      id: uuid(700), code: 'GS-D1', region_id: tables.episodes[0].region_id,
+      id: uuid(700), code: 'GS-D1', episode_id: episodeId,
       _episode_id: episodeId, _related_clue_id: tables.clues[0].id,
-      dialect_text: '마', standard_text: '그만'
+      expression: '됐다 고마', standard_meaning: '됐어요, 그만해요'
     });
     const writer = new MemoryWriter();
     await runContentSeed(tables, writer);
     const stored = writer.rows.get('dialect_expressions:GS-D1');
     expect(stored?.episode_id).toBe(episodeId);
+    expect(stored?.related_clue_id).toBe(tables.clues[0].id);
     expect(stored?._episode_id).toBeUndefined();
     expect(stored?._related_clue_id).toBeUndefined();
   });

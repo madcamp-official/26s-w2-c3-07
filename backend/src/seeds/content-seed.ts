@@ -29,6 +29,7 @@ export interface ContentSeedWriter {
 
 const text = (row: SeedRow, key: string) => typeof row[key] === 'string' ? row[key] as string : undefined;
 const rowsForEpisode = (rows: SeedRow[], episodeId: string) => rows.filter((row) => text(row, 'episode_id') === episodeId);
+const isCoreClue = (row: SeedRow) => row._is_core === true || text(row, 'importance') === 'CORE';
 
 export const validateContent = (tables: SeedTables): ValidationResult => {
   const errors: string[] = [];
@@ -65,14 +66,14 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
     const clueIds = new Set(clues.map((row) => text(row, 'id')));
     const evidenceIds = new Set(rowsForEpisode(tables.evidence, episodeId).map((row) => text(row, 'id')));
     const suspectIds = new Set(suspects.map((row) => text(row, 'id')));
-    if (!clues.some((row) => row._is_core === true || text(row, 'clue_type') === 'CORE')) errors.push(`${code}: CORE clue is missing`);
+    if (!clues.some(isCoreClue)) errors.push(`${code}: CORE clue is missing`);
 
-    const initialEvidenceIds = new Set(rowsForEpisode(tables.evidence, episodeId).filter((row) => row.is_initial === true).map((row) => text(row, 'id')));
+    const initialEvidenceIds = new Set(rowsForEpisode(tables.evidence, episodeId).filter((row) => row.initial_visible === true || row._initial_visible === true).map((row) => text(row, 'id')));
     const reachableClues = new Set<string>();
     let changed = true;
     while (changed) {
       changed = false;
-      for (const clue of clues.filter((row) => text(row, 'clue_type') === 'CORE')) {
+      for (const clue of clues.filter(isCoreClue)) {
         const clueId = text(clue, 'id');
         if (!clueId || reachableClues.has(clueId)) continue;
         const groups = new Map<number, SeedRow[]>();
@@ -89,7 +90,7 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
         if (reachable) { reachableClues.add(clueId); changed = true; }
       }
     }
-    for (const clue of clues.filter((row) => text(row, 'clue_type') === 'CORE')) {
+    for (const clue of clues.filter(isCoreClue)) {
       const clueId = text(clue, 'id');
       if (clueId && !reachableClues.has(clueId)) errors.push(`${code}: CORE clue ${text(clue, 'code') ?? clueId} is not reachable`);
     }
@@ -116,6 +117,7 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
 const stripSeedMetadata = (row: SeedRow, table: ContentTable): SeedRow => {
   const stored = Object.fromEntries(Object.entries(row).filter(([key]) => !key.startsWith('_')));
   if (table === 'dialect_expressions' && typeof row._episode_id === 'string') stored.episode_id = row._episode_id;
+  if (table === 'dialect_expressions' && typeof row._related_clue_id === 'string') stored.related_clue_id = row._related_clue_id;
   return stored;
 };
 const codeTables = new Set<ContentTable>(['regions', 'episodes', 'suspects', 'evidence', 'clues', 'dialect_expressions', 'endings']);
