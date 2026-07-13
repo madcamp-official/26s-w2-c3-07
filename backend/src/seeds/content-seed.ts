@@ -86,7 +86,11 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
   return { valid: errors.length === 0, errors };
 };
 
-const stripSeedMetadata = (row: SeedRow): SeedRow => Object.fromEntries(Object.entries(row).filter(([key]) => !key.startsWith('_')));
+const stripSeedMetadata = (row: SeedRow, table: ContentTable): SeedRow => {
+  const stored = Object.fromEntries(Object.entries(row).filter(([key]) => !key.startsWith('_')));
+  if (table === 'dialect_expressions' && typeof row._episode_id === 'string') stored.episode_id = row._episode_id;
+  return stored;
+};
 const codeTables = new Set<ContentTable>(['regions', 'episodes', 'suspects', 'evidence', 'clues', 'dialect_expressions', 'endings']);
 
 export const runContentSeed = async (tables: SeedTables, writer: ContentSeedWriter) => {
@@ -95,7 +99,7 @@ export const runContentSeed = async (tables: SeedTables, writer: ContentSeedWrit
   let inserted = 0;
   let updated = 0;
   for (const table of tableOrder) {
-    const result = await writer.upsert(table, tables[table].map(stripSeedMetadata), codeTables.has(table) ? 'code' : 'id');
+    const result = await writer.upsert(table, tables[table].map((row) => stripSeedMetadata(row, table)), codeTables.has(table) ? 'code' : 'id');
     inserted += result.inserted;
     updated += result.updated;
     if (table === 'suspects') {
