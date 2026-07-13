@@ -11,6 +11,7 @@ import { CaseBriefingHeader } from '@/features/episode/components/CaseBriefingHe
 import { VictimSummaryCard } from '@/features/episode/components/VictimSummaryCard';
 import { EvidenceGrid } from '@/features/episode/components/EvidenceGrid';
 import { SuspectPreviewStrip } from '@/features/episode/components/SuspectPreviewStrip';
+import { DifficultySelector } from '@/features/region/components/DifficultySelector';
 import type { EpisodeDetail, PublicSuspect, Scene } from '@/types/content';
 import type { SessionView } from '@/types/session';
 import { ApiError } from '@/types/api';
@@ -28,7 +29,7 @@ export default function EpisodePage() {
 
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-4xl space-y-7"><Link href="/regions" className="text-sm opacity-70">← 지역 목록</Link>
     {detail.loading ? <LoadingState /> : detail.error ? <ErrorState error={detail.error} retry={detail.reload} /> : detail.data ? <><CaseBriefingHeader episode={detail.data}/><VictimSummaryCard victim={detail.data.victim}/>{scene.data && (scene.data.evidence.length ? <EvidenceGrid evidence={scene.data.evidence}/> : <EmptyState label="공개된 초기 증거가 없습니다." />)}{suspects.data && <><SuspectPreviewStrip suspects={suspects.data}/><Link className="inline-block text-sm text-brass-400" href={`/episodes/${episodeId}/suspects`}>용의자 공개 정보 자세히 보기 →</Link></>}
-      <section className="border-t border-brass-600/30 pt-6"><h2 className="mb-3 font-display text-xl">수사 난이도</h2><div className="flex flex-wrap gap-2">{detail.data.difficulties.map((item) => <button key={item.difficulty} type="button" onClick={() => setDifficulty(item.difficulty)} className={`border px-4 py-2 ${difficulty === item.difficulty ? 'border-evidence-red bg-evidence-red' : 'border-brass-600/40'}`}>{item.difficulty} · 총 {item.totalQuestions}회</button>)}</div>{startError && <div className="mt-4"><ErrorState error={startError}/></div>}<button type="button" onClick={start} disabled={starting} className="mt-5 w-full bg-evidence-red py-4 font-display text-lg font-bold disabled:opacity-50">{starting ? '세션 생성 중...' : '사건 조사 시작'}</button></section>
+      <section className="border-t border-brass-600/30 pt-6"><h2 className="mb-3 font-display text-xl">수사 난이도</h2><DifficultySelector difficulties={detail.data.difficulties} selectedDifficulty={difficulty} onSelectDifficulty={setDifficulty}/>{startError && <div className="mt-4"><ErrorState error={startError}/></div>}<button type="button" onClick={start} disabled={starting} className="mt-5 w-full bg-evidence-red py-4 font-display text-lg font-bold disabled:opacity-50">{starting ? '세션 생성 중...' : '사건 조사 시작'}</button></section>
     </> : null}
   </div></main></AuthGuard>;
 }
