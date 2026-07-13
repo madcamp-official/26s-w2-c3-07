@@ -18,7 +18,7 @@ export type Database = {
       game_sessions: Table<Id & { user_id: string; episode_id: string; difficulty_config_id: string; difficulty: string; status: string; remaining_questions: number; started_at: string; expires_at: string; current_suspect_id: string | null; last_activity_at: string; completed_at: string | null; created_at: string }>;
       session_suspect_states: Table<Id & { session_id: string; suspect_id: string; emotion: string; emotion_intensity: number; questions_asked: number; state: Json; updated_at: string }>;
       interrogation_messages: Table<Id & { session_id: string; suspect_id: string; request_id: string; question: string; answer: string | null; dialect_response: string | null; response_metadata: Json; status: string; created_at: string }>;
-      session_evidence: Table<Id & { session_id: string; evidence_id: string; discovered_at: string }>;
+      session_evidence: Table<Id & { session_id: string; evidence_id: string; discovered_at: string; viewed_at: string | null }>;
       session_clues: Table<Id & { session_id: string; clue_id: string; unlocked_at: string; source: string | null }>;
       session_notes: Table<Id & { session_id: string; user_id: string; content: string } & Audit>;
       game_results: Table<Id & { session_id: string; selected_suspect_id: string; is_correct: boolean; score: number; ending_id: string | null; result_data: Json; created_at: string }>;
@@ -36,6 +36,8 @@ export type Database = {
         };
         Returns: Json;
       };
+      evaluate_session_clues: { Args: { p_user_id: string; p_session_id: string; p_source?: string }; Returns: string[] };
+      view_session_evidence: { Args: { p_user_id: string; p_session_id: string; p_evidence_id: string }; Returns: Json };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
@@ -50,7 +52,7 @@ export type Database = {
       episode_timelines: Table<Id & { episode_id: string; occurred_at: string; title: string; description: string; is_secret: boolean; visibility: string; sort_order: number }>;
       evidence: Table<Id & { episode_id: string; code: string; title: string; description: string; evidence_type: string; metadata: Json; is_initial: boolean; sort_order: number }>;
       clues: Table<Id & { episode_id: string; code: string; title: string; description: string; clue_type: string; metadata: Json; sort_order: number }>;
-      clue_unlock_conditions: Table<Id & { clue_id: string; condition_type: string; condition_data: Json; sort_order: number }>;
+      clue_unlock_conditions: Table<Id & { clue_id: string; condition_type: string; condition_data: Json; group_no: number; operator: string; sort_order: number }>;
       dialect_expressions: Table<Id & { region_id: string; code: string; standard_text: string; dialect_text: string; meaning: string | null; usage_context: string | null; difficulty: number }>;
       suspect_facts: Table<Id & { suspect_id: string; fact_key: string; content: string; is_public: boolean; sort_order: number }>;
       suspect_lies: Table<Id & { suspect_id: string; lie_key: string; claim: string; truth: string; exposure_data: Json }>;
