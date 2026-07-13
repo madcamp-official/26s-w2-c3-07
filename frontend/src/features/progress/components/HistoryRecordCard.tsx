@@ -1,0 +1,6 @@
+import Link from 'next/link';
+import type { HistoryItem } from '@/types/progress';
+
+export function HistoryRecordCard({ record }: { record: HistoryItem }) {
+  return <article className="flex flex-wrap items-center gap-5 border border-brass-600/40 bg-noir-800/80 p-5"><span className="grid h-12 w-12 shrink-0 place-items-center border border-brass-600/30 font-display text-sm text-brass-400" aria-hidden>{record.episode.region.code}</span><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><h2 className="font-display text-lg text-parchment-100">{record.episode.title}</h2><span className="text-xs text-parchment-300/50">{record.episode.region.name}</span></div><p className="mt-1 text-xs text-parchment-300/60">{record.difficulty} · 지목 {record.selectedSuspect.name} · {new Date(record.completedAt).toLocaleDateString('ko-KR')}</p></div><span className={`shrink-0 border px-3 py-1.5 text-xs font-bold ${record.isCorrect ? 'border-evidence-red bg-evidence-red/15 text-evidence-red' : 'border-brass-600/40 text-parchment-300/60'}`}>{record.isCorrect ? '사건 해결' : '오답'}</span><Link href={`/game/${record.sessionId}/result`} className="shrink-0 border border-brass-600/50 px-4 py-2 text-xs font-bold text-parchment-100 hover:border-brass-400">결과 보기</Link></article>;
+}
