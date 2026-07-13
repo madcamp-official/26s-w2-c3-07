@@ -27,8 +27,10 @@ beforeEach(() => {
     id: resultId,
     selected_suspect_id: suspectId,
     is_correct: true,
-    ending_id: endingId,
-    result_data: { resolutionType: 'FULL_RESOLUTION', acquiredCoreClues: 4, totalCoreClues: 4 }
+    resolution_type: 'FULL_RESOLUTION',
+    acquired_core_clues: 4,
+    total_core_clues: 4,
+    ending_id: endingId
   });
 });
 
@@ -82,20 +84,20 @@ describe('final culprit judgment', () => {
 });
 
 describe('atomic deduction SQL', () => {
-  const sql = readFileSync(new URL('../supabase/migrations/20260713045846_add_final_culprit_judgment.sql', import.meta.url), 'utf8');
+  const sql = readFileSync(new URL('../supabase/migrations/20260713102716_align_runtime_game_rpcs.sql', import.meta.url), 'utf8');
 
   it('uses stored culprit and CORE clues without LLM or score-based judgment', () => {
-    expect(sql).toContain('v_episode.culprit_suspect_id');
-    expect(sql).toContain("clue.clue_type = 'CORE'");
+    expect(sql).toContain('episode.culprit_suspect_id');
+    expect(sql).toContain("clue.importance = 'CORE'");
     expect(sql).not.toContain('openai');
     expect(sql).not.toContain('score integer');
     expect(sql).not.toContain('p_score');
   });
 
-  it('selects a suspect ending and creates WRONG_FALLBACK when missing', () => {
-    expect(sql).toContain("ending.conditions ->> 'selected_suspect_id'");
-    expect(sql).toContain("v_episode.code || '-WRONG_FALLBACK'");
-    expect(sql).toContain('on conflict (code) do nothing');
+  it('selects a suspect-specific ending and falls back only to stored content', () => {
+    expect(sql).toContain("ending.ending_type = 'WRONG_SPECIFIC'");
+    expect(sql).toContain("ending.ending_type = 'WRONG_FALLBACK'");
+    expect(sql).not.toContain('insert into game_content.endings');
   });
 
   it('locks the session and performs all final writes in one database function', () => {

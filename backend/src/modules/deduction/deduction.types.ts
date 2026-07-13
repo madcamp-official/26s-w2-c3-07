@@ -14,6 +14,8 @@ export type StoredDeductionResult = {
   id: string;
   selected_suspect_id: string;
   is_correct: boolean;
-  ending_id: string | null;
-  result_data: unknown;
+  resolution_type: ResolutionType;
+  acquired_core_clues: number;
+  total_core_clues: number;
+  ending_id: string;
 };

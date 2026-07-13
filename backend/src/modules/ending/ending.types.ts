@@ -68,12 +68,11 @@ export type EndingResultRow = {
   id: string;
   selected_suspect_id: string;
   is_correct: boolean;
-  ending_id: string | null;
-  result_data: unknown;
+  resolution_type: string;
+  ending_id: string;
   report_text: string | null;
   aftermath_text: string | null;
-  report_status: string;
-  report_generated_at: string | null;
+  completed_at: string;
 };
 
 export type ReportClaim = {

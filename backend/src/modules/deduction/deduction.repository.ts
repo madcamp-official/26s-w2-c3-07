@@ -22,7 +22,7 @@ export const deductionRepository = {
 
   async findResult(sessionId: string): Promise<StoredDeductionResult | null> {
     const { data, error } = await serviceRoleClient.from('game_results')
-      .select('id, selected_suspect_id, is_correct, ending_id, result_data')
+      .select('id, selected_suspect_id, is_correct, resolution_type, acquired_core_clues, total_core_clues, ending_id')
       .eq('session_id', sessionId).maybeSingle();
     if (error) throw toAppError(error);
     return data as StoredDeductionResult | null;

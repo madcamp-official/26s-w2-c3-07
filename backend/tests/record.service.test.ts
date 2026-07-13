@@ -43,7 +43,7 @@ describe('investigation records',()=>{
     expect(result).toEqual({caseOverview:overview,evidence,testimonies,timeline,clues,dialectExpressions:dialects,relationships,notes:[note]});
     const json=JSON.stringify(result);
     expect(json).not.toContain('usedFact'); expect(json).not.toContain('actualRoute'); expect(json).not.toContain('standardMeaning');
-    expect(repository.findDialects).toHaveBeenCalledWith('region-1',false);
+    expect(repository.findDialects).toHaveBeenCalledWith(episodeId,false);
   });
 
   it('returns empty arrays for a new session record',async()=>{
@@ -59,7 +59,7 @@ describe('investigation records',()=>{
   it('reveals dialect standard meaning only after completion',async()=>{
     vi.mocked(repository.findOwnedSession).mockResolvedValue({id:sessionId,user_id:userId,episode_id:episodeId,status:'COMPLETED'});
     await recordService.records(sessionId,userId);
-    expect(repository.findDialects).toHaveBeenCalledWith('region-1',true);
+    expect(repository.findDialects).toHaveBeenCalledWith(episodeId,true);
   });
 });
 
@@ -67,12 +67,11 @@ describe('record visibility boundaries',()=>{
   const source=readFileSync(new URL('../src/modules/record/record.repository.ts',import.meta.url),'utf8');
   const migration=readFileSync(new URL('../supabase/migrations/20260713044823_add_investigation_records_and_notes.sql',import.meta.url),'utf8');
   it('loads only public or clue-unlocked timelines',()=>{
-    expect(source).toContain(".eq('visibility','PUBLIC_INITIAL')");
-    expect(source).toContain(".eq('visibility','CLUE_UNLOCKED')");
+    expect(source).toContain(".in('visibility', ['PUBLIC_INITIAL', 'SESSION_UNLOCKED'])");
     expect(source).not.toContain(".eq('visibility','PRIVATE')");
   });
   it('never queries hidden relationships',()=>{
-    expect(source).toContain(".eq('visibility','PUBLIC')");
+    expect(source).toContain(".eq('disclosure_level', 'PUBLIC')");
     expect(source).not.toContain(".eq('visibility','HIDDEN')");
   });
   it('does not select actual routes and validates note scope in the database',()=>{

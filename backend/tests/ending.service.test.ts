@@ -154,13 +154,13 @@ describe('ending persistence and privacy', () => {
   });
 
   it('loads all timelines after completion but never queries response rule text', () => {
-    expect(repositorySource).toContain("from('episode_timelines').select('occurred_at, title, description, sort_order')");
+    expect(repositorySource).toContain("from('episode_timelines').select('occurred_at_label, public_description, server_description, sequence_no')");
     expect(repositorySource).not.toContain('suspect_response_rules');
     expect(repositorySource).not.toContain('response_guidance');
   });
 
   it('uses unlock conditions only to build evidence links and never returns their raw data', () => {
-    expect(repositorySource).toContain("select('clue_id, condition_data')");
+    expect(repositorySource).toContain("select('clue_id, target_ref, expected_value')");
     expect(JSON.stringify(fixed)).not.toContain('condition_data');
     expect(JSON.stringify(fixed)).not.toContain('unlockCondition');
   });

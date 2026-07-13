@@ -21,7 +21,7 @@ export const recordService = {
       repository.findTestimonies(session.id, session.episode_id),
       repository.findTimeline(session.episode_id, clueIds),
       repository.findClues(session.id, session.episode_id),
-      repository.findDialects(regionId, session.status === 'COMPLETED'),
+      repository.findDialects(session.episode_id, session.status === 'COMPLETED'),
       repository.findRelationships(session.episode_id, clueIds),
       repository.findNotes(session.id, userId)
     ]);

@@ -103,7 +103,7 @@ export const progressRepository = {
         selectedSuspect: { id: suspect.id, code: suspect.code, name: suspect.name },
         isCorrect: result.is_correct,
         resolutionType: resolution(result.resolution_type),
-        score: result.score,
+        score: result.score ?? 0,
         startedAt: session.started_at,
         completedAt: session.completed_at
       }];

@@ -15,19 +15,19 @@ function metadata(row: MessageRow): Record<string, unknown> {
 
 export function toInterrogationDto(row: MessageRow): InterrogationMessageDto {
   const meta = metadata(row);
-  const questionType = typeof meta.questionType === 'string' && QUESTION_TYPES.includes(meta.questionType as (typeof QUESTION_TYPES)[number])
-    ? meta.questionType as (typeof QUESTION_TYPES)[number] : 'Q-UNKNOWN';
+  const questionType = QUESTION_TYPES.includes(row.question_type as (typeof QUESTION_TYPES)[number])
+    ? row.question_type as (typeof QUESTION_TYPES)[number] : 'Q-UNKNOWN';
   return {
     id: row.id,
     sessionId: row.session_id,
     suspectId: row.suspect_id,
     requestId: row.request_id,
-    question: row.question,
-    dialectResponse: row.dialect_response ?? '',
+    question: row.user_question,
+    dialectResponse: row.npc_response,
     questionType,
-    emotion: typeof meta.emotion === 'string' ? meta.emotion as InterrogationMessageDto['emotion'] : 'NEUTRAL',
-    usedFactIds: Array.isArray(meta.usedFactIds) ? meta.usedFactIds.filter((id): id is string => typeof id === 'string') : [],
-    evasionType: typeof meta.evasionType === 'string' ? meta.evasionType as InterrogationMessageDto['evasionType'] : 'UNKNOWN',
+    emotion: row.emotion_after as InterrogationMessageDto['emotion'] ?? 'NEUTRAL',
+    usedFactIds: Array.isArray(row.used_fact_refs) ? row.used_fact_refs.filter((id): id is string => typeof id === 'string') : [],
+    evasionType: row.evasion_type as InterrogationMessageDto['evasionType'] ?? 'UNKNOWN',
     consistencyStatus: meta.consistencyStatus === 'INVALID' ? 'INVALID' : 'VALID',
     createdAt: row.created_at
   };

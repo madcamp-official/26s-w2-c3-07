@@ -44,11 +44,13 @@ const validResponse: StructuredInterrogationResponse = {
   consistencyStatus: 'VALID'
 };
 
-function row(response = validResponse) {
+function row(response = validResponse, questionType = 'Q-PLACE') {
   return {
     id: 'message-1', session_id: sessionId, suspect_id: suspectId, request_id: requestId,
-    question: '사건 당시 어디에 있었습니까?', dialect_response: response.dialectResponse,
-    response_metadata: { questionType: 'Q-PLACE', emotion: response.emotion, usedFactIds: response.usedFactIds, evasionType: response.evasionType, consistencyStatus: response.consistencyStatus },
+    user_question: '사건 당시 어디에 있었습니까?', question_type: questionType,
+    npc_response: response.dialectResponse, emotion_after: response.emotion,
+    evasion_type: response.evasionType, used_fact_refs: response.usedFactIds,
+    response_metadata: { consistencyStatus: response.consistencyStatus },
     created_at: new Date().toISOString()
   };
 }
@@ -60,7 +62,7 @@ beforeEach(() => {
   vi.spyOn(repository, 'getQuestionsPerSuspect').mockResolvedValue(3);
   vi.spyOn(repository, 'loadKnowledge').mockResolvedValue(knowledge);
   vi.spyOn(repository, 'logLlm').mockResolvedValue();
-  vi.spyOn(repository, 'finalize').mockImplementation(async (input) => ({ duplicate: false, message: row(input.response) }));
+  vi.spyOn(repository, 'finalize').mockImplementation(async (input) => ({ duplicate: false, message: row(input.response, input.questionType) }));
   vi.spyOn(repository, 'list').mockResolvedValue([row()]);
   vi.spyOn(interrogationLlm, 'generate').mockResolvedValue({ output: validResponse, model: 'test-model', inputTokens: 20, outputTokens: 10, latencyMs: 12 });
 });

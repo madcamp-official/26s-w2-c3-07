@@ -1,6 +1,6 @@
 import { AppError } from '../../shared/errors/app-error.js';
 import { deductionRepository } from './deduction.repository.js';
-import type { DeductionResult, ResolutionType, StoredDeductionResult } from './deduction.types.js';
+import type { DeductionResult, StoredDeductionResult } from './deduction.types.js';
 
 function mapSubmissionError(error: unknown): never {
   const message = error instanceof Error ? error.message : String(error);
@@ -14,27 +14,17 @@ function mapSubmissionError(error: unknown): never {
   throw error;
 }
 
-function numberField(data: Record<string, unknown>, key: string): number {
-  const value = data[key];
-  if (typeof value !== 'number') throw new AppError(500, 'Stored result is invalid', 'DEDUCTION_RESULT_INVALID');
-  return value;
-}
-
 function toDto(row: StoredDeductionResult): DeductionResult {
-  const data = row.result_data && typeof row.result_data === 'object' && !Array.isArray(row.result_data)
-    ? row.result_data as Record<string, unknown>
-    : {};
-  const resolutionType = data.resolutionType;
-  if (!['FULL_RESOLUTION', 'CULPRIT_CORRECT', 'WRONG_SUSPECT'].includes(String(resolutionType)) || !row.ending_id) {
+  if (!['FULL_RESOLUTION', 'CULPRIT_CORRECT', 'WRONG_SUSPECT'].includes(row.resolution_type)) {
     throw new AppError(500, 'Stored result is invalid', 'DEDUCTION_RESULT_INVALID');
   }
   return {
     resultId: row.id,
     selectedSuspectId: row.selected_suspect_id,
     isCorrect: row.is_correct,
-    resolutionType: resolutionType as ResolutionType,
-    acquiredCoreClues: numberField(data, 'acquiredCoreClues'),
-    totalCoreClues: numberField(data, 'totalCoreClues'),
+    resolutionType: row.resolution_type,
+    acquiredCoreClues: row.acquired_core_clues,
+    totalCoreClues: row.total_core_clues,
     endingId: row.ending_id
   };
 }

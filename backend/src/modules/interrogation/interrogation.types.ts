@@ -65,7 +65,7 @@ export type SuspectKnowledge = {
   };
   facts: Array<{ id: string; content: string; isPublic: boolean }>;
   lies: Array<{ claim: string; truth: string }>;
-  responseRules: Array<{ ruleType: string; trigger: Json; guidance: string }>;
+  responseRules: Array<{ ruleType: string; trigger: Json; guidance: Json }>;
   emotionRules: Array<{ triggerType: string; trigger: Json; emotion: string; intensity: number }>;
   dialectExpressions: Array<{ standardText: string; dialectText: string; usageContext: string | null }>;
   previousMessages: Array<{ question: string; response: string; metadata: Json }>;

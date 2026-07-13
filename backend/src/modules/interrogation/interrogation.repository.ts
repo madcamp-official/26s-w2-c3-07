@@ -3,10 +3,11 @@ import type { Json } from '../../shared/types/database.types.js';
 import { toAppError } from '../../shared/utils/supabase.js';
 import type { OwnedSession, StructuredInterrogationResponse, SuspectKnowledge } from './interrogation.types.js';
 
-const messageColumns = 'id, session_id, suspect_id, request_id, question, dialect_response, response_metadata, created_at';
+const messageColumns = 'id, session_id, suspect_id, request_id, user_question, question_type, npc_response, emotion_after, evasion_type, used_fact_refs, response_metadata, created_at';
 type MessageRow = {
-  id: string; session_id: string; suspect_id: string; request_id: string; question: string;
-  dialect_response: string | null; response_metadata: Json; created_at: string;
+  id: string; session_id: string; suspect_id: string; request_id: string; user_question: string;
+  question_type: string; npc_response: string; emotion_after: string | null; evasion_type: string | null;
+  used_fact_refs: Json; response_metadata: Json; created_at: string;
 };
 
 function throwIfError(error: { message: string; code?: string } | null): void {
@@ -40,13 +41,13 @@ export const interrogationRepository = {
     const content = serviceRoleClient.schema('game_content');
     const [suspectResult, factsResult, liesResult, responseRulesResult, emotionRulesResult, stateResult, episodeResult, previousResult, evidenceIdsResult] = await Promise.all([
       content.from('suspects').select('id, episode_id, name, age, occupation, personality, speech_style, public_profile').eq('id', suspectId).eq('episode_id', session.episode_id).maybeSingle(),
-      content.from('suspect_facts').select('id, content, is_public').eq('suspect_id', suspectId).order('sort_order'),
-      content.from('suspect_lies').select('claim, truth').eq('suspect_id', suspectId),
-      content.from('suspect_response_rules').select('rule_type, trigger_data, response_guidance').eq('suspect_id', suspectId).order('priority', { ascending: false }),
-      content.from('suspect_emotion_rules').select('trigger_type, trigger_data, emotion, intensity').eq('suspect_id', suspectId),
-      serviceRoleClient.from('session_suspect_states').select('emotion, questions_asked, state').eq('session_id', session.id).eq('suspect_id', suspectId).maybeSingle(),
+      content.from('suspect_facts').select('id, content, disclosure_level').eq('suspect_id', suspectId).order('priority', { ascending: false }),
+      content.from('suspect_lies').select('claimed_content, true_content').eq('suspect_id', suspectId),
+      content.from('suspect_response_rules').select('question_type, response_policy, difficulty_overrides').eq('suspect_id', suspectId),
+      content.from('suspect_emotion_rules').select('trigger_type, condition, to_emotion, priority').eq('suspect_id', suspectId).order('priority', { ascending: false }),
+      serviceRoleClient.from('session_suspect_states').select('current_emotion, questions_used').eq('session_id', session.id).eq('suspect_id', suspectId).maybeSingle(),
       content.from('episodes').select('region_id, location').eq('id', session.episode_id).maybeSingle(),
-      serviceRoleClient.from('interrogation_messages').select('question, dialect_response, response_metadata').eq('session_id', session.id).eq('suspect_id', suspectId).eq('status', 'completed').order('created_at').limit(20),
+      serviceRoleClient.from('interrogation_messages').select('user_question, npc_response, used_fact_refs, response_metadata').eq('session_id', session.id).eq('suspect_id', suspectId).order('created_at').limit(20),
       serviceRoleClient.from('session_evidence').select('evidence_id').eq('session_id', session.id)
     ]);
     for (const result of [suspectResult, factsResult, liesResult, responseRulesResult, emotionRulesResult, stateResult, episodeResult, previousResult, evidenceIdsResult]) throwIfError(result.error);
@@ -54,7 +55,7 @@ export const interrogationRepository = {
 
     const evidenceIds = (evidenceIdsResult.data ?? []).map((row) => row.evidence_id);
     const [dialectResult, victimResult, evidenceResult] = await Promise.all([
-      content.from('dialect_expressions').select('standard_text, dialect_text, usage_context').eq('region_id', episodeResult.data.region_id).order('difficulty'),
+      content.from('dialect_expressions').select('standard_meaning, expression, usage_context').eq('episode_id', session.episode_id).order('display_order'),
       content.from('victims').select('name').eq('episode_id', session.episode_id).maybeSingle(),
       evidenceIds.length
         ? content.from('evidence').select('title').eq('episode_id', session.episode_id).in('id', evidenceIds)
@@ -62,9 +63,9 @@ export const interrogationRepository = {
     ]);
     throwIfError(dialectResult.error); throwIfError(victimResult.error); throwIfError(evidenceResult.error);
 
-    const stateJson = stateResult.data.state;
-    const revealed = typeof stateJson === 'object' && stateJson !== null && !Array.isArray(stateJson)
-      ? stateJson.revealedFactIds : undefined;
+    const revealed = (previousResult.data ?? []).flatMap((row) =>
+      Array.isArray(row.used_fact_refs) ? row.used_fact_refs.filter((id): id is string => typeof id === 'string') : []
+    );
     const knownEntities = [
       suspectResult.data.name,
       victimResult.data?.name,
@@ -82,23 +83,23 @@ export const interrogationRepository = {
         speechStyle: suspectResult.data.speech_style,
         publicProfile: suspectResult.data.public_profile
       },
-      facts: (factsResult.data ?? []).map((row) => ({ id: row.id, content: row.content, isPublic: row.is_public })),
-      lies: (liesResult.data ?? []).map((row) => ({ claim: row.claim, truth: row.truth })),
-      responseRules: (responseRulesResult.data ?? []).map((row) => ({ ruleType: row.rule_type, trigger: row.trigger_data, guidance: row.response_guidance })),
-      emotionRules: (emotionRulesResult.data ?? []).map((row) => ({ triggerType: row.trigger_type, trigger: row.trigger_data, emotion: row.emotion, intensity: row.intensity })),
-      dialectExpressions: (dialectResult.data ?? []).map((row) => ({ standardText: row.standard_text, dialectText: row.dialect_text, usageContext: row.usage_context })),
-      previousMessages: (previousResult.data ?? []).map((row) => ({ question: row.question, response: row.dialect_response ?? '', metadata: row.response_metadata })),
-      currentEmotion: stateResult.data.emotion,
-      revealedFactIds: Array.isArray(revealed) ? revealed.filter((id): id is string => typeof id === 'string') : [],
+      facts: (factsResult.data ?? []).map((row) => ({ id: row.id, content: row.content, isPublic: row.disclosure_level === 'PUBLIC' })),
+      lies: (liesResult.data ?? []).map((row) => ({ claim: row.claimed_content, truth: row.true_content })),
+      responseRules: (responseRulesResult.data ?? []).map((row) => ({ ruleType: row.question_type, trigger: row.difficulty_overrides, guidance: row.response_policy })),
+      emotionRules: (emotionRulesResult.data ?? []).map((row) => ({ triggerType: row.trigger_type, trigger: row.condition, emotion: row.to_emotion, intensity: row.priority })),
+      dialectExpressions: (dialectResult.data ?? []).map((row) => ({ standardText: row.standard_meaning, dialectText: row.expression, usageContext: row.usage_context })),
+      previousMessages: (previousResult.data ?? []).map((row) => ({ question: row.user_question, response: row.npc_response, metadata: row.response_metadata })),
+      currentEmotion: stateResult.data.current_emotion,
+      revealedFactIds: [...new Set(revealed)],
       knownEntities
     };
   },
 
   async getSuspectQuestionCount(sessionId: string, suspectId: string): Promise<number | null> {
     const { data, error } = await serviceRoleClient.from('session_suspect_states')
-      .select('questions_asked').eq('session_id', sessionId).eq('suspect_id', suspectId).maybeSingle();
+      .select('questions_used').eq('session_id', sessionId).eq('suspect_id', suspectId).maybeSingle();
     throwIfError(error);
-    return data?.questions_asked ?? null;
+    return data?.questions_used ?? null;
   },
 
   async finalize(input: {
@@ -126,25 +127,24 @@ export const interrogationRepository = {
     sessionId: string; userId: string; requestId: string; model: string; promptHash: string | null;
     inputTokens: number | null; outputTokens: number | null; latencyMs: number | null; status: string; errorCode: string | null;
   }): Promise<void> {
-    const { error } = await serviceRoleClient.schema('game_private').from('llm_request_logs').upsert({
+    const status = input.status === 'COMPLETED' ? 'SUCCEEDED' : input.status === 'FAILED' ? 'FAILED' : 'STARTED';
+    const { error } = await serviceRoleClient.schema('game_private').from('llm_request_logs').insert({
       session_id: input.sessionId,
-      user_id: input.userId,
-      request_id: input.requestId,
       model: input.model,
       purpose: 'INTERROGATION',
-      prompt_hash: input.promptHash,
-      input_tokens: input.inputTokens,
-      output_tokens: input.outputTokens,
+      prompt_tokens: input.inputTokens,
+      completion_tokens: input.outputTokens,
       latency_ms: input.latencyMs,
-      status: input.status,
-      error_code: input.errorCode
-    }, { onConflict: 'session_id,request_id' });
+      status,
+      error_code: input.errorCode,
+      metadata: { userId: input.userId, requestId: input.requestId, promptHash: input.promptHash }
+    });
     throwIfError(error);
   },
 
   async list(sessionId: string, suspectId?: string): Promise<MessageRow[]> {
     let query = serviceRoleClient.from('interrogation_messages').select(messageColumns)
-      .eq('session_id', sessionId).eq('status', 'completed').order('created_at');
+      .eq('session_id', sessionId).order('created_at');
     if (suspectId) query = query.eq('suspect_id', suspectId);
     const { data, error } = await query;
     throwIfError(error);
