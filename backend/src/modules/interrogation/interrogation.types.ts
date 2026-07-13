@@ -59,8 +59,8 @@ export type SuspectKnowledge = {
     name: string;
     age: number | null;
     occupation: string | null;
-    personality: string | null;
-    speechStyle: string | null;
+    personality: Json;
+    speechStyle: Json;
     publicProfile: Json;
   };
   facts: Array<{ id: string; content: string; isPublic: boolean }>;

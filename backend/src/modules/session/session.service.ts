@@ -15,14 +15,18 @@ async function view(row: Record<string, unknown>, userId: string): Promise<Sessi
     await repo.transition(String(row.id), userId, 'EXPIRED', undefined, selectable.concat('DEDUCTION'));
     status = 'EXPIRED';
   }
-  const [states, evidence, count] = await Promise.all([
-    repo.states(String(row.id)), repo.evidence(String(row.id)), repo.clueCount(String(row.id))
+  const difficultyRequest = typeof row.difficulty === 'string'
+    ? Promise.resolve(row.difficulty)
+    : repo.difficulty(String(row.difficulty_config_id));
+  const [states, evidence, count, difficulty] = await Promise.all([
+    repo.states(String(row.id)), repo.evidence(String(row.id)), repo.clueCount(String(row.id)),
+    difficultyRequest
   ]);
   return {
-    sessionId: String(row.id), episodeId: String(row.episode_id), difficulty: String(row.difficulty), status,
+    sessionId: String(row.id), episodeId: String(row.episode_id), difficulty, status,
     startedAt: String(row.started_at), expiresAt: String(row.expires_at), remainingSeconds: seconds,
     remainingQuestions: Number(row.remaining_questions), currentSuspectId: row.current_suspect_id as string | null,
-    suspectStates: states.map((state) => ({ suspectId: state.suspect_id, emotion: state.emotion, questionsAsked: state.questions_asked })),
+    suspectStates: states.map((state) => ({ suspectId: state.suspect_id, emotion: state.current_emotion, questionsAsked: state.questions_used })),
     viewedEvidenceIds: evidence, acquiredClueCount: count
   };
 }

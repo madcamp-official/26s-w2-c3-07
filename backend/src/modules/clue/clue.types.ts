@@ -14,7 +14,7 @@ export type EvidenceDto = {
   title: string;
   description: string;
   evidenceType: string;
-  discoveredAt: string;
+  discoveredAt: string | null;
   viewedAt: string | null;
 };
 

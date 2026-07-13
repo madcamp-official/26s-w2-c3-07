@@ -1,7 +1,7 @@
 import { serviceRoleClient } from '../../config/supabase.js';
 import { toAppError } from '../../shared/utils/supabase.js';
 
-const cols = 'id, user_id, episode_id, difficulty, status, remaining_questions, started_at, expires_at, current_suspect_id';
+const cols = 'id, user_id, episode_id, difficulty_config_id, status, remaining_questions, started_at, expires_at, current_suspect_id';
 
 export const sessionRepository = {
   async initialize(userId: string, episodeId: string, difficulty: string) {
@@ -21,9 +21,15 @@ export const sessionRepository = {
     return data;
   },
   async states(id: string) {
-    const { data, error } = await serviceRoleClient.from('session_suspect_states').select('suspect_id, emotion, questions_asked').eq('session_id', id);
+    const { data, error } = await serviceRoleClient.from('session_suspect_states').select('suspect_id, current_emotion, questions_used').eq('session_id', id);
     if (error) throw toAppError(error);
     return data ?? [];
+  },
+  async difficulty(configId: string) {
+    const { data, error } = await serviceRoleClient.schema('game_content').from('episode_difficulty_configs')
+      .select('difficulty').eq('id', configId).maybeSingle();
+    if (error) throw toAppError(error);
+    return data?.difficulty ?? 'normal';
   },
   async evidence(id: string) {
     const { data, error } = await serviceRoleClient.from('session_evidence').select('evidence_id').eq('session_id', id).not('viewed_at', 'is', null);

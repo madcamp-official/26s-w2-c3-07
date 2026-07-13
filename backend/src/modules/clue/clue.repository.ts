@@ -16,33 +16,33 @@ export const clueRepository = {
 
   async findAcquiredClues(sessionId: string, episodeId: string): Promise<ClueDto[]> {
     const { data: acquired, error: acquiredError } = await serviceRoleClient.from('session_clues')
-      .select('clue_id, unlocked_at, source').eq('session_id', sessionId).order('unlocked_at');
+      .select('clue_id, acquired_at, acquired_from_type, acquired_from_ref').eq('session_id', sessionId).order('acquired_at');
     throwIfError(acquiredError);
     if (!acquired?.length) return [];
     const { data: clues, error: cluesError } = await serviceRoleClient.schema('game_content').from('clues')
-      .select('id, code, title, description, clue_type, sort_order')
-      .eq('episode_id', episodeId).in('id', acquired.map((row) => row.clue_id)).order('sort_order');
+      .select('id, code, title, content, clue_type, display_order')
+      .eq('episode_id', episodeId).in('id', acquired.map((row) => row.clue_id)).order('display_order');
     throwIfError(cluesError);
     const acquiredById = new Map(acquired.map((row) => [row.clue_id, row]));
     return (clues ?? []).map((clue) => {
       const state = acquiredById.get(clue.id)!;
-      return { id: clue.id, code: clue.code, title: clue.title, description: clue.description, clueType: clue.clue_type, unlockedAt: state.unlocked_at, source: state.source };
+      return { id: clue.id, code: clue.code, title: clue.title, description: clue.content, clueType: clue.clue_type, unlockedAt: state.acquired_at, source: state.acquired_from_type };
     });
   },
 
   async findAvailableEvidence(sessionId: string, episodeId: string): Promise<EvidenceDto[]> {
     const { data: available, error: availableError } = await serviceRoleClient.from('session_evidence')
-      .select('evidence_id, discovered_at, viewed_at').eq('session_id', sessionId).order('discovered_at');
+      .select('evidence_id, source_type, viewed_at').eq('session_id', sessionId).order('viewed_at');
     throwIfError(availableError);
     if (!available?.length) return [];
     const { data: evidence, error: evidenceError } = await serviceRoleClient.schema('game_content').from('evidence')
-      .select('id, code, title, description, evidence_type, sort_order')
-      .eq('episode_id', episodeId).in('id', available.map((row) => row.evidence_id)).order('sort_order');
+      .select('id, code, title, description, evidence_type, display_order')
+      .eq('episode_id', episodeId).in('id', available.map((row) => row.evidence_id)).order('display_order');
     throwIfError(evidenceError);
     const stateById = new Map(available.map((row) => [row.evidence_id, row]));
     return (evidence ?? []).map((item) => {
       const state = stateById.get(item.id)!;
-      return { id: item.id, code: item.code, title: item.title, description: item.description, evidenceType: item.evidence_type, discoveredAt: state.discovered_at, viewedAt: state.viewed_at };
+      return { id: item.id, code: item.code, title: item.title, description: item.description, evidenceType: item.evidence_type, discoveredAt: state.viewed_at, viewedAt: state.viewed_at };
     });
   },
 
