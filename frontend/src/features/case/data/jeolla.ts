@@ -28,24 +28,24 @@ export const jeollaCase: CaseData = {
     { id: "c7", title: "창고 열쇠 소지자 압축", description: "창고 열쇠 소지자가 사장·정춘삼·최말자뿐이라는 사실(용의자 압축).", isKey: false },
     { id: "c8", title: "정춘삼의 습관어 \"거시기\"", description: "얼버무릴 때 나오는 습관어. 뭔가 숨기고 있다는 심리적 단서.", isKey: false },
   ],
-  culpritId: "jeong-chunsam",
-  truth:
-    "서병만이 외부 회계사를 불러 장부를 다시 점검하겠다고 예고한 것을 알고, 동업자 정춘삼은 3년간의 횡령이 발각되기 직전임을 깨닫는다. 게다가 경쟁업체 오갑수와의 인수 협상까지 성사시키려면 서병만이 방해가 된다고 판단, 저녁에 창고로 찾아가 다툼 끝에 저울추로 뒤통수를 가격하고 사고사로 위장했다.",
-  trueEndingNarration:
-    "3년간의 횡령이 발각될 위기에서 벌인 계획적 살인임이 드러난다. 서지영은 아버지의 마지막 전화가 화해의 시도였음을 뒤늦게 알고 오열한다.",
-  trueEndingArrestLine: "사업 다 망치게 생겼는디… 나도 어쩔 수 없었어야.",
+  // TODO(backend): 정답 판정 데이터는 서버에서 관리하고 API로만 제공해야 함.
+  // 아래 필드는 프론트 개발/데모용 더미 값이며 실제 정답이 아님.
+  culpritId: "jeong-chunsam", // TODO(backend): 더미 값(첫 용의자 id) — 실제 정답 아님, 화면 렌더링용 placeholder
+  truth: "(서버에서 제공되는 사건의 진실 — 프론트 데모 단계에서는 비공개)",
+  trueEndingNarration: "(서버에서 제공되는 정답 엔딩 에필로그 — 프론트 데모 단계에서는 비공개)",
+  trueEndingArrestLine: "(서버에서 제공되는 체포 대사 — 프론트 데모 단계에서는 비공개)",
   falseEndings: {
     "seo-jiyoung": {
-      wrongLine: "나는 아버지 목소리도 제대로 못 들었어라!",
-      culpritMockLine: "아이고 참말로… 딸내미가 그랬다고라? 웃기고 자빠졌네.",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
     "choi-malja": {
-      wrongLine: "내가 그것 땜에 그랬간디! 사장님 부탁이라 말 못 한 것뿐이여!",
-      culpritMockLine: "(안도한 기색을 애써 감춘다)",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
     "o-gapsu": {
-      wrongLine: "내가요?! 목포에 있었당께요! 증인이 몇인디 이러시요!",
-      culpritMockLine: "(먼 곳에서 이 소식을 전해 듣고 씁쓸하게 웃는다)",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
   },
   dialectGuide: [
@@ -70,7 +70,7 @@ export const jeollaCase: CaseData = {
       age: 60,
       job: "동업자(부사장)",
       relationship: "피해자와 20년간 함께 회사를 키운 동업자",
-      isCulprit: true,
+      isCulprit: false, // TODO(backend): 실제 값은 서버에서만 판정
       portraitColor: "#4a3a2a",
       metaResponse: "형사님도 참… 그런 걸 왜 나한테 물어보시오.",
       accuseEasy:

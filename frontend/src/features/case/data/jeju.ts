@@ -27,24 +27,24 @@ export const jejuCase: CaseData = {
     { id: "c5", title: "장부 복사본", description: "차 회장을 살해하고 장부를 훔쳐야 했던 강윤호의 동기.", isKey: false },
     { id: "c6", title: "찻잔과 빈 약품 포장지", description: "차가 준비된 탕비실과 독살 수법을 연결.", isKey: false },
   ],
-  culpritId: "kang-yunho",
-  truth:
-    "강윤호는 차량 유지비를 부풀려 회사 돈을 빼돌리고 있었다. 차 회장이 이를 비밀 장부에 기록하고 경찰에 넘기겠다고 하자, 강윤호는 회장의 차에 독을 넣어 살해하고 장부를 훔쳤다. 이후 동료들에게 모두 탑동에 함께 있었다고 진술하도록 협박했다.",
-  trueEndingNarration:
-    "소매에 묻어 있던 흰 가루, 밤 11시 18분 차량 출입 기록, 오민석에게 걸려 온 협박 전화, 강윤호의 횡령 기록이 담긴 장부 복사본, 찻잔에서 검출된 독성 약물이 모두 강윤호를 가리킨다. 문태오, 양재우, 오민석은 살인 혐의에서 벗어나지만 거짓 진술 경위에 대해서는 별도 조사를 받는다.",
-  trueEndingArrestLine: "게메… 육지서 온 형사라 우습게 봤는디, 끝까지 찾아냈수다. 이젠 맘대로 합서.",
+  // TODO(backend): 정답 판정 데이터는 서버에서 관리하고 API로만 제공해야 함.
+  // 아래 필드는 프론트 개발/데모용 더미 값이며 실제 정답이 아님.
+  culpritId: "moon-taeo", // TODO(backend): 더미 값(첫 용의자 id) — 실제 정답 아님, 화면 렌더링용 placeholder
+  truth: "(서버에서 제공되는 사건의 진실 — 프론트 데모 단계에서는 비공개)",
+  trueEndingNarration: "(서버에서 제공되는 정답 엔딩 에필로그 — 프론트 데모 단계에서는 비공개)",
+  trueEndingArrestLine: "(서버에서 제공되는 체포 대사 — 프론트 데모 단계에서는 비공개)",
   falseEndings: {
     "moon-taeo": {
-      wrongLine: "난 독 안 탔수다! 해 지기 전에 찻잎 조금 가져간 것뿐이우다. 밤에는 거기 가지도 않았수다!",
-      culpritMockLine: "게메… 이시고 후앗수다. 덕분에 편하게 되었수다.",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
     "yang-jaewoo": {
-      wrongLine: "저는 그냥 봤을 뿐이우다! 협박당해서 거짓말한 거우다!",
-      culpritMockLine: "수사 끝났으면 이젠 가도 되쿠과? 덕분에 편히 살겠수다.",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
     "o-minseok": {
-      wrongLine: "지는 겁이 나서 경 말한 거우다! 진짜 범인이 아니우다!",
-      culpritMockLine: "수사 끝났으면 이젠 가도 되쿠과? 덕분에 편히 살겠수다.",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
   },
   dialectGuide: [
@@ -116,7 +116,7 @@ export const jejuCase: CaseData = {
       age: 29,
       job: "개인 운전기사",
       relationship: "차 회장의 개인 기사, 횡령 사실이 들통날 위기",
-      isCulprit: true,
+      isCulprit: false, // TODO(backend): 실제 값은 서버에서만 판정
       portraitColor: "#3a1e1e",
       metaResponse: "무사 나한테만 경 물어봄수과? 증거가 이시면 내놉서. 탕비실 안트레 드나들던 태오부터 조사해야 되는 거 아니우꽈?",
       accuseEasy: "게메, 사아가 뭘 잘못 봤나 보주. 난 그날 탑동에 있었수다. 증거 있으면 내놉서.",

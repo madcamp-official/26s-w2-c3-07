@@ -27,24 +27,24 @@ export const chungcheongCase: CaseData = {
     { id: "c6", title: "녹색 테이프 라이터", description: "용식과 방화 현장을 연결한다.", isKey: false },
     { id: "c7", title: "사라진 돈", description: "용식의 도박 빚과 범행 동기를 연결한다.", isKey: false },
   ],
-  culpritId: "maeng-yongsik",
-  truth:
-    "도박 빚에 시달리던 맹용식이 피해자의 돈궤를 훔치러 침입했다가 발각되자 피해자를 둔기로 살해한다. 이후 주방에 불을 지르고 당구장으로 도망친다. 목성구와 표성두를 협박하고 당구장 장부까지 고쳐 알리바이를 조작한다.",
-  trueEndingNarration:
-    "조작된 장부, 목성구의 그을음 증언, 표성두의 통화 기록과 현장의 라이터가 모두 맹용식을 가리킨다. 노방석, 목성구, 표성두는 사건 가담 혐의에서 벗어나지만 거짓 진술 경위에 대해 별도 조사를 받는다.",
-  trueEndingArrestLine: "아유… 모른 척하고 지나가셨으면 서로 편했을 텐디. 괜히 끝까지 파고드셨네유.",
+  // TODO(backend): 정답 판정 데이터는 서버에서 관리하고 API로만 제공해야 함.
+  // 아래 필드는 프론트 개발/데모용 더미 값이며 실제 정답이 아님.
+  culpritId: "no-bangseok", // TODO(backend): 더미 값(첫 용의자 id) — 실제 정답 아님, 화면 렌더링용 placeholder
+  truth: "(서버에서 제공되는 사건의 진실 — 프론트 데모 단계에서는 비공개)",
+  trueEndingNarration: "(서버에서 제공되는 정답 엔딩 에필로그 — 프론트 데모 단계에서는 비공개)",
+  trueEndingArrestLine: "(서버에서 제공되는 체포 대사 — 프론트 데모 단계에서는 비공개)",
   falseEndings: {
     "no-bangseok": {
-      wrongLine: "지가 거기 잠깐 있었던 건 맞는디, 사람 죽이고 불 지른 건 아니라니까유!",
-      culpritMockLine: "형사님도 고생 많으셨슈. 이제 사건도 끝났으니 더 볼 일 없겠네유.",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
     "mok-seonggu": {
-      wrongLine: "지는 그냥 먼저 당구장에 있었을 뿐이에유! 지가 왜 사람을 죽여유!",
-      culpritMockLine: "(협박 피해자가 범인으로 체포되고 맹용식은 알리바이가 인정된 채 풀려난다. 맹용식은 사건 종결 직후 마을을 떠났다.)",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
     "pyo-seongdu": {
-      wrongLine: "지는 집에서 자고 있었다니까유! 지가 왜 사람을 죽여유!",
-      culpritMockLine: "(협박 피해자가 범인으로 체포되고 맹용식은 알리바이가 인정된 채 풀려난다. 맹용식은 사건 종결 직후 마을을 떠났다.)",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
   },
   dialectGuide: [
@@ -118,7 +118,7 @@ export const chungcheongCase: CaseData = {
       age: 24,
       job: "일용직 노동자",
       relationship: "피해자에게 도박 빚을 지고 있어 갈등",
-      isCulprit: true,
+      isCulprit: false, // TODO(backend): 실제 값은 서버에서만 판정
       portraitColor: "#3a1a1a",
       metaResponse: "증거 있으면 내놔유. 없으면 그만하슈.",
       accuseEasy: "지가요? 참말로 억울하네유. 증거 있으면 잡아넣으시든가유. 지는 당구장에 있었다니께유.",

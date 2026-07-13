@@ -28,24 +28,24 @@ export const gyeongsangCase: CaseData = {
     { id: "c7", title: "박말순의 신분(이복 누나)", description: "그녀의 침묵 동기를 살인이 아닌 다른 이유로 재해석하게 함.", isKey: false },
     { id: "c8", title: "사투리 해석 — \"속이 다 시커멓다\"", description: "이순임이 반복하는 표현. 오랜 세월 마음이 썩어들었다는 뜻.", isKey: false },
   ],
-  culpritId: "lee-sunim",
-  truth:
-    "37년간의 시집살이 끝에, 유언장에서 자신의 몫이 완전히 삭제된 것을 확인한 그날 밤, 이순임은 뒷산에서 캐둔 초오를 안동식혜에 타서 남편에게 건넸다. 부검 결과 두부 외상(김도현이 원인)은 사망 원인이 아니며, 사인은 명백히 초오 중독이다. 이순임은 밤 10시경 다시 사랑채에 들어가 남편이 위독한 것을 확인하고도 아무에게도 알리지 않았다.",
-  trueEndingNarration:
-    "37년의 시집살이와 마지막 배신감이 살인으로 이어졌다는 진실이 밝혀진다. 김도현은 자신이 아버지를 죽인 게 아니라는 사실에 오열하듯 안도하고, 박말순은 평생 감춰온 신분을 처음으로 인정받으며 조용히 눈물짓는다.",
-  trueEndingArrestLine: "여자로 태어나가 이 집에서 산 세월이 억울해서 그캤다…",
+  // TODO(backend): 정답 판정 데이터는 서버에서 관리하고 API로만 제공해야 함.
+  // 아래 필드는 프론트 개발/데모용 더미 값이며 실제 정답이 아님.
+  culpritId: "lee-sunim", // TODO(backend): 더미 값(첫 용의자 id) — 실제 정답 아님, 화면 렌더링용 placeholder
+  truth: "(서버에서 제공되는 사건의 진실 — 프론트 데모 단계에서는 비공개)",
+  trueEndingNarration: "(서버에서 제공되는 정답 엔딩 에필로그 — 프론트 데모 단계에서는 비공개)",
+  trueEndingArrestLine: "(서버에서 제공되는 체포 대사 — 프론트 데모 단계에서는 비공개)",
   falseEndings: {
     "kim-dohyeon": {
-      wrongLine: "내가 안 그랬다! 진짜 밀치기만 했다!",
-      culpritMockLine: "쯧쯧, 아이고 불쌍해래이… 근데 니는 안 죽았겠나.",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
     "park-malsun": {
-      wrongLine: "내가… 내가 그 집 딸인데도 그런 취급 받았다! 근데 내가 왜 죽이겠노!",
-      culpritMockLine: "(침묵 속에 안도의 한숨을 내쉰다)",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
     "kim-panseok": {
-      wrongLine: "이게 무슨 소리고! 내가 위토답 욕심 좀 냈다고 사람을 죽이겠나! 억울하다카이!",
-      culpritMockLine: "쯧… 문중회장 체면이 뭐가 되겠노. 근데 나는 아이라꼬.",
+      wrongLine: "(더미) 무고한 용의자의 항변 대사",
+      culpritMockLine: "(더미) 진범의 조소 대사",
     },
   },
   dialectGuide: [
@@ -70,7 +70,7 @@ export const gyeongsangCase: CaseData = {
       age: 58,
       job: "종부(宗婦)",
       relationship: "피해자의 아내, 37년간 종부로 이 집안에 살아옴",
-      isCulprit: true,
+      isCulprit: false, // TODO(backend): 실제 값은 서버에서만 판정
       portraitColor: "#5a3a2a",
       metaResponse: "형사 양반이 잡아내야지, 그걸 왜 나한테 묻는당가?",
       accuseEasy: "…머라카노. 내가… 내가 우째 그런 사람이겠노. 37년을 이 집에서 살았는데.",
