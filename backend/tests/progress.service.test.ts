@@ -28,7 +28,7 @@ const dialect: DialectProgressDto = {
 beforeEach(() => {
   vi.spyOn(repository, 'listEpisodes').mockResolvedValue([]);
   vi.spyOn(repository, 'history').mockResolvedValue({ items: [], page: 1, pageSize: 5, total: 0, totalPages: 0 });
-  vi.spyOn(repository, 'resultStats').mockResolvedValue({ correctCount: 0, fullResolutionCount: 0 });
+  vi.spyOn(repository, 'resultStats').mockResolvedValue({ correctCount: 0, fullResolutionCount: 0, completedEpisodeIds: [], solvedEpisodeIds: [] });
   vi.spyOn(repository, 'countDialects').mockResolvedValue(0);
   vi.spyOn(repository, 'dialects').mockResolvedValue([]);
 });
@@ -38,7 +38,7 @@ afterEach(() => vi.restoreAllMocks());
 describe('progress summary and episodes', () => {
   it('returns an empty progress summary', async () => {
     await expect(progressService.summary(userId)).resolves.toEqual({
-      playedEpisodeCount: 0, solvedEpisodeCount: 0, correctCount: 0, fullResolutionCount: 0,
+      playedEpisodeCount: 0, completedEpisodeCount: 0, solvedEpisodeCount: 0, correctCount: 0, fullResolutionCount: 0,
       regionProgress: [], recentPlays: [], unlockedDialectCount: 0
     });
   });
@@ -46,13 +46,23 @@ describe('progress summary and episodes', () => {
   it('aggregates completed records and regional progress', async () => {
     vi.mocked(repository.listEpisodes).mockResolvedValue([episode]);
     vi.mocked(repository.history).mockResolvedValue({ items: [historyItem], page: 1, pageSize: 5, total: 1, totalPages: 1 });
-    vi.mocked(repository.resultStats).mockResolvedValue({ correctCount: 1, fullResolutionCount: 1 });
+    vi.mocked(repository.resultStats).mockResolvedValue({ correctCount: 1, fullResolutionCount: 1, completedEpisodeIds: [episode.episodeId], solvedEpisodeIds: [episode.episodeId] });
     vi.mocked(repository.countDialects).mockResolvedValue(1);
     await expect(progressService.summary(userId)).resolves.toMatchObject({
-      playedEpisodeCount: 1, solvedEpisodeCount: 1, correctCount: 1, fullResolutionCount: 1,
+      playedEpisodeCount: 1, completedEpisodeCount: 1, solvedEpisodeCount: 1, correctCount: 1, fullResolutionCount: 1,
       regionProgress: [{ region, totalEpisodes: 1, playedEpisodes: 1, solvedEpisodes: 1 }],
       recentPlays: [historyItem], unlockedDialectCount: 1
     });
+  });
+  it('does not count a wrong completed episode as solved', async () => {
+    vi.mocked(repository.listEpisodes).mockResolvedValue([episode]);
+    vi.mocked(repository.resultStats).mockResolvedValue({ correctCount: 0, fullResolutionCount: 0, completedEpisodeIds: [episode.episodeId], solvedEpisodeIds: [] });
+    await expect(progressService.summary(userId)).resolves.toMatchObject({ completedEpisodeCount: 1, solvedEpisodeCount: 0, regionProgress: [{ solvedEpisodes: 0 }] });
+  });
+  it('deduplicates repeated correct results by episode', async () => {
+    vi.mocked(repository.listEpisodes).mockResolvedValue([episode]);
+    vi.mocked(repository.resultStats).mockResolvedValue({ correctCount: 2, fullResolutionCount: 1, completedEpisodeIds: [episode.episodeId], solvedEpisodeIds: [episode.episodeId] });
+    await expect(progressService.summary(userId)).resolves.toMatchObject({ correctCount: 2, solvedEpisodeCount: 1 });
   });
 
   it('returns episode progress fields without inventing sequential unlocks', async () => {

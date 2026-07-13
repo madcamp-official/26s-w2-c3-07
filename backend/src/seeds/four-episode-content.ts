@@ -105,7 +105,15 @@ export const fourEpisodeContent = (): SeedTables => {
     const clueIds = spec.clues.map((_, index) => id(group, 400 + index));
     spec.clues.forEach(([title, description], index) => {
       tables.clues.push({ id: clueIds[index], episode_id: episodeId, code: `${spec.code}-C${index + 1}`, title, description, clue_type: 'CORE', _is_core: true, metadata: {}, sort_order: index + 1 });
-      tables.clue_unlock_conditions.push({ id: id(group, 500 + index), clue_id: clueIds[index], condition_type: 'EVIDENCE_VIEWED', condition_data: { evidence_id: evidenceIds[Math.min(index, evidenceIds.length - 1)] }, group_no: 1, operator: 'EQ', _target_evidence_id: evidenceIds[Math.min(index, evidenceIds.length - 1)], sort_order: 1 });
+      const conditions: SeedRow[] = [
+        { condition_type: 'EVIDENCE_VIEWED', condition_data: { evidence_id: evidenceIds[0] }, operator: 'EQ', _target_evidence_id: evidenceIds[0] },
+        { condition_type: 'QUESTION_TYPE_ASKED', condition_data: { question_type: 'Q-TIME' }, operator: 'EXISTS' },
+        { condition_type: 'QUESTION_TYPE_ASKED', condition_data: { question_type: 'Q-EVIDENCE' }, operator: 'EXISTS' },
+        { condition_type: 'FACT_USED', condition_data: { fact_id: id(group, 100 + (index % suspectIds.length)) }, operator: 'EQ' },
+        { condition_type: 'SUSPECT_INTERROGATED', condition_data: { suspect_id: culpritId }, operator: 'EXISTS', _target_suspect_id: culpritId },
+        { condition_type: 'CLUE_ACQUIRED', condition_data: { clue_id: clueIds[index - 1] }, operator: 'EQ', _target_clue_id: clueIds[index - 1] }
+      ];
+      tables.clue_unlock_conditions.push({ id: id(group, 500 + index), clue_id: clueIds[index], group_no: 1, sort_order: 1, ...conditions[index] });
     });
     spec.dialect.forEach(([dialect_text, standard_text, usage_context], index) => tables.dialect_expressions.push({ id: id(group, 600 + index), region_id: regionId, code: `${spec.code}-D${index + 1}`, dialect_text, standard_text, meaning: standard_text, usage_context, difficulty: 2, _episode_id: episodeId, _related_clue_id: clueIds[clueIds.length - 1] }));
     [spec.endings.correct, spec.endings.wrongA, spec.endings.wrongB].forEach((narrative, index) => tables.endings.push({ id: id(group, 700 + index), episode_id: episodeId, code: `${spec.code}-${index === 0 ? 'TRUE' : `FALSE-${index}`}`, ending_type: index === 0 ? 'correct' : 'incorrect', title: index === 0 ? '정답 엔딩' : `오답 엔딩 ${index}`, narrative, conditions: { selected_suspect_id: index === 0 ? culpritId : suspectIds[index] }, _target_suspect_id: index === 0 ? culpritId : suspectIds[index], sort_order: index + 1 }));

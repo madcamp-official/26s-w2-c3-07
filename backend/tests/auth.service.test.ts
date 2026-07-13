@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { authRepository } from '../src/modules/auth/auth.repository.js';
 import { authService } from '../src/modules/auth/auth.service.js';
-import { signInSchema, updateProfileSchema, updateSettingsSchema } from '../src/modules/auth/auth.schema.js';
+import { signInSchema, signUpSchema, updateProfileSchema, updateSettingsSchema } from '../src/modules/auth/auth.schema.js';
+import { AppError } from '../src/shared/errors/app-error.js';
 import { validateBody } from '../src/middlewares/validate.middleware.js';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -12,6 +13,16 @@ describe('auth service', () => {
     const spy = vi.spyOn(authRepository, 'getProfile').mockResolvedValue({ userId: 'user-1', displayName: 'Kim', avatarUrl: null });
     await expect(authService.me({ id: 'user-1', email: 'user@example.com' })).resolves.toMatchObject({ userId: 'user-1' });
     expect(spy).toHaveBeenCalledWith('user-1');
+  });
+  it('returns a login-ready session after sign-up', async () => {
+    const result = { accessToken: 'access', refreshToken: 'refresh', user: { id: 'user-1', email: 'user@example.com' }, profile: { userId: 'user-1', displayName: '탐정', avatarUrl: null }, settings: { userId: 'user-1', soundEnabled: true, musicEnabled: true, textSpeed: 'normal', locale: 'ko' } };
+    const spy = vi.spyOn(authRepository, 'signUp').mockResolvedValue(result);
+    await expect(authService.signUp({ email: 'user@example.com', password: 'secret1', displayName: '탐정' })).resolves.toEqual(result);
+    expect(spy).toHaveBeenCalledOnce();
+  });
+  it('preserves the duplicate email error', async () => {
+    vi.spyOn(authRepository, 'signUp').mockRejectedValue(new AppError(409, 'Email is already registered', 'AUTH_EMAIL_ALREADY_EXISTS'));
+    await expect(authService.signUp({ email: 'user@example.com', password: 'secret1', displayName: '탐정' })).rejects.toMatchObject({ statusCode: 409, code: 'AUTH_EMAIL_ALREADY_EXISTS' });
   });
   it('uses only the verified user id to update a profile', async () => {
     const spy = vi.spyOn(authRepository, 'updateProfile').mockResolvedValue({ userId: 'user-1', displayName: 'New', avatarUrl: null });
@@ -32,6 +43,7 @@ describe('auth service', () => {
 
 describe('auth input validation', () => {
   it('validates email and password', () => expect(signInSchema.safeParse({ email: 'bad', password: '1' }).success).toBe(false));
+  it('validates sign-up display name and password length', () => expect(signUpSchema.safeParse({ email: 'user@example.com', password: '1', displayName: '' }).success).toBe(false));
   it('validates profile fields', () => expect(updateProfileSchema.safeParse({ avatarUrl: 'not-a-url' }).success).toBe(false));
   it('validates setting values', () => expect(updateSettingsSchema.safeParse({ textSpeed: 'instant' }).success).toBe(false));
   it('returns a validation error through middleware', () => {

@@ -1,0 +1,1 @@
+export type InterrogationMessage = { id: string; sessionId: string; suspectId: string; requestId: string; question: string; questionType: string; dialectResponse: string; emotion: string; usedFactIds: string[]; evasionType: string; consistencyStatus: 'VALID' | 'INVALID'; createdAt: string };

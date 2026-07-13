@@ -143,15 +143,18 @@ export const progressRepository = {
 
   async resultStats(userId: string): Promise<ResultStats> {
     const { data: sessions, error: sessionError } = await serviceRoleClient.from('game_sessions')
-      .select('id').eq('user_id', userId).eq('status', 'COMPLETED');
+      .select('id, episode_id').eq('user_id', userId).eq('status', 'COMPLETED');
     fail(sessionError);
-    if (!sessions?.length) return { correctCount: 0, fullResolutionCount: 0 };
+    if (!sessions?.length) return { correctCount: 0, fullResolutionCount: 0, completedEpisodeIds: [], solvedEpisodeIds: [] };
     const { data: results, error: resultError } = await serviceRoleClient.from('game_results')
-      .select('is_correct, result_data').in('session_id', sessions.map((session) => session.id));
+      .select('session_id, is_correct, result_data').in('session_id', sessions.map((session) => session.id));
     fail(resultError);
+    const episodeBySession = new Map(sessions.map((session) => [session.id, session.episode_id]));
     return {
       correctCount: (results ?? []).filter((result) => result.is_correct).length,
-      fullResolutionCount: (results ?? []).filter((result) => object(result.result_data).resolutionType === 'FULL_RESOLUTION').length
+      fullResolutionCount: (results ?? []).filter((result) => object(result.result_data).resolutionType === 'FULL_RESOLUTION').length,
+      completedEpisodeIds: [...new Set(sessions.map((session) => session.episode_id))],
+      solvedEpisodeIds: [...new Set((results ?? []).filter((result) => result.is_correct).map((result) => episodeBySession.get(result.session_id)).filter((id): id is string => Boolean(id)))]
     };
   },
 
