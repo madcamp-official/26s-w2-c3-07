@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { episodeCodes, runContentSeed, tableOrder, validateContent, type ContentSeedWriter, type SeedRow, type SeedTables } from '../src/seeds/content-seed.js';
+import { fourEpisodeContent } from '../src/seeds/four-episode-content.js';
 
 const uuid = (value: number) => `00000000-0000-4000-8000-${value.toString().padStart(12, '0')}`;
 
@@ -37,6 +38,7 @@ describe('content seed', () => {
     expect(validateContent(tables).errors).toEqual(episodeCodes.map((code) => `${code}: content specification is missing`));
   });
   it('validates the difficulty exception and episode invariants', () => expect(validateContent(fixture())).toEqual({ valid: true, errors: [] }));
+  it('validates the four PDF-derived episode specifications', () => expect(validateContent(fourEpisodeContent())).toEqual({ valid: true, errors: [] }));
   it('does not increase row count on a second run', async () => {
     const writer = new MemoryWriter();
     const first = await runContentSeed(fixture(), writer);
