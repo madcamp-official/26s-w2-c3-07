@@ -6,9 +6,12 @@ type PasswordFieldProps = {
   id?: string;
   label?: string;
   placeholder?: string;
+  name?: string;
+  required?: boolean;
+  minLength?: number;
 };
 
-export function PasswordField({ id = "password", label = "비밀번호", placeholder = "비밀번호를 입력하세요" }: PasswordFieldProps) {
+export function PasswordField({ id = "password", label = "비밀번호", placeholder = "비밀번호를 입력하세요", name, required, minLength }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -19,6 +22,9 @@ export function PasswordField({ id = "password", label = "비밀번호", placeho
       <div className="relative">
         <input
           id={id}
+          name={name ?? id}
+          required={required}
+          minLength={minLength}
           type={visible ? "text" : "password"}
           placeholder={placeholder}
           className="w-full border border-brass-600/30 bg-noir-900/80 px-4 py-3 pr-11 text-sm text-parchment-100 placeholder:text-parchment-300/40 focus:border-brass-400 focus:outline-none"
