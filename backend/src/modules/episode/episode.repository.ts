@@ -1,14 +1,18 @@
-import type { Episode } from './episode.types.js';
 import { serviceRoleClient } from '../../config/supabase.js';
 import { toAppError } from '../../shared/utils/supabase.js';
-import type { Row } from '../../shared/types/database.types.js';
+import type { Difficulty, EpisodeSummary, Scene, VictimPublic } from './episode.types.js';
+
+const content = serviceRoleClient.schema('game_content');
+const episodeColumns = 'id, code, title, location, incident_type, synopsis, estimated_play_minutes, status, image_url';
+const episodeDetailColumns = 'id, code, title, location, incident_type, synopsis, estimated_play_minutes, status, image_url, scene_description';
+const mapEpisode = (row: Record<string, unknown>): EpisodeSummary => ({ id: String(row.id), code: String(row.code), title: String(row.title), location: row.location as string | null, incidentType: row.incident_type as string | null, synopsis: row.synopsis as string | null, estimatedPlayMinutes: Number(row.estimated_play_minutes), status: String(row.status), imageUrl: row.image_url as string | null, progressStatus: null });
+const mapVictim = (row: Record<string, unknown>): VictimPublic => ({ name: String(row.name), age: row.age as number | null, occupation: row.occupation as string | null, profile: row.profile });
 
 export const episodeRepository = {
-  async findAll(): Promise<Episode[]> {
-    const { data, error } = await serviceRoleClient.schema('game_content').from('episodes').select('id, region_id, title');
-    if (error) throw toAppError(error, 'Failed to load episodes');
-    return (data as Pick<Row<'game_content', 'episodes'>, 'id' | 'region_id' | 'title'>[]).map((row) => ({
-      id: row.id, regionId: row.region_id, title: row.title
-    }));
-  }
+  async findByRegion(regionId: string) { const { data, error } = await content.from('episodes').select(episodeColumns).eq('region_id', regionId).eq('is_published', true).eq('status', 'available').order('sort_order'); if (error) throw toAppError(error); return (data as unknown as Record<string, unknown>[]).map(mapEpisode); },
+  async findById(episodeId: string) { const { data, error } = await content.from('episodes').select(episodeDetailColumns).eq('id', episodeId).eq('is_published', true).eq('status', 'available').maybeSingle(); if (error) throw toAppError(error); const row = data as unknown as Record<string, unknown> | null; return row ? { ...mapEpisode(row), sceneDescription: row.scene_description as string | null } : null; },
+  async findDifficulties(episodeId: string): Promise<Difficulty[]> { const { data, error } = await content.from('episode_difficulty_configs').select('difficulty, questions_per_suspect, total_questions, time_limit_seconds, dialect_level, hint_limit').eq('episode_id', episodeId); if (error) throw toAppError(error); return (data ?? []).map((row) => ({ difficulty: row.difficulty, questionsPerSuspect: row.questions_per_suspect, totalQuestions: row.total_questions, timeLimitSeconds: row.time_limit_seconds, dialectLevel: row.dialect_level, hintLimit: row.hint_limit })); },
+  async findVictim(episodeId: string): Promise<VictimPublic | null> { const { data, error } = await content.from('victims').select('name, age, occupation, profile').eq('episode_id', episodeId).maybeSingle(); if (error) throw toAppError(error); return data ? mapVictim(data as unknown as Record<string, unknown>) : null; },
+  async findSceneParts(episodeId: string): Promise<Pick<Scene, 'timeline' | 'evidence'>> { const [timelineResult, evidenceResult] = await Promise.all([content.from('episode_timelines').select('occurred_at, title, description').eq('episode_id', episodeId).eq('visibility', 'PUBLIC_INITIAL').eq('is_secret', false).order('sort_order'), content.from('evidence').select('id, code, title, description, evidence_type').eq('episode_id', episodeId).eq('is_initial', true).order('sort_order')]); if (timelineResult.error) throw toAppError(timelineResult.error); if (evidenceResult.error) throw toAppError(evidenceResult.error); return { timeline: (timelineResult.data ?? []).map((row) => ({ occurredAt: row.occurred_at, title: row.title, description: row.description })), evidence: (evidenceResult.data ?? []).map((row) => ({ id: row.id, code: row.code, title: row.title, description: row.description, evidenceType: row.evidence_type })) }; },
+  async findProgress(userId: string, episodeIds: string[]) { if (!episodeIds.length) return new Map<string, string>(); const { data, error } = await serviceRoleClient.from('user_episode_progress').select('episode_id, status').eq('user_id', userId).in('episode_id', episodeIds); if (error) throw toAppError(error); return new Map((data ?? []).map((row) => [row.episode_id, row.status])); }
 };

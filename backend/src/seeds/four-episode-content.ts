@@ -87,8 +87,8 @@ export const fourEpisodeContent = (): SeedTables => {
     const suspectIds = spec.suspects.map((_, index) => id(group, 10 + index));
     const culpritId = suspectIds[spec.suspects.findIndex((suspect) => suspect.culprit)];
     tables.regions.push({ id: regionId, code: spec.regionCode, name: spec.regionName, dialect_name: spec.dialectName, description: `${spec.regionName} 사건 지역`, sort_order: group, is_active: true });
-    tables.episodes.push({ id: episodeId, region_id: regionId, code: spec.code, title: spec.title, synopsis: spec.synopsis, scene_description: spec.synopsis, culprit_suspect_id: null, _culprit_suspect_id: culpritId, default_difficulty: 'normal', is_published: true, sort_order: group });
-    ['easy','normal','hard'].forEach((difficulty, index) => tables.episode_difficulty_configs.push({ id: id(group, 20 + index), episode_id: episodeId, difficulty, questions_per_suspect: difficulty === 'easy' ? 12 : difficulty === 'normal' ? 8 : spec.code === 'JJ-01' ? 6 : 4, score_multiplier: difficulty === 'easy' ? 0.8 : difficulty === 'hard' ? 1.2 : 1, config: {} }));
+    tables.episodes.push({ id: episodeId, region_id: regionId, code: spec.code, title: spec.title, synopsis: spec.synopsis, scene_description: spec.synopsis, location: spec.regionName, incident_type: '살인 사건', estimated_play_minutes: 15, status: 'available', image_url: null, culprit_suspect_id: null, _culprit_suspect_id: culpritId, default_difficulty: 'normal', is_published: true, sort_order: group });
+    ['easy','normal','hard'].forEach((difficulty, index) => { const total = difficulty === 'easy' ? 12 : difficulty === 'normal' ? 8 : spec.code === 'JJ-01' ? 6 : 4; tables.episode_difficulty_configs.push({ id: id(group, 20 + index), episode_id: episodeId, difficulty, questions_per_suspect: difficulty === 'easy' ? 3 : difficulty === 'normal' ? 2 : 1, total_questions: total, time_limit_seconds: difficulty === 'easy' ? 900 : difficulty === 'normal' ? 720 : 600, dialect_level: difficulty === 'easy' ? 'guided' : difficulty === 'normal' ? 'standard' : 'native', hint_limit: difficulty === 'easy' ? 3 : difficulty === 'normal' ? 1 : 0, score_multiplier: difficulty === 'easy' ? 0.8 : difficulty === 'hard' ? 1.2 : 1, config: {} }); });
     tables.victims.push({ id: victimId, episode_id: episodeId, ...spec.victim, profile: { description: spec.victim.profile } });
     spec.suspects.forEach((suspect, index) => {
       const suspectId = suspectIds[index]; const code = `${spec.code}-S${index + 1}`;
@@ -98,7 +98,8 @@ export const fourEpisodeContent = (): SeedTables => {
       tables.suspect_response_rules.push({ id: id(group, 120 + index), suspect_id: suspectId, rule_type: 'scenario_guidance', trigger_data: {}, response_guidance: suspect.response, priority: 10 });
       tables.suspect_emotion_rules.push({ id: id(group, 130 + index), suspect_id: suspectId, trigger_type: 'interrogation', trigger_data: {}, emotion: suspect.emotion, intensity: 3 });
     });
-    spec.timeline.forEach(([occurred_at, description], index) => tables.episode_timelines.push({ id: id(group, 200 + index), episode_id: episodeId, occurred_at, title: description, description, is_secret: true, sort_order: index + 1 }));
+    tables.episode_timelines.push({ id: id(group, 199), episode_id: episodeId, occurred_at: '사건 발견', title: spec.title, description: spec.synopsis, is_secret: false, visibility: 'PUBLIC_INITIAL', sort_order: 0 });
+    spec.timeline.forEach(([occurred_at, description], index) => tables.episode_timelines.push({ id: id(group, 200 + index), episode_id: episodeId, occurred_at, title: description, description, is_secret: true, visibility: 'PRIVATE', sort_order: index + 1 }));
     const evidenceIds = spec.evidence.map((_, index) => id(group, 300 + index));
     spec.evidence.forEach(([title, description], index) => tables.evidence.push({ id: evidenceIds[index], episode_id: episodeId, code: `${spec.code}-E${index + 1}`, title, description, evidence_type: 'physical', metadata: {}, is_initial: index === 0, sort_order: index + 1 }));
     const clueIds = spec.clues.map((_, index) => id(group, 400 + index));
