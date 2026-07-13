@@ -47,6 +47,7 @@ export type DialectProgressDto = {
 
 export type ProgressSummary = {
   playedEpisodeCount: number;
+  completedEpisodeCount: number;
   solvedEpisodeCount: number;
   correctCount: number;
   fullResolutionCount: number;
@@ -55,4 +56,4 @@ export type ProgressSummary = {
   unlockedDialectCount: number;
 };
 
-export type ResultStats = { correctCount: number; fullResolutionCount: number };
+export type ResultStats = { correctCount: number; fullResolutionCount: number; completedEpisodeIds: string[]; solvedEpisodeIds: string[] };
