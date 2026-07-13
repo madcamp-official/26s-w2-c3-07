@@ -13,8 +13,8 @@ type Audit = { created_at: string; updated_at: string };
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<{ user_id: string; display_name: string | null; avatar_url: string | null } & Audit>;
-      user_settings: Table<{ user_id: string; sound_enabled: boolean; music_enabled: boolean; text_speed: string; locale: string; updated_at: string }>;
+      profiles: Table<{ id: string; display_name: string; avatar_url: string | null } & Audit>;
+      user_settings: Table<{ user_id: string; bgm_enabled: boolean; sfx_enabled: boolean; text_speed: number; skip_animation: boolean; locale: string; updated_at: string }>;
       game_sessions: Table<Id & { user_id: string; episode_id: string; difficulty_config_id: string; difficulty: string; status: string; remaining_questions: number; started_at: string; expires_at: string; current_suspect_id: string | null; last_activity_at: string; completed_at: string | null; created_at: string }>;
       session_suspect_states: Table<Id & { session_id: string; suspect_id: string; emotion: string; emotion_intensity: number; questions_asked: number; state: Json; updated_at: string }>;
       interrogation_messages: Table<Id & { session_id: string; suspect_id: string; request_id: string; question: string; answer: string | null; dialect_response: string | null; response_metadata: Json; status: string; created_at: string }>;
@@ -48,7 +48,7 @@ export type Database = {
   };
   game_content: {
     Tables: {
-      regions: Table<Id & { code: string; name: string; description: string | null; dialect_name: string | null; image_url: string | null; sort_order: number; is_active: boolean } & Audit>;
+      regions: Table<Id & { code: string; name: string; description: string | null; image_url: string | null; display_order: number; is_active: boolean } & Audit>;
       episodes: Table<Id & { region_id: string; code: string; title: string; synopsis: string | null; scene_description: string | null; culprit_suspect_id: string | null; default_difficulty: string; is_published: boolean; sort_order: number; location: string | null; incident_type: string | null; estimated_play_minutes: number; status: string; image_url: string | null } & Audit>;
       episode_difficulty_configs: Table<Id & { episode_id: string; difficulty: string; questions_per_suspect: number; total_questions: number; time_limit_seconds: number | null; dialect_level: string; hint_limit: number; score_multiplier: number; config: Json }>;
       victims: Table<Id & { episode_id: string; name: string; age: number | null; occupation: string | null; profile: Json }>;

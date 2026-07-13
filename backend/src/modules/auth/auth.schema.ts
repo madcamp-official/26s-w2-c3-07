@@ -10,7 +10,7 @@ export const signUpSchema = signInSchema.extend({
 }).strict();
 
 export const updateProfileSchema = z.object({
-  displayName: z.string().trim().min(1).max(50).nullable().optional(),
+  displayName: z.string().trim().min(1).max(50).optional(),
   avatarUrl: z.string().url().max(2048).nullable().optional()
 }).refine((value) => Object.keys(value).length > 0, 'At least one profile field is required');
 
