@@ -40,7 +40,7 @@ export function CasePanel({ caseData, selectedDifficultyId }: CasePanelProps) {
               </p>
             </div>
             <Link
-              href={`/episodes/${caseData.id}/suspects?difficulty=${difficulty.id}`}
+              href={`/episodes/${caseData.id}?difficulty=${difficulty.id}`}
               className="shrink-0 bg-noir-900 px-6 py-3 font-display text-sm font-bold text-parchment-100 transition-colors hover:bg-noir-800"
             >
               사건 선택
