@@ -165,7 +165,8 @@ export const interrogationService = {
         await safeLog({
           sessionId, userId, requestId: input.requestId, provider: 'openai', model, promptHash,
           inputTokens, outputTokens, latencyMs, status: 'FAILED', errorCode: lastErrorCode,
-          errorMessage: lastErrorMessage, httpStatus, providerCode, attempt: usedAttempts, stage: 'generation'
+          errorMessage: lastErrorMessage, httpStatus, providerCode, attempt: usedAttempts,
+          stage: 'LLM_RESULT_VALIDATION', questionType, suspectId: input.suspectId
         });
         throw new AppError(502, 'Could not generate a safe interrogation response', lastErrorCode === 'INTERROGATION_LLM_FAILED' ? lastErrorCode : 'INTERROGATION_RESPONSE_INVALID');
       }
@@ -185,7 +186,7 @@ export const interrogationService = {
       await safeLog({
         sessionId, userId, requestId: input.requestId, provider, model, promptHash, inputTokens, outputTokens,
         latencyMs, status: 'COMPLETED', errorCode: null, errorMessage: null, httpStatus: null,
-        providerCode: null, attempt: usedAttempts, stage: 'finalize'
+        providerCode: null, attempt: usedAttempts, stage: 'SESSION_UPDATE', questionType, suspectId: input.suspectId
       });
       return toAskResponse(result.message, result.remainingQuestions, clues);
     } catch (error) {
@@ -193,7 +194,8 @@ export const interrogationService = {
         sessionId, userId, requestId: input.requestId, provider, model, promptHash, inputTokens, outputTokens,
         latencyMs, status: 'FAILED', errorCode: 'INTERROGATION_FINALIZE_FAILED',
         errorMessage: error instanceof Error ? error.message.slice(0, 500) : 'Unknown finalize error',
-        httpStatus: null, providerCode: null, attempt: usedAttempts, stage: 'finalize'
+        httpStatus: null, providerCode: null, attempt: usedAttempts,
+        stage: 'MESSAGE_PERSIST', questionType, suspectId: input.suspectId
       });
       return mapRpcError(error);
     }
