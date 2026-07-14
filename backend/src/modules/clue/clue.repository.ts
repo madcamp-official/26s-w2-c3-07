@@ -20,13 +20,17 @@ export const clueRepository = {
     throwIfError(acquiredError);
     if (!acquired?.length) return [];
     const { data: clues, error: cluesError } = await serviceRoleClient.schema('game_content').from('clues')
-      .select('id, code, title, content, clue_type, display_order')
+      .select('id, code, title, content, record_summary, clue_type, importance, display_order')
       .eq('episode_id', episodeId).in('id', acquired.map((row) => row.clue_id)).order('display_order');
     throwIfError(cluesError);
     const acquiredById = new Map(acquired.map((row) => [row.clue_id, row]));
     return (clues ?? []).map((clue) => {
       const state = acquiredById.get(clue.id)!;
-      return { id: clue.id, code: clue.code, title: clue.title, description: clue.content, clueType: clue.clue_type, unlockedAt: state.acquired_at, source: state.acquired_from_type };
+      return {
+        id: clue.id, code: clue.code, title: clue.title, content: clue.content,
+        description: clue.content, recordSummary: clue.record_summary, clueType: clue.clue_type,
+        importance: clue.importance, unlockedAt: state.acquired_at, source: state.acquired_from_type
+      };
     });
   },
 
