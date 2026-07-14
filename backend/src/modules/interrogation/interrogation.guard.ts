@@ -1,4 +1,4 @@
-import type { QuestionType, StructuredInterrogationResponse, SuspectKnowledge } from './interrogation.types.js';
+import type { PromptFact, QuestionType, StructuredInterrogationResponse, SuspectKnowledge } from './interrogation.types.js';
 
 const includesAny = (value: string, words: string[]) => words.some((word) => value.includes(word));
 
@@ -20,15 +20,41 @@ export function classifyQuestion(question: string): QuestionType {
 const directCulpritDisclosure = /(내가|제가|그가|그 사람이|[가-힣]{2,4})(?:이|가)?\s*(범인(?:이다|입니다|이야)|죽였다|살해했다)/;
 const promptDisclosure = /(system prompt|developer message|시스템 프롬프트|개발자 메시지|내부 지시문|숨겨진 프롬프트)/i;
 
+const ruleMatches = (rule: SuspectKnowledge['responseRules'][number], questionType: QuestionType) => {
+  if (rule.ruleType === questionType) return true;
+  if (!rule.trigger || typeof rule.trigger !== 'object' || Array.isArray(rule.trigger)) return false;
+  const trigger = rule.trigger as Record<string, unknown>;
+  return trigger.questionType === questionType
+    || trigger.question_type === questionType
+    || (Array.isArray(trigger.questionTypes) && trigger.questionTypes.includes(questionType));
+};
+
+export function selectPromptFacts(knowledge: SuspectKnowledge, questionType: QuestionType): PromptFact[] {
+  const matchingRules = knowledge.responseRules.filter((rule) => ruleMatches(rule, questionType));
+  const explicitlyAllowed = new Set(matchingRules.flatMap((rule) => rule.allowedFactRefs));
+  const explicitlyHidden = new Set(matchingRules.flatMap((rule) => rule.hiddenFactRefs));
+  const previouslyRevealed = new Set(knowledge.revealedFactIds);
+
+  return knowledge.facts.filter((fact) => {
+    if (fact.disclosureLevel === 'SERVER_ONLY') return false;
+    if (explicitlyAllowed.has(fact.id)) return true;
+    if (explicitlyHidden.has(fact.id)) return false;
+    if (previouslyRevealed.has(fact.id)) return true;
+    return fact.disclosureLevel === 'LLM_ALLOWED';
+  });
+}
+
 export function validateGuardedResponse(
   response: StructuredInterrogationResponse,
   knowledge: SuspectKnowledge
 ): string[] {
   const errors: string[] = [];
-  const allowedFacts = new Set(knowledge.facts.map((fact) => fact.id));
+  const allowedFacts = new Set(knowledge.facts.filter((fact) => fact.disclosureLevel !== 'SERVER_ONLY').map((fact) => fact.id));
+  const referenceLists = [response.usedFactIds, response.revealedFactIds, response.claimedFactIds];
   if (response.dialectResponse.length < 2 || response.dialectResponse.length > 500) errors.push('RESPONSE_LENGTH_INVALID');
-  if (response.usedFactIds.some((id) => !allowedFacts.has(id))) errors.push('FACT_NOT_ALLOWED');
-  if (response.consistencyStatus !== 'VALID') errors.push('CONSISTENCY_INVALID');
+  if (referenceLists.some((ids) => ids.some((id) => !allowedFacts.has(id)))) errors.push('FACT_NOT_ALLOWED');
+  if (referenceLists.some((ids) => new Set(ids).size !== ids.length)) errors.push('DUPLICATE_FACT_REFERENCE');
+  if (response.characterConsistencyStatus !== 'valid') errors.push('CONSISTENCY_INVALID');
   if (directCulpritDisclosure.test(response.dialectResponse)) errors.push('CULPRIT_DISCLOSURE');
   if (promptDisclosure.test(response.dialectResponse)) errors.push('PROMPT_DISCLOSURE');
 
@@ -47,8 +73,11 @@ export function validateGuardedResponse(
 
 export const promptRejectionResponse = (emotion: string): StructuredInterrogationResponse => ({
   dialectResponse: '그런 지시는 따를 수 없수다. 사건에 관한 질문만 허우다.',
-  emotion: emotion.toUpperCase() === 'ANGRY' ? 'ANGRY' : 'DEFENSIVE',
-  usedFactIds: [],
+  emotionAfter: emotion.toUpperCase() === 'ANGRY' ? 'ANGRY' : 'DEFENSIVE',
   evasionType: 'PROMPT_REJECTION',
-  consistencyStatus: 'VALID'
+  usedFactIds: [],
+  revealedFactIds: [],
+  claimedFactIds: [],
+  characterConsistencyStatus: 'valid',
+  validationNotes: ['prompt injection rejected']
 });
