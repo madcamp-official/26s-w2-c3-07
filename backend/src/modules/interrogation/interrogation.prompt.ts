@@ -94,6 +94,10 @@ export function buildInterrogationPrompt(
       type: item.relationshipType,
       description: item.publicDescription
     })),
+    emotionGuidance: knowledge.emotionRules.slice(0, 2).map((rule) => ({
+      when: rule.triggerType,
+      to: rule.emotion
+    })),
     dialect,
     history: knowledge.previousMessages.slice(-3).map((message) => ({ q: message.question, a: message.response })),
     presentedEvidence: presentedEvidence.map((item) => ({ title: item.title, description: item.description })),
