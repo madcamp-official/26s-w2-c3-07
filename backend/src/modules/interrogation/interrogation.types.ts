@@ -57,6 +57,14 @@ export type UnlockedClueDto = {
   importance: string;
 };
 
+export type UnlockedEvidenceDto = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  evidenceType: string;
+};
+
 export type InterrogationResponse = {
   message: {
     id: string;
@@ -65,6 +73,7 @@ export type InterrogationResponse = {
     evasionType: EvasionType | null;
   };
   newlyUnlockedClues: UnlockedClueDto[];
+  newlyUnlockedEvidence: UnlockedEvidenceDto[];
   remainingQuestions: number;
 };
 
