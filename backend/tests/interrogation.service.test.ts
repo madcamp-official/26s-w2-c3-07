@@ -187,12 +187,12 @@ describe('guarded interrogation flow', () => {
 
   it('sums retry tokens and cached tokens in the final log', async () => {
     vi.mocked(interrogationLlm.generate)
-      .mockRejectedValueOnce(new InterrogationLlmError('timeout', 408, 'timeout', true))
+      .mockRejectedValueOnce(new InterrogationLlmError('timeout', 408, 'timeout', true, 10, 3, 2, 4))
       .mockResolvedValueOnce({ output: validResponse, provider: 'openai', model: 'test', inputTokens: 30, outputTokens: 12, cachedTokens: 8, latencyMs: 2 });
     await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '어디에 있었습니까?' });
     expect(interrogationLlm.generate).toHaveBeenCalledTimes(2);
     expect(repository.logLlm).toHaveBeenLastCalledWith(expect.objectContaining({
-      inputTokens: 30, outputTokens: 12, cachedTokens: 8, attempt: 2,
+      inputTokens: 40, outputTokens: 15, cachedTokens: 10, attempt: 2,
       promptMetrics: expect.objectContaining({ promptVersion: 'interrogation-v2-compact', includedRuleCount: 0 })
     }));
   });
