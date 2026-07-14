@@ -7,6 +7,7 @@ import { AuthGuard } from '@/features/auth/AuthProvider';
 import { useApiResource } from '@/features/api/useApiResource';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/ApiState';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { resolveEpisodeImage } from '@/features/episode/utils/episodeImage';
 import type { Region, EpisodeSummary } from '@/types/content';
 import type { ProgressSummary } from '@/types/progress';
 import type { SessionView } from '@/types/session';
@@ -55,7 +56,7 @@ export default function RegionsPage() {
           </div>
         </section>
         <section>
-          {episodes.loading ? <LoadingState label="사건 목록을 불러오는 중..." /> : episodes.error ? <ErrorState error={episodes.error} retry={episodes.reload} /> : !episodes.data?.length ? <EmptyState label="공개된 사건이 없습니다." /> : <div className="space-y-4">{episodes.data.map((episode) => <article key={episode.id} className="border border-brass-600/30 bg-noir-900/70 p-6"><p className="text-xs text-evidence-red">{episode.code}</p><h2 className="mt-2 font-display text-2xl">{episode.title}</h2><p className="mt-2 text-sm opacity-70">{episode.synopsis}</p><p className="mt-4 text-xs opacity-50">예상 {episode.estimatedPlayMinutes}분 · {episode.progressStatus ?? '미시작'}</p><Link href={`/episodes/${episode.id}`} className="mt-5 inline-block bg-evidence-red px-5 py-2 font-bold">사건 보기 →</Link></article>)}</div>}
+          {episodes.loading ? <LoadingState label="사건 목록을 불러오는 중..." /> : episodes.error ? <ErrorState error={episodes.error} retry={episodes.reload} /> : !episodes.data?.length ? <EmptyState label="공개된 사건이 없습니다." /> : <div className="space-y-4">{episodes.data.map((episode) => { const image = resolveEpisodeImage(episode); return <article key={episode.id} className="overflow-hidden border border-brass-600/30 bg-noir-900/70">{image && <div className="relative aspect-[16/9] w-full"><Image src={image} alt={episode.title} fill sizes="(min-width: 768px) 640px, 100vw" className="object-cover" /></div>}<div className="p-6"><p className="text-xs text-evidence-red">{episode.code}</p><h2 className="mt-2 font-display text-2xl">{episode.title}</h2><p className="mt-2 text-sm opacity-70">{episode.synopsis}</p><p className="mt-4 text-xs opacity-50">예상 {episode.estimatedPlayMinutes}분 · {episode.progressStatus ?? '미시작'}</p><Link href={`/episodes/${episode.id}`} className="mt-5 inline-block bg-evidence-red px-5 py-2 font-bold">사건 보기 →</Link></div></article>; })}</div>}
         </section>
       </div>}
     </div>

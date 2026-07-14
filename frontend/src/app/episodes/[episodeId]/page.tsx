@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -12,6 +13,7 @@ import type { SessionView } from '@/types/session';
 import { ApiError } from '@/types/api';
 import { SuspectImage } from '@/features/suspect/components/SuspectImage';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { resolveEpisodeImage } from '@/features/episode/utils/episodeImage';
 
 export default function EpisodePage() {
   const { episodeId } = useParams<{ episodeId: string }>();
@@ -26,6 +28,7 @@ export default function EpisodePage() {
     <AppHeader />
     <Link href="/regions" className="text-sm opacity-70">← 지역 목록</Link>
     {detail.loading ? <LoadingState /> : detail.error ? <ErrorState error={detail.error} retry={detail.reload} /> : detail.data ? <>
+      {resolveEpisodeImage(detail.data) && <div className="relative aspect-[16/9] w-full overflow-hidden border border-brass-600/30"><Image src={resolveEpisodeImage(detail.data)!} alt={detail.data.title} fill sizes="(min-width: 768px) 768px, 100vw" className="object-cover" /></div>}
       <header><p className="text-xs text-evidence-red">{detail.data.code} · {detail.data.incidentType}</p><h1 className="mt-2 font-display text-4xl">{detail.data.title}</h1><p className="mt-3 opacity-70">{detail.data.synopsis}</p></header>
       <section className="border border-brass-600/30 bg-noir-900/70 p-5"><h2 className="font-bold text-brass-400">피해자</h2><p className="mt-2">{detail.data.victim.name} · {detail.data.victim.age ?? '나이 미상'}세 · {detail.data.victim.occupation ?? '직업 미상'}</p></section>
       {scene.data && <section><h2 className="mb-3 font-display text-2xl">초기 현장 증거</h2>{scene.data.evidence.length ? <div className="grid gap-3 md:grid-cols-2">{scene.data.evidence.map((item) => <div key={item.id} className="border border-brass-600/30 p-4"><b>{item.title}</b><p className="mt-1 text-sm opacity-60">{item.description}</p></div>)}</div> : <EmptyState label="공개된 초기 증거가 없습니다." />}</section>}
