@@ -16,31 +16,35 @@ describe('episode service', () => {
     expect(list).toHaveBeenCalledWith('region-1');
   });
   it('returns only public episode detail fields', async () => {
-    vi.spyOn(episodeRepository, 'findById').mockResolvedValue({ ...summary, sceneDescription: '공개 내레이션' });
+    vi.spyOn(episodeRepository, 'findByKey').mockResolvedValue({ ...summary, sceneDescription: '공개 내레이션' });
     vi.spyOn(episodeRepository, 'findVictim').mockResolvedValue(victim);
     vi.spyOn(episodeRepository, 'findDifficulties').mockResolvedValue(difficulties);
-    const result = await episodeService.detail('episode-1');
+    const result = await episodeService.detail('gs-01');
     expect(result).not.toHaveProperty('culprit_suspect_id');
     expect(result).not.toHaveProperty('server_truth');
     expect(result).not.toHaveProperty('sceneDescription');
     expect(result).toMatchObject({ code: 'GS-01', victim });
+    expect(episodeRepository.findVictim).toHaveBeenCalledWith('episode-1');
+    expect(episodeRepository.findDifficulties).toHaveBeenCalledWith('episode-1');
   });
   it('returns only PUBLIC_INITIAL timeline and initial evidence supplied by the repository boundary', async () => {
-    vi.spyOn(episodeRepository, 'findById').mockResolvedValue({ ...summary, sceneDescription: '공개 내레이션' });
+    vi.spyOn(episodeRepository, 'findByKey').mockResolvedValue({ ...summary, sceneDescription: '공개 내레이션' });
     vi.spyOn(episodeRepository, 'findVictim').mockResolvedValue(victim);
     vi.spyOn(episodeRepository, 'findSceneParts').mockResolvedValue({ timeline: [{ occurredAt: '사건 발견', title: '발견', description: '공개' }], evidence: [{ id: 'e1', code: 'GS-01-E1', title: '식혜', description: '공개 증거', evidenceType: 'physical' }] });
-    const scene = await episodeService.scene('episode-1');
+    const scene = await episodeService.scene('GS-01');
     expect(scene.timeline).toHaveLength(1);
     expect(scene.evidence).toHaveLength(1);
     expect(JSON.stringify(scene)).not.toContain('PRIVATE');
+    expect(episodeRepository.findSceneParts).toHaveBeenCalledWith('episode-1');
   });
   it('returns EPISODE_NOT_FOUND for unpublished or missing episodes', async () => {
-    vi.spyOn(episodeRepository, 'findById').mockResolvedValue(null);
+    vi.spyOn(episodeRepository, 'findByKey').mockResolvedValue(null);
     await expect(episodeService.detail('missing')).rejects.toMatchObject({ code: 'EPISODE_NOT_FOUND' });
   });
   it('returns JJ-01 hard with six total questions from DB data', async () => {
-    vi.spyOn(episodeRepository, 'findById').mockResolvedValue({ ...summary, code: 'JJ-01', sceneDescription: '공개' });
+    vi.spyOn(episodeRepository, 'findByKey').mockResolvedValue({ ...summary, code: 'JJ-01', sceneDescription: '공개' });
     vi.spyOn(episodeRepository, 'findDifficulties').mockResolvedValue([{ ...difficulties[0], totalQuestions: 6 }]);
-    await expect(episodeService.difficulties('jj')).resolves.toEqual([expect.objectContaining({ difficulty: 'hard', totalQuestions: 6, questionsPerSuspect: 1 })]);
+    await expect(episodeService.difficulties('jj-01')).resolves.toEqual([expect.objectContaining({ difficulty: 'hard', totalQuestions: 6, questionsPerSuspect: 1 })]);
+    expect(episodeRepository.findDifficulties).toHaveBeenCalledWith('episode-1');
   });
 });

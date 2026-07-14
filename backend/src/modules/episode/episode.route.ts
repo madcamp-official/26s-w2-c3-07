@@ -4,8 +4,8 @@ import { suspectController } from '../suspect/suspect.controller.js';
 
 export const episodeRoute = Router();
 
-episodeRoute.get('/:episodeId', episodeController.detail);
-episodeRoute.get('/:episodeId/difficulties', episodeController.difficulties);
-episodeRoute.get('/:episodeId/scene', episodeController.scene);
-episodeRoute.get('/:episodeId/suspects', suspectController.list);
-episodeRoute.get('/:episodeId/suspects/:suspectId', suspectController.detail);
+episodeRoute.get('/:episodeKey', episodeController.detail);
+episodeRoute.get('/:episodeKey/difficulties', episodeController.difficulties);
+episodeRoute.get('/:episodeKey/scene', episodeController.scene);
+episodeRoute.get('/:episodeKey/suspects', suspectController.list);
+episodeRoute.get('/:episodeKey/suspects/:suspectId', suspectController.detail);
