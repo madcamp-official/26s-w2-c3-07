@@ -86,6 +86,19 @@ describe('content seed', () => {
     const types = new Set(tables.clue_unlock_conditions.map((row) => row.condition_type));
     expect(types).toEqual(new Set(['EVIDENCE_VIEWED', 'QUESTION_TYPE_ASKED', 'FACT_USED', 'SUSPECT_INTERROGATED', 'CLUE_ACQUIRED']));
   });
+  it('marks curated dialect seed rows with compact prompt metadata', () => {
+    const rows = fourEpisodeContent().dialect_expressions;
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.difficulty_rules).toEqual(expect.objectContaining({
+        category: expect.any(String),
+        intensity: expect.any(Number),
+        question_types: expect.any(Array),
+        emotion_tags: expect.any(Array),
+        verification_status: 'APPROVED_FOR_MVP'
+      }));
+    }
+  });
   it('does not increase row count on a second run', async () => {
     const writer = new MemoryWriter();
     const first = await runContentSeed(fixture(), writer);

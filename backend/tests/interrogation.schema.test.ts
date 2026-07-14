@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createInterrogationSchema, structuredInterrogationSchema } from '../src/modules/interrogation/interrogation.schema.js';
+import {
+  compactInterrogationOutputSchema,
+  createInterrogationSchema,
+  structuredInterrogationSchema
+} from '../src/modules/interrogation/interrogation.schema.js';
 
 const id = '00000000-0000-4000-8000-000000000001';
 const structured = {
@@ -20,6 +24,23 @@ describe('interrogation request and provider schemas', () => {
 
   it('blocks unknown provider fields', () => {
     expect(structuredInterrogationSchema.safeParse({ ...structured, culpritId: id }).success).toBe(false);
+  });
+
+  it('accepts the compact provider response with short fact keys', () => {
+    expect(compactInterrogationOutputSchema.safeParse({
+      response: '그때 별장에 있었수다.', emotion: 'NERVOUS', evasion: null,
+      usedFacts: ['F1'], revealedFacts: ['F1'], claimedFacts: []
+    }).success).toBe(true);
+  });
+
+  it('rejects UUIDs, invalid fact keys, and unknown fields in compact output', () => {
+    const base = {
+      response: '모르겠수다.', emotion: 'NEUTRAL', evasion: 'UNKNOWN',
+      usedFacts: ['F1'], revealedFacts: [], claimedFacts: []
+    };
+    expect(compactInterrogationOutputSchema.safeParse({ ...base, usedFacts: [id] }).success).toBe(false);
+    expect(compactInterrogationOutputSchema.safeParse({ ...base, usedFacts: ['fact-1'] }).success).toBe(false);
+    expect(compactInterrogationOutputSchema.safeParse({ ...base, culpritId: id }).success).toBe(false);
   });
 
   it('normalizes duplicate evidence ids in a valid request', () => {
