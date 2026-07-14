@@ -34,11 +34,11 @@ function fixture(type: QuestionType): SuspectKnowledge {
       factType: index % 2 ? 'ALIBI' : 'OBSERVATION', disclosureLevel: 'ALLOWED'
     })),
     lies: Array.from({ length: 6 }, (_, index) => ({ claim: `주장 ${index} ${paragraph}`, truth: `진실 ${index} ${paragraph}` })),
-    responseRules: [{
-      ruleType: type, trigger: { keywords: paragraph },
-      guidance: { guidance: paragraph, duplicatedCharacterPolicy: paragraph },
+    responseRules: Array.from({ length: 8 }, (_, index) => ({
+      ruleType: index ? 'Q-OTHER' : type, trigger: { keywords: paragraph },
+      guidance: { guidance: index ? `IRRELEVANT_RULE_${index} ${paragraph}` : paragraph, duplicatedCharacterPolicy: paragraph },
       allowedFactRefs: [uuid(10)], hiddenFactRefs: [uuid(99)]
-    }],
+    })),
     emotionRules: Array.from({ length: 6 }, () => ({ triggerType: 'QUESTION', trigger: { text: paragraph }, emotion: 'NERVOUS', intensity: 2 })),
     dialectExpressions: selectDialectExpressions(dialect, type, 'NEUTRAL', 'normal', 3),
     relationships: Array.from({ length: 5 }, (_, index) => ({ targetSuspectId: uuid(index + 100), relationshipType: '지인', publicDescription: paragraph })),
@@ -49,13 +49,10 @@ function fixture(type: QuestionType): SuspectKnowledge {
 }
 
 function legacyPrompt(question: string, knowledge: SuspectKnowledge) {
-  const allRules = Array.from({ length: 8 }, (_, index) => ({
-    ...knowledge.responseRules[0], ruleType: index ? 'Q-OTHER' : knowledge.responseRules[0]?.ruleType
-  }));
   return [
     '당신은 추리 게임의 용의자다. 아래 모든 설정과 규칙을 지켜 JSON으로 답하라.',
     JSON.stringify(knowledge.suspect), JSON.stringify(knowledge.facts), JSON.stringify(knowledge.lies),
-    JSON.stringify(allRules), JSON.stringify(knowledge.emotionRules),
+    JSON.stringify(knowledge.responseRules), JSON.stringify(knowledge.emotionRules),
     JSON.stringify(knowledge.dialectExpressions), JSON.stringify(knowledge.relationships),
     JSON.stringify(knowledge.previousMessages), `질문: ${question}`
   ].join('\n');
@@ -72,6 +69,7 @@ describe('compact interrogation prompt budget', () => {
       expect(compact.metrics.estimatedTokens).toBeLessThanOrEqual(3500);
       expect(compact.metrics.includedHistoryCount).toBeLessThanOrEqual(3);
       expect(compact.metrics.includedRuleCount).toBe(1);
+      expect(compact.user).not.toContain('IRRELEVANT_RULE_1');
       expect(compact.metrics.includedDialectCount).toBeLessThanOrEqual(7);
       expect(compact.user).toContain('"key":"F1"');
       expect(compact.user).not.toContain(uuid(10));
