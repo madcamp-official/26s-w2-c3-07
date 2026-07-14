@@ -19,3 +19,14 @@ export const structuredInterrogationSchema = z.object({
   characterConsistencyStatus: z.enum(['valid', 'invalid']),
   validationNotes: z.array(z.string().trim().min(1).max(200)).max(20)
 }).strict();
+
+const factKeySchema = z.string().regex(/^F[1-9]\d*$/);
+
+export const compactInterrogationOutputSchema = z.object({
+  response: z.string().trim().min(1).max(120),
+  emotion: z.enum(EMOTIONS),
+  evasion: z.enum(EVASION_TYPES).nullable(),
+  usedFacts: z.array(factKeySchema).max(7),
+  revealedFacts: z.array(factKeySchema).max(7),
+  claimedFacts: z.array(factKeySchema).max(7)
+}).strict();
