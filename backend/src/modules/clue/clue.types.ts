@@ -2,8 +2,11 @@ export type ClueDto = {
   id: string;
   code: string;
   title: string;
+  content: string;
   description: string;
+  recordSummary: string | null;
   clueType: string;
+  importance: string;
   unlockedAt: string;
   source: string | null;
 };
