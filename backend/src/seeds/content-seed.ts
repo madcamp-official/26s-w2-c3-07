@@ -9,6 +9,8 @@ export type EpisodeCode = (typeof episodeCodes)[number];
 export const tableOrder = [
   'regions', 'episodes', 'episode_difficulty_configs', 'victims', 'suspects',
   'episode_timelines', 'evidence', 'clues', 'clue_unlock_conditions',
+  'difficulty_initial_evidence', 'difficulty_initial_clues', 'clue_evidence_unlocks',
+  'evidence_clue_links', 'clue_suspect_impacts',
   'dialect_expressions', 'suspect_facts', 'suspect_lies', 'suspect_response_rules',
   'suspect_emotion_rules', 'suspect_relationships', 'endings'
 ] as const;
@@ -60,6 +62,17 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
       if (!config) errors.push(`${code}: ${difficulty} difficulty is missing`);
       const expected = difficulty === 'easy' ? 12 : difficulty === 'normal' ? 8 : code === 'JJ-01' ? 6 : 4;
       if (config?.total_questions !== expected) errors.push(`${code}: ${difficulty} must allow ${expected} total questions`);
+      const configId = config && text(config, 'id');
+      if (configId) {
+        const initialEvidence = tables.difficulty_initial_evidence.filter((row) => text(row, 'difficulty_config_id') === configId);
+        const expectedEvidenceCount = difficulty === 'easy' ? 3 : difficulty === 'normal' ? 2 : 1;
+        if (initialEvidence.length !== expectedEvidenceCount) {
+          errors.push(`${code}: ${difficulty} must provide ${expectedEvidenceCount} initial evidence rows`);
+        }
+        const initialClues = tables.difficulty_initial_clues.filter((row) => text(row, 'difficulty_config_id') === configId);
+        if (difficulty === 'easy' && initialClues.length > 1) errors.push(`${code}: easy may provide at most 1 initial clue`);
+        if (difficulty !== 'easy' && initialClues.length > 0) errors.push(`${code}: ${difficulty} must not provide initial clues`);
+      }
     }
 
     const clues = rowsForEpisode(tables.clues, episodeId);
@@ -68,12 +81,23 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
     const suspectIds = new Set(suspects.map((row) => text(row, 'id')));
     if (!clues.some(isCoreClue)) errors.push(`${code}: CORE clue is missing`);
 
-    const initialEvidenceIds = new Set(rowsForEpisode(tables.evidence, episodeId).filter((row) => row.initial_visible === true || row._initial_visible === true).map((row) => text(row, 'id')));
-    const reachableClues = new Set<string>();
+    const difficultyIds = new Set(difficulties.map((row) => text(row, 'id')).filter((value): value is string => Boolean(value)));
+    const reachableEvidenceIds = new Set(
+      tables.difficulty_initial_evidence
+        .filter((row) => difficultyIds.has(text(row, 'difficulty_config_id') ?? ''))
+        .map((row) => text(row, 'evidence_id'))
+        .filter((value): value is string => Boolean(value))
+    );
+    const reachableClues = new Set(
+      tables.difficulty_initial_clues
+        .filter((row) => difficultyIds.has(text(row, 'difficulty_config_id') ?? ''))
+        .map((row) => text(row, 'clue_id'))
+        .filter((value): value is string => Boolean(value))
+    );
     let changed = true;
     while (changed) {
       changed = false;
-      for (const clue of clues.filter(isCoreClue)) {
+      for (const clue of clues) {
         const clueId = text(clue, 'id');
         if (!clueId || reachableClues.has(clueId)) continue;
         const groups = new Map<number, SeedRow[]>();
@@ -83,11 +107,20 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
         }
         const reachable = [...groups.values()].some((conditions) => conditions.every((condition) => {
           const kind = text(condition, 'condition_type');
-          if (kind === 'EVIDENCE_VIEWED') return initialEvidenceIds.has(text(condition, '_target_evidence_id'));
+          if (kind === 'EVIDENCE_VIEWED' || kind === 'EVIDENCE_PRESENTED') {
+            return reachableEvidenceIds.has(text(condition, '_target_evidence_id') ?? text(condition, 'target_ref') ?? '');
+          }
           if (kind === 'CLUE_ACQUIRED') return reachableClues.has(text(condition, '_target_clue_id') ?? '');
-          return ['QUESTION_TYPE_ASKED', 'FACT_USED', 'SUSPECT_INTERROGATED', 'MESSAGE_EXISTS', 'EMOTION_REACHED'].includes(kind ?? '');
+          return ['QUESTION_TYPE_ASKED', 'FACT_USED', 'FACT_REVEALED', 'CLAIM_RECORDED', 'SUSPECT_INTERROGATED', 'MESSAGE_EXISTS', 'EMOTION_REACHED'].includes(kind ?? '');
         }));
-        if (reachable) { reachableClues.add(clueId); changed = true; }
+        if (reachable) {
+          reachableClues.add(clueId);
+          for (const unlock of tables.clue_evidence_unlocks.filter((row) => text(row, 'clue_id') === clueId)) {
+            const unlockedEvidenceId = text(unlock, 'evidence_id');
+            if (unlockedEvidenceId) reachableEvidenceIds.add(unlockedEvidenceId);
+          }
+          changed = true;
+        }
       }
     }
     for (const clue of clues.filter(isCoreClue)) {
@@ -100,6 +133,23 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
         const target = text(condition, key);
         if (target && !targets.has(target)) errors.push(`${code}: clue condition ${key} target does not exist in the episode`);
       }
+    }
+    for (const initial of tables.difficulty_initial_evidence.filter((row) => difficultyIds.has(text(row, 'difficulty_config_id') ?? ''))) {
+      if (!evidenceIds.has(text(initial, 'evidence_id'))) errors.push(`${code}: initial evidence belongs to another episode`);
+    }
+    for (const initial of tables.difficulty_initial_clues.filter((row) => difficultyIds.has(text(row, 'difficulty_config_id') ?? ''))) {
+      if (!clueIds.has(text(initial, 'clue_id'))) errors.push(`${code}: initial clue belongs to another episode`);
+    }
+    for (const unlock of tables.clue_evidence_unlocks.filter((row) => clueIds.has(text(row, 'clue_id')))) {
+      if (!evidenceIds.has(text(unlock, 'evidence_id'))) errors.push(`${code}: unlocked evidence belongs to another episode`);
+    }
+    for (const link of tables.evidence_clue_links.filter((row) => text(row, 'episode_id') === episodeId)) {
+      if (!evidenceIds.has(text(link, 'evidence_id')) || !clueIds.has(text(link, 'clue_id'))) {
+        errors.push(`${code}: evidence-clue link crosses episode boundaries`);
+      }
+    }
+    for (const impact of tables.clue_suspect_impacts.filter((row) => clueIds.has(text(row, 'clue_id')))) {
+      if (!suspectIds.has(text(impact, 'suspect_id'))) errors.push(`${code}: clue impact targets another episode`);
     }
     for (const ending of rowsForEpisode(tables.endings, episodeId)) {
       const target = text(ending, '_target_suspect_id');
