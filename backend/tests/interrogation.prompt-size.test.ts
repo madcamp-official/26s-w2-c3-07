@@ -39,6 +39,7 @@ function fixture(type: QuestionType): SuspectKnowledge {
       guidance: { guidance: index ? `IRRELEVANT_RULE_${index} ${paragraph}` : paragraph, duplicatedCharacterPolicy: paragraph },
       allowedFactRefs: [uuid(10)], hiddenFactRefs: [uuid(99)]
     })),
+    effectiveRuleType: type,
     emotionRules: Array.from({ length: 6 }, () => ({ triggerType: 'QUESTION', trigger: { text: paragraph }, emotion: 'NERVOUS', intensity: 2 })),
     dialectExpressions: selectDialectExpressions(dialect, type, 'NEUTRAL', 'normal', 3),
     relationships: Array.from({ length: 5 }, (_, index) => ({ targetSuspectId: uuid(index + 100), relationshipType: '지인', publicDescription: paragraph })),

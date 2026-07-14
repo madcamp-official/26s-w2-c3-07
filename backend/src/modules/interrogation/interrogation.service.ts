@@ -16,6 +16,7 @@ import {
 
 const MAX_GENERATION_ATTEMPTS = 2;
 
+
 const stringArray = (value: Json): string[] => Array.isArray(value)
   ? value.filter((item): item is string => typeof item === 'string')
   : [];
@@ -107,8 +108,11 @@ export const interrogationService = {
     if (new Date(session.expires_at).getTime() <= Date.now()) throw new AppError(409, 'Session expired', 'SESSION_EXPIRED');
     if (session.remaining_questions <= 0) throw new AppError(409, 'No questions remaining', 'INTERROGATION_QUESTIONS_EXHAUSTED');
 
-    const questionType = classifyQuestion(input.question);
     const presentedEvidenceIds = input.presentedEvidenceIds ?? [];
+    const classifiedType = classifyQuestion(input.question);
+    const questionType = classifiedType === 'Q-PROMPT'
+      ? 'Q-PROMPT'
+      : presentedEvidenceIds.length > 0 ? 'Q-EVIDENCE' : classifiedType;
     const [knowledge, questionsUsed, perSuspectLimit, presentedEvidence] = await Promise.all([
       repository.loadKnowledge(session, input.suspectId, questionType),
       repository.getSuspectQuestionCount(session.id, input.suspectId),
@@ -218,6 +222,7 @@ export const interrogationService = {
         characterConsistencyStatus: response.characterConsistencyStatus,
         validationNotes: response.validationNotes,
         promptVersion: prompt?.metrics.promptVersion ?? null,
+        effectiveRuleType: knowledge.effectiveRuleType,
         localResponse
       };
       const result = await repository.finalize({

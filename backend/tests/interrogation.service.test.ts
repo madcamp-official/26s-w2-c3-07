@@ -24,6 +24,7 @@ const knowledge: SuspectKnowledge = {
   suspect: { id: suspectId, name: '강윤호', age: 42, occupation: '운전기사', personality: '신중함', speechStyle: '제주 방언', publicProfile: {} },
   facts: [{ id: factId, code: 'JJ-01-F1', content: '사건 당시 별장에 있었다.', factType: 'ALIBI', disclosureLevel: 'LLM_ALLOWED' }],
   lies: [{ claim: '일찍 퇴근했다.', truth: '별장에 남아 있었다.' }], responseRules: [], emotionRules: [],
+  effectiveRuleType: 'Q-OTHER',
   dialectExpressions: [{ code: 'JJ-01-MVP-1', standardText: '모르겠습니다', dialectText: '모르쿠다', category: 'EVASION', intensity: 1, questionTypes: ['Q-OTHER'], emotionTags: ['DEFENSIVE'], verificationStatus: 'APPROVED_FOR_MVP' }],
   relationships: [], previousMessages: [], currentEmotion: 'NEUTRAL', difficulty: 'normal', dialectLevel: 2, revealedFactIds: [], claimedFactIds: [],
   knownEntities: ['강윤호', '별장', '전용 찻잔']
@@ -86,6 +87,20 @@ describe('guarded interrogation flow', () => {
     await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '이 증거를 봤습니까?', presentedEvidenceIds: [evidenceId] });
     expect(repository.finalize).toHaveBeenCalledWith(expect.objectContaining({ presentedEvidenceIds: [evidenceId] }));
     expect(interrogationLlm.generate).toHaveBeenCalledWith(expect.objectContaining({ user: expect.stringContaining('전용 찻잔') }));
+  });
+
+  it('forces Q-EVIDENCE when an acquired evidence id is presented', async () => {
+    vi.mocked(repository.findPresentedEvidence).mockResolvedValue([{ id: evidenceId, code: 'GS-01-E4', title: '문틀 혈흔', description: '문틀의 혈흔', evidenceType: 'PHYSICAL' }]);
+    vi.mocked(interrogationLlm.generate).mockResolvedValue({
+      output: { ...validResponse, usedFactIds: [], revealedFactIds: [], claimedFactIds: [] },
+      provider: 'openai', model: 'test-model', inputTokens: 20, outputTokens: 10, cachedTokens: 0, latencyMs: 12
+    });
+    const result = await interrogationService.ask(sessionId, userId, {
+      requestId, suspectId, question: '이건 뭡니까?', presentedEvidenceIds: [evidenceId]
+    });
+    expect(repository.loadKnowledge).toHaveBeenCalledWith(session, suspectId, 'Q-EVIDENCE');
+    expect(repository.finalize).toHaveBeenCalledWith(expect.objectContaining({ questionType: 'Q-EVIDENCE' }));
+    expect(result.message).toMatchObject({ emotionAfter: 'NERVOUS' });
   });
 
   it('rejects evidence that is not acquired for the session', async () => {

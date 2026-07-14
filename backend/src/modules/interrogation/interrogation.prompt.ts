@@ -49,7 +49,8 @@ export function buildPromptCharacterProfile(knowledge: SuspectKnowledge) {
 }
 
 function compactPolicy(knowledge: SuspectKnowledge, type: QuestionType) {
-  const rule = knowledge.responseRules.find((candidate) => candidate.ruleType === type)
+  const rule = knowledge.responseRules.find((candidate) => candidate.ruleType === knowledge.effectiveRuleType)
+    ?? knowledge.responseRules.find((candidate) => candidate.ruleType === type)
     ?? knowledge.responseRules[0];
   if (!rule) return { behavior: '질문과 직접 관련된 허용 사실만 짧게 답한다.', evasionAllowed: true };
   const guidance = objectValue(rule.guidance);

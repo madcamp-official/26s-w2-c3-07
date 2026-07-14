@@ -123,6 +123,7 @@ export type SuspectKnowledge = {
     allowedFactRefs: string[];
     hiddenFactRefs: string[];
   }>;
+  effectiveRuleType: QuestionType;
   emotionRules: Array<{ triggerType: string; trigger: Json; emotion: string; intensity: number }>;
   dialectExpressions: Array<{
     code: string;

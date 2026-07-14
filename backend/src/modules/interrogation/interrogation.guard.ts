@@ -7,7 +7,12 @@ export function classifyQuestion(question: string): QuestionType {
   if (includesAny(value, ['system prompt', 'developer message', 'ignore previous', '지시를 무시', '프롬프트', '규칙을 무시', '설정값'])) return 'Q-PROMPT';
   if (includesAny(value, ['범인', '죽였', '살해했', '자백'])) return 'Q-ACCUSATION';
   if (includesAny(value, ['모순', '말이 다르', '거짓말', '앞에서는', '아까는'])) return 'Q-CONTRADICTION';
-  if (includesAny(value, ['증거', '흔적', '기록', '장부', '물건'])) return 'Q-EVIDENCE';
+  const evidencePatterns = [
+    /증거|흔적|혈흔|피자국|핏자국|문틀|긁힌\s*자국|상처|몸싸움|부검|독극물|독성|성분/,
+    /피가\s*(?:묻|남|흐르|튀)/,
+    /지문|발자국|cctv|녹음|통화\s*기록|장부|물건/i
+  ];
+  if (evidencePatterns.some((pattern) => pattern.test(value))) return 'Q-EVIDENCE';
   if (includesAny(value, ['어디', '장소', '있었', '갔'])) return 'Q-PLACE';
   if (includesAny(value, ['언제', '몇 시', '시간', '당시'])) return 'Q-TIME';
   if (includesAny(value, ['관계', '사이', '알고', '가족', '피해자'])) return 'Q-RELATION';
@@ -49,7 +54,7 @@ export function selectPromptFacts(
   questionType: QuestionType,
   presentedEvidence: PresentedEvidence[] = []
 ): PromptFact[] {
-  const matchingRules = knowledge.responseRules.filter((rule) => ruleMatches(rule, questionType));
+  const matchingRules = knowledge.responseRules.filter((rule) => ruleMatches(rule, knowledge.effectiveRuleType));
   const explicitlyAllowed = new Set(matchingRules.flatMap((rule) => rule.allowedFactRefs));
   const explicitlyHidden = new Set(matchingRules.flatMap((rule) => rule.hiddenFactRefs));
   const previouslyRevealed = new Set(knowledge.revealedFactIds);
@@ -61,6 +66,7 @@ export function selectPromptFacts(
     if (explicitlyHidden.has(fact.id) || explicitlyHidden.has(fact.code)) return false;
     if (explicitlyAllowed.has(fact.id) || explicitlyAllowed.has(fact.code)) return true;
     if (previouslyRevealed.has(fact.id)) return true;
+    if (fact.disclosureLevel === 'LLM_HIDDEN') return false;
     if (evidenceRelated(fact, presentedEvidence)) return true;
     return fact.disclosureLevel === 'LLM_ALLOWED' && hints.some((hint) => fact.factType.toUpperCase().includes(hint));
   }).sort((a, b) => {

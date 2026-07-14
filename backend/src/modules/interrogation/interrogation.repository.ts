@@ -71,6 +71,7 @@ export const interrogationRepository = {
       : { data: [], error: null };
     throwIfError(fallbackRuleResult.error);
     const responseRules = (responseRuleResult.data ?? []).length ? responseRuleResult.data ?? [] : fallbackRuleResult.data ?? [];
+    const effectiveRuleType = (responseRules[0]?.question_type ?? questionType) as QuestionType;
 
     const [dialectResult, liesResult] = await Promise.all([
       content.from('dialect_expressions')
@@ -132,6 +133,7 @@ export const interrogationRepository = {
         allowedFactRefs: stringArray(row.allowed_fact_refs),
         hiddenFactRefs: stringArray(row.hidden_fact_refs)
       })),
+      effectiveRuleType,
       emotionRules: (emotionRulesResult.data ?? []).map((row) => ({ triggerType: row.trigger_type, trigger: row.condition, emotion: row.to_emotion, intensity: row.priority })),
       dialectExpressions,
       relationships: (relationshipsResult.data ?? []).map((row) => ({ targetSuspectId: row.target_suspect_id ?? '', relationshipType: row.relation_type, publicDescription: row.public_description })),
