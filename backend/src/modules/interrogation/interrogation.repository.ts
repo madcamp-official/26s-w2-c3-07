@@ -62,6 +62,8 @@ export const interrogationRepository = {
     ]);
     for (const result of [suspectResult, factsResult, responseRuleResult, emotionRulesResult, relationshipsResult, stateResult, episodeResult, configResult, previousResult, victimResult]) throwIfError(result.error);
     if (!suspectResult.data || !stateResult.data || !episodeResult.data || !configResult.data) return null;
+    const state = stateResult.data;
+    const config = configResult.data;
 
     const fallbackRuleResult = (responseRuleResult.data ?? []).length === 0 && questionType !== 'Q-OTHER'
       ? await content.from('suspect_response_rules').select('question_type, response_policy, allowed_fact_refs, hidden_fact_refs, difficulty_overrides').eq('suspect_id', suspectId).eq('question_type', 'Q-OTHER').limit(1)
@@ -69,7 +71,7 @@ export const interrogationRepository = {
     throwIfError(fallbackRuleResult.error);
     const responseRules = (responseRuleResult.data ?? []).length ? responseRuleResult.data ?? [] : fallbackRuleResult.data ?? [];
 
-    const dialectLimit = configResult.data.difficulty === 'easy' ? 5 : configResult.data.difficulty === 'hard' ? 10 : 7;
+    const dialectLimit = config.difficulty === 'easy' ? 5 : config.difficulty === 'hard' ? 10 : 7;
     const [dialectResult, liesResult] = await Promise.all([
       content.from('dialect_expressions')
         .select('code, standard_meaning, expression, difficulty_rules')
@@ -106,10 +108,10 @@ export const interrogationRepository = {
         emotionTags: stringArray(rules.emotion_tags ?? []),
         verificationStatus: typeof rules.verification_status === 'string' ? rules.verification_status : ''
       };
-    }).filter((row) => row.intensity <= configResult.data.dialect_level)
+    }).filter((row) => row.intensity <= config.dialect_level)
       .sort((a, b) => {
         const score = (row: typeof a) => (row.questionTypes.includes(questionType) ? 4 : 0)
-          + (row.emotionTags.includes(stateResult.data.current_emotion) ? 2 : 0);
+          + (row.emotionTags.includes(state.current_emotion) ? 2 : 0);
         return score(b) - score(a) || a.code.localeCompare(b.code);
       });
 
@@ -146,9 +148,9 @@ export const interrogationRepository = {
       dialectExpressions,
       relationships: (relationshipsResult.data ?? []).map((row) => ({ targetSuspectId: row.target_suspect_id ?? '', relationshipType: row.relation_type, publicDescription: row.public_description })),
       previousMessages: previousRows.map((row) => ({ question: row.user_question, response: row.npc_response })),
-      currentEmotion: stateResult.data.current_emotion,
-      difficulty: configResult.data.difficulty,
-      dialectLevel: configResult.data.dialect_level,
+      currentEmotion: state.current_emotion,
+      difficulty: config.difficulty,
+      dialectLevel: config.dialect_level,
       revealedFactIds: [...new Set(revealed)],
       claimedFactIds: [...new Set(claimed)],
       knownEntities
