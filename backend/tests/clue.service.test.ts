@@ -41,6 +41,17 @@ const condition = (groupNo: number, conditionType: string, targetRef: string) =>
 });
 
 describe('data-driven clue condition evaluation', () => {
+  it.each([
+    ['GS-01', 'GS-01-E1', 'GS-01-F1'],
+    ['JL-01', 'JL-01-E6', 'JL-01-F1'],
+    ['CC-01', 'CC-01-E1', 'CC-01-F1'],
+    ['JJ-01', 'JJ-01-E1', 'JJ-01-F1']
+  ])('evaluates one data-defined unlock path for %s', (_episode, evidenceRef, factRef) => {
+    expect(evaluateClueConditions([
+      condition(1, 'EVIDENCE_VIEWED', evidenceRef), condition(1, 'FACT_REVEALED', factRef)
+    ], context({ viewedEvidenceIds: new Set([evidenceRef]), revealedFactIds: new Set([factRef]) }))).toBe(true);
+  });
+
   it('does not unlock testimony from an unrelated time question', () => {
     expect(evaluateClueConditions([condition(1, 'FACT_REVEALED', 'fact-alibi')], context({ questionType: 'Q-TIME' }))).toBe(false);
   });
