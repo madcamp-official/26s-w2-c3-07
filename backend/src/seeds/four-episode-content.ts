@@ -214,7 +214,27 @@ export const fourEpisodeContent = (): SeedTables => {
     if (spec.code === 'JJ-01') tables.evidence_clue_links.push({ id: id(group, 1189), episode_id: episodeId, evidence_id: evidenceIds[0], clue_id: initialClueId, link_type: 'REVEALS', explanation: '찻잔에서 발견된 백색 분말 흔적을 기초 단서로 기록한다.', strength: 100, is_required: false });
     clueIds.forEach((clueId, index) => tables.clue_suspect_impacts.push({ id: id(group, 1200 + index), clue_id: clueId, suspect_id: culpritId, impact_type: 'SUPPORTS_GUILT', weight: 50, explanation: `${spec.clues[index][0]}이 실제 범인 판단에 기여한다.` }));
 
-    spec.dialect.forEach(([expression, standardMeaning, usageContext], index) => tables.dialect_expressions.push({ id: id(group, 600 + index), episode_id: episodeId, code: `${spec.code}-D${index + 1}`, expression, standard_meaning: standardMeaning, usage_context: usageContext, importance: 'SUPPORT', related_clue_id: clueIds[clueIds.length - 1], difficulty_rules: {}, is_post_ending_only: false, display_order: index + 1, _episode_id: episodeId, _related_clue_id: clueIds[clueIds.length - 1] }));
+    spec.dialect.forEach(([expression, standardMeaning, usageContext], index) => {
+      const category = /회피/.test(usageContext) ? 'EVASION'
+        : /확인|중단|반복/.test(usageContext) ? 'ENDING'
+          : 'VOCABULARY';
+      const questionType = /시간/.test(usageContext) ? 'Q-TIME'
+        : /장소|방향/.test(usageContext) ? 'Q-PLACE'
+          : /증언|물질/.test(usageContext) ? 'Q-EVIDENCE'
+            : 'Q-OTHER';
+      tables.dialect_expressions.push({
+        id: id(group, 600 + index), episode_id: episodeId, code: `${spec.code}-D${index + 1}`,
+        expression, standard_meaning: standardMeaning, usage_context: usageContext,
+        importance: 'SUPPORT', related_clue_id: clueIds[clueIds.length - 1],
+        difficulty_rules: {
+          category, intensity: Math.min(index + 1, 3), question_types: [questionType],
+          emotion_tags: category === 'EVASION' ? ['DEFENSIVE'] : ['NEUTRAL'],
+          verification_status: 'APPROVED_FOR_MVP'
+        },
+        is_post_ending_only: false, display_order: index + 1,
+        _episode_id: episodeId, _related_clue_id: clueIds[clueIds.length - 1]
+      });
+    });
 
     [spec.endings.correct, spec.endings.wrongA, spec.endings.wrongB].forEach((fixedContent, index) => tables.endings.push({ id: id(group, 700 + index), episode_id: episodeId, code: `${spec.code}-${index === 0 ? 'TRUE' : `FALSE-${index}`}`, ending_type: index === 0 ? 'TRUE' : 'WRONG_SPECIFIC', target_suspect_id: index === 0 ? culpritId : suspectIds[index], title: index === 0 ? '정답 엔딩' : `오답 엔딩 ${index}`, fixed_content: { narrative: fixedContent }, llm_prompt_context: {}, asset_url: null, display_order: index + 1, _target_suspect_id: index === 0 ? culpritId : suspectIds[index] }));
 
