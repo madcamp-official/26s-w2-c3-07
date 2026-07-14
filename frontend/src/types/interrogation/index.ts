@@ -1,5 +1,13 @@
 import type { Clue } from '@/types/clue';
 
+export type UnlockedEvidence = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  evidenceType: string;
+};
+
 export type InterrogationMessage = {
   id: string;
   sessionId: string;
@@ -27,5 +35,6 @@ export type InterrogationResponse = {
     evasionType: string | null;
   };
   newlyUnlockedClues: Array<Pick<Clue, 'id' | 'code' | 'title' | 'content' | 'recordSummary' | 'clueType' | 'importance'>>;
+  newlyUnlockedEvidence: UnlockedEvidence[];
   remainingQuestions: number;
 };

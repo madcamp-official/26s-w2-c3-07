@@ -57,10 +57,11 @@ beforeEach(() => {
   vi.spyOn(repository, 'loadKnowledge').mockResolvedValue(knowledge);
   vi.spyOn(repository, 'findPresentedEvidence').mockResolvedValue([]);
   vi.spyOn(repository, 'findCluesByIds').mockResolvedValue([]);
+  vi.spyOn(repository, 'findEvidenceByIds').mockResolvedValue([]);
   vi.spyOn(repository, 'logLlm').mockResolvedValue();
   vi.spyOn(repository, 'finalize').mockImplementation(async (input) => ({
     duplicate: false, message: { ...row(input.response, input.questionType), presented_evidence_refs: input.presentedEvidenceIds },
-    newClueIds: [], remainingQuestions: 3
+    newClueIds: [], newEvidenceIds: [], remainingQuestions: 3
   }));
   vi.spyOn(repository, 'list').mockResolvedValue([row()]);
   vi.spyOn(interrogationLlm, 'generate').mockResolvedValue({
@@ -72,7 +73,7 @@ afterEach(() => vi.restoreAllMocks());
 describe('guarded interrogation flow', () => {
   it('generates, validates, and atomically finalizes a normal answer', async () => {
     const result = await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '사건 당시 어디에 있었습니까?' });
-    expect(result).toMatchObject({ message: { emotionAfter: 'NERVOUS' }, remainingQuestions: 3, newlyUnlockedClues: [] });
+    expect(result).toMatchObject({ message: { emotionAfter: 'NERVOUS' }, remainingQuestions: 3, newlyUnlockedClues: [], newlyUnlockedEvidence: [] });
     expect(repository.finalize).toHaveBeenCalledWith(expect.objectContaining({
       questionType: 'Q-PLACE', response: expect.objectContaining({ revealedFactIds: [factId] })
     }));
@@ -115,7 +116,7 @@ describe('guarded interrogation flow', () => {
   it('returns an existing response without another LLM call or state change', async () => {
     vi.mocked(repository.findByRequest).mockResolvedValue(row());
     await expect(interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '어디에 있었습니까?' }))
-      .resolves.toMatchObject({ message: { id: 'message-1' }, newlyUnlockedClues: [], remainingQuestions: 4 });
+      .resolves.toMatchObject({ message: { id: 'message-1' }, newlyUnlockedClues: [], newlyUnlockedEvidence: [], remainingQuestions: 4 });
     expect(interrogationLlm.generate).not.toHaveBeenCalled();
     expect(repository.finalize).not.toHaveBeenCalled();
   });
@@ -172,10 +173,18 @@ describe('guarded interrogation flow', () => {
   });
 
   it('returns only clue rows inserted during this turn', async () => {
-    vi.mocked(repository.finalize).mockResolvedValue({ duplicate: false, message: row(), newClueIds: ['clue-new'], remainingQuestions: 3 });
+    vi.mocked(repository.finalize).mockResolvedValue({ duplicate: false, message: row(), newClueIds: ['clue-new'], newEvidenceIds: [], remainingQuestions: 3 });
     vi.mocked(repository.findCluesByIds).mockResolvedValue([{ id: 'clue-new', code: 'JJ-01-C1', title: '방문 시각', content: '시각 모순', recordSummary: '방문 시각이 다르다.', clueType: 'CORE', importance: 'CORE' }]);
     const result = await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '어디에 있었습니까?' });
     expect(result.newlyUnlockedClues.map((clue) => clue.id)).toEqual(['clue-new']);
+  });
+
+  it('returns only newly unlocked evidence rows from the same episode', async () => {
+    vi.mocked(repository.finalize).mockResolvedValue({ duplicate: false, message: row(), newClueIds: [], newEvidenceIds: [evidenceId], remainingQuestions: 3 });
+    vi.mocked(repository.findEvidenceByIds).mockResolvedValue([{ id: evidenceId, code: 'JJ-01-E2', title: '약 포장지', description: '별장 쓰레기통에서 발견됐다.', evidenceType: 'PHYSICAL' }]);
+    const result = await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '어디에 있었습니까?' });
+    expect(repository.findEvidenceByIds).toHaveBeenCalledWith(episodeId, [evidenceId]);
+    expect(result.newlyUnlockedEvidence.map((item) => item.id)).toEqual([evidenceId]);
   });
 
   it('enforces the per-suspect question limit', async () => {

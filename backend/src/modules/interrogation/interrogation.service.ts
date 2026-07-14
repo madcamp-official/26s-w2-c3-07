@@ -50,11 +50,17 @@ export function toInterrogationDto(row: MessageRow): InterrogationMessageDto {
   };
 }
 
-const toAskResponse = (row: MessageRow, remainingQuestions: number, newlyUnlockedClues: InterrogationResponse['newlyUnlockedClues']): InterrogationResponse => {
+const toAskResponse = (
+  row: MessageRow,
+  remainingQuestions: number,
+  newlyUnlockedClues: InterrogationResponse['newlyUnlockedClues'],
+  newlyUnlockedEvidence: InterrogationResponse['newlyUnlockedEvidence']
+): InterrogationResponse => {
   const dto = toInterrogationDto(row);
   return {
     message: { id: dto.id, npcResponse: dto.dialectResponse, emotionAfter: dto.emotionAfter, evasionType: dto.evasionType },
     newlyUnlockedClues,
+    newlyUnlockedEvidence,
     remainingQuestions
   };
 };
@@ -93,7 +99,7 @@ export const interrogationService = {
   async ask(sessionId: string, userId: string, input: InterrogationInput): Promise<InterrogationResponse> {
     const session = await ownedSession(sessionId, userId);
     const duplicate = await repository.findByRequest(sessionId, input.requestId);
-    if (duplicate) return toAskResponse(duplicate, session.remaining_questions, []);
+    if (duplicate) return toAskResponse(duplicate, session.remaining_questions, [], []);
     if (session.status !== 'INTERROGATING') throw new AppError(409, 'Session is not interrogating', 'INTERROGATION_STATE_INVALID');
     if (new Date(session.expires_at).getTime() <= Date.now()) throw new AppError(409, 'Session expired', 'SESSION_EXPIRED');
     if (session.remaining_questions <= 0) throw new AppError(409, 'No questions remaining', 'INTERROGATION_QUESTIONS_EXHAUSTED');
@@ -183,13 +189,16 @@ export const interrogationService = {
         userId, sessionId, requestId: input.requestId, suspectId: input.suspectId,
         question: input.question, questionType, response, presentedEvidenceIds, responseMetadata
       });
-      const clues = await repository.findCluesByIds(result.newClueIds ?? []);
+      const [clues, evidence] = await Promise.all([
+        repository.findCluesByIds(result.newClueIds ?? []),
+        repository.findEvidenceByIds(session.episode_id, result.newEvidenceIds ?? [])
+      ]);
       await safeLog({
         sessionId, userId, requestId: input.requestId, provider, model, promptHash, inputTokens, outputTokens,
         latencyMs, status: 'COMPLETED', errorCode: null, errorMessage: null, httpStatus: null,
         providerCode: null, attempt: usedAttempts, stage: 'SESSION_UPDATE', questionType, suspectId: input.suspectId
       });
-      return toAskResponse(result.message, result.remainingQuestions, clues);
+      return toAskResponse(result.message, result.remainingQuestions, clues, evidence);
     } catch (error) {
       await safeLog({
         sessionId, userId, requestId: input.requestId, provider, model, promptHash, inputTokens, outputTokens,

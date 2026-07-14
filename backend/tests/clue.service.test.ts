@@ -9,15 +9,17 @@ const sessionId = '00000000-0000-4000-8000-000000000002';
 const episodeId = '00000000-0000-4000-8000-000000000003';
 const evidenceId = '00000000-0000-4000-8000-000000000004';
 const clueId = '00000000-0000-4000-8000-000000000005';
+const unlockedEvidenceId = '00000000-0000-4000-8000-000000000006';
 
 const clue = { id: clueId, code: 'GS-01-C1', title: '독성 물질', content: '차에서 독이 검출됐다.', description: '차에서 독이 검출됐다.', recordSummary: '찻잔에서 독 검출', clueType: 'CORE', importance: 'CORE', unlockedAt: new Date().toISOString(), source: 'EVIDENCE_VIEWED' };
 const evidence = { id: evidenceId, code: 'GS-01-E1', title: '찻잔', description: '사건 현장의 찻잔', evidenceType: 'physical', discoveredAt: new Date().toISOString(), viewedAt: new Date().toISOString() };
+const unlockedEvidence = { id: unlockedEvidenceId, code: 'GS-01-E2', title: '약봉지', description: '단서로 새로 확보됐다.', evidenceType: 'physical', discoveredAt: new Date().toISOString(), viewedAt: null };
 
 beforeEach(() => {
   vi.spyOn(repository, 'findOwnedSession').mockResolvedValue({ id: sessionId, user_id: userId, episode_id: episodeId });
   vi.spyOn(repository, 'findAcquiredClues').mockResolvedValue([clue]);
-  vi.spyOn(repository, 'findAvailableEvidence').mockResolvedValue([evidence]);
-  vi.spyOn(repository, 'viewEvidence').mockResolvedValue({ evidenceId, viewedAt: evidence.viewedAt!, newClueIds: [clueId] });
+  vi.spyOn(repository, 'findAvailableEvidence').mockResolvedValue([evidence, unlockedEvidence]);
+  vi.spyOn(repository, 'viewEvidence').mockResolvedValue({ evidenceId, viewedAt: evidence.viewedAt!, newClueIds: [clueId], newEvidenceIds: [unlockedEvidenceId] });
   vi.spyOn(repository, 'evaluate').mockResolvedValue([clueId]);
 });
 afterEach(() => vi.restoreAllMocks());
@@ -128,12 +130,12 @@ describe('server-side clue service', () => {
   });
 
   it('returns only evidence made available to the session', async () => {
-    await expect(clueService.listEvidence(sessionId, userId)).resolves.toEqual([evidence]);
+    await expect(clueService.listEvidence(sessionId, userId)).resolves.toEqual([evidence, unlockedEvidence]);
     expect(repository.findAvailableEvidence).toHaveBeenCalledWith(sessionId, episodeId);
   });
 
   it('views evidence and returns only clues inserted by the server evaluator', async () => {
-    await expect(clueService.viewEvidence(sessionId, userId, evidenceId)).resolves.toEqual({ evidence, newClues: [clue] });
+    await expect(clueService.viewEvidence(sessionId, userId, evidenceId)).resolves.toEqual({ evidence, newClues: [clue], newlyUnlockedEvidence: [unlockedEvidence] });
     expect(repository.viewEvidence).toHaveBeenCalledWith(sessionId, userId, evidenceId);
   });
 
@@ -160,6 +162,8 @@ describe('server-side clue service', () => {
 
 describe('clue SQL enforcement', () => {
   const sql = readFileSync(new URL('../supabase/migrations/20260714072622_llm_clue_unlock_integration.sql', import.meta.url), 'utf8');
+  const progressionSql = readFileSync(new URL('../supabase/migrations/20260714101403_initial_evidence_clue_progression.sql', import.meta.url), 'utf8');
+  const viewedAtTypeSql = readFileSync(new URL('../supabase/migrations/20260714193200_fix_clue_evidence_viewed_at_type.sql', import.meta.url), 'utf8');
 
   it('deduplicates clue acquisition and implements AND/OR grouping', () => {
     expect(sql).toContain('bool_and');
@@ -181,5 +185,15 @@ describe('clue SQL enforcement', () => {
     expect(sql).toContain("set search_path = ''");
     expect(sql).toContain('from public.interrogation_messages');
     expect(sql).toContain('from public.session_evidence');
+  });
+
+  it('models difficulty starts and clue-driven evidence acquisition', () => {
+    for (const table of ['difficulty_initial_evidence', 'difficulty_initial_clues', 'clue_evidence_unlocks']) expect(progressionSql).toContain(`game_content.${table}`);
+    expect(progressionSql).toContain('drop not null');
+    expect(progressionSql).toContain('newEvidenceIds');
+    expect(progressionSql).toContain('evaluate_clue_unlocks_with_evidence');
+    expect(progressionSql).toContain("select v_session_id, initial.evidence_id, 'INITIAL', null");
+    expect(progressionSql).toContain('set search_path = \'\'');
+    expect(viewedAtTypeSql).toContain('null::timestamptz');
   });
 });
