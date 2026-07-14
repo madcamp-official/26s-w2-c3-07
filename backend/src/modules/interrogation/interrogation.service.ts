@@ -175,7 +175,8 @@ export const interrogationService = {
 
     try {
       const responseMetadata: Json = {
-        provider, model, attempts: usedAttempts, characterConsistencyStatus: response.characterConsistencyStatus,
+        provider, model, retryCount: Math.max(usedAttempts - 1, 0), validationStatus: 'valid',
+        characterConsistencyStatus: response.characterConsistencyStatus,
         validationNotes: response.validationNotes
       };
       const result = await repository.finalize({
