@@ -90,5 +90,19 @@ describe('compact interrogation prompt budget', () => {
     expect(normal.every((row) => row.verificationStatus === 'APPROVED_FOR_MVP')).toBe(true);
     expect(normal.filter((row) => row.category === 'VOCABULARY')).toHaveLength(2);
     expect(normal.filter((row) => row.category === 'ENDING')).toHaveLength(2);
+    const pool = Array.from({ length: 30 }, (_, index) => ({
+      ...normal[index % normal.length]!, code: `POOL-${index}`, category: `CUSTOM-${index}`
+    }));
+    expect(selectDialectExpressions(pool, 'Q-TIME', 'NEUTRAL', 'easy', 3)).toHaveLength(5);
+    expect(selectDialectExpressions(pool, 'Q-TIME', 'NEUTRAL', 'normal', 3)).toHaveLength(7);
+    expect(selectDialectExpressions(pool, 'Q-TIME', 'NEUTRAL', 'hard', 3)).toHaveLength(10);
+  });
+
+  it('keeps only the latest three history entries in chronological order', () => {
+    const compact = buildInterrogationPrompt('어디였습니까?', 'Q-PLACE', fixture('Q-PLACE'), []);
+    const payload = JSON.parse(compact.user) as { history: Array<{ q: string }> };
+    expect(payload.history).toHaveLength(3);
+    expect(payload.history.map((row) => row.q.match(/이전 질문 (\d+)/)?.[1])).toEqual(['9', '10', '11']);
+    expect(compact.user).not.toContain('response_metadata');
   });
 });
