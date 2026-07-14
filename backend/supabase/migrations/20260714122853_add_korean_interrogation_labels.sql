@@ -78,3 +78,29 @@ alter table public.interrogation_messages
   add column if not exists emotion_after_ko text generated always as (game_content.emotion_label_ko(emotion_after)) stored;
 alter table game_private.llm_request_logs
   add column if not exists question_type_ko text generated always as (game_content.question_type_label_ko(metadata ->> 'questionType')) stored;
+
+comment on function game_content.question_type_label_ko(text)
+  is '심문 질문 유형 내부 코드를 한국어 표시명으로 변환한다.';
+comment on function game_content.emotion_label_ko(text)
+  is '심문 감정 내부 코드를 한국어 표시명으로 변환한다.';
+comment on function game_content.emotion_trigger_label_ko(text)
+  is '감정 전환 트리거 내부 코드를 한국어 표시명으로 변환한다.';
+
+comment on column game_content.suspect_response_rules.question_type_ko
+  is 'question_type의 한국어 표시명. 내부 분기에는 question_type을 사용한다.';
+comment on column game_content.suspect_emotion_rules.trigger_type_ko
+  is 'trigger_type의 한국어 표시명.';
+comment on column game_content.suspect_emotion_rules.from_emotion_ko
+  is 'from_emotion의 한국어 표시명.';
+comment on column game_content.suspect_emotion_rules.to_emotion_ko
+  is 'to_emotion의 한국어 표시명.';
+comment on column public.session_suspect_states.current_emotion_ko
+  is 'current_emotion의 한국어 표시명.';
+comment on column public.interrogation_messages.question_type_ko
+  is 'question_type의 한국어 표시명.';
+comment on column public.interrogation_messages.emotion_before_ko
+  is 'emotion_before의 한국어 표시명.';
+comment on column public.interrogation_messages.emotion_after_ko
+  is 'emotion_after의 한국어 표시명.';
+comment on column game_private.llm_request_logs.question_type_ko
+  is 'metadata.questionType의 한국어 표시명.';

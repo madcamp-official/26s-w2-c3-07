@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const migration = (name: string) => readFileSync(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8');
-const validationSql = migration('20260714125232_align_interrogation_fact_validation.sql');
-const labelSql = migration('20260714125234_add_korean_interrogation_labels.sql');
+const validationSql = migration('20260714125447_align_interrogation_fact_validation.sql');
+const labelSql = migration('20260714122853_add_korean_interrogation_labels.sql');
 
 describe('interrogation database migrations', () => {
   it('aligns finalize validation with the effective response rule without allowing SERVER_ONLY facts', () => {
