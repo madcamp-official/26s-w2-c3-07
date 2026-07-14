@@ -5,10 +5,8 @@ export const createInterrogationSchema = z.object({
   requestId: z.string().uuid(),
   suspectId: z.string().uuid(),
   question: z.string().trim().min(2).max(500),
-  presentedEvidenceIds: z.array(z.string().uuid()).max(3).refine(
-    (ids) => new Set(ids).size === ids.length,
-    'presentedEvidenceIds must not contain duplicates'
-  ).optional()
+  presentedEvidenceIds: z.array(z.string().uuid()).max(3)
+    .transform((ids) => [...new Set(ids)]).optional()
 }).strict();
 
 export const structuredInterrogationSchema = z.object({
