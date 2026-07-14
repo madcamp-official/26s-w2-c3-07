@@ -177,14 +177,24 @@ export const interrogationService = {
           }
           break;
         } catch (error) {
-          latencyMs += Date.now() - attemptStartedAt;
           lastErrorCode = 'INTERROGATION_LLM_FAILED';
           lastErrorMessage = error instanceof Error ? error.message : 'Unknown OpenAI error';
-          attempts.push({ attempt, promptTokens: null, completionTokens: null, cachedTokens: null, errorCode: lastErrorCode });
           if (error instanceof InterrogationLlmError) {
+            if (error.inputTokens !== null || error.outputTokens !== null) hasTokenUsage = true;
+            inputTokens += error.inputTokens ?? 0;
+            outputTokens += error.outputTokens ?? 0;
+            cachedTokens += error.cachedTokens ?? 0;
+            latencyMs += error.latencyMs ?? Date.now() - attemptStartedAt;
+            attempts.push({
+              attempt, promptTokens: error.inputTokens, completionTokens: error.outputTokens,
+              cachedTokens: error.cachedTokens, errorCode: lastErrorCode
+            });
             httpStatus = error.status;
             providerCode = error.providerCode;
             if (!error.retryable) break;
+          } else {
+            latencyMs += Date.now() - attemptStartedAt;
+            attempts.push({ attempt, promptTokens: null, completionTokens: null, cachedTokens: null, errorCode: lastErrorCode });
           }
         }
       }
