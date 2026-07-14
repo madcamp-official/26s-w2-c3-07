@@ -63,12 +63,13 @@ export const endingRepository = {
     const clues = cluesResult.data ?? [];
     const suspectIds = suspects.map((item) => item.id);
     const clueIds = clues.map((item) => item.id);
-    const [{ data: conditions, error: conditionsError }, { data: facts, error: factsError }, { data: lies, error: liesError }] = await Promise.all([
-      clueIds.length ? content.from('clue_unlock_conditions').select('clue_id, target_ref, expected_value').in('clue_id', clueIds) : Promise.resolve({ data: [], error: null }),
+    const [{ data: links, error: linksError }, { data: impacts, error: impactsError }, { data: facts, error: factsError }, { data: lies, error: liesError }] = await Promise.all([
+      clueIds.length ? content.from('evidence_clue_links').select('evidence_id, clue_id, link_type, explanation').in('clue_id', clueIds) : Promise.resolve({ data: [], error: null }),
+      clueIds.length ? content.from('clue_suspect_impacts').select('clue_id, suspect_id, impact_type, explanation').in('clue_id', clueIds) : Promise.resolve({ data: [], error: null }),
       suspectIds.length ? content.from('suspect_facts').select('suspect_id, content, priority').in('suspect_id', suspectIds).order('priority', { ascending: false }) : Promise.resolve({ data: [], error: null }),
       suspectIds.length ? content.from('suspect_lies').select('suspect_id, claimed_content, true_content, reveal_conditions').in('suspect_id', suspectIds) : Promise.resolve({ data: [], error: null })
     ]);
-    fail(conditionsError); fail(factsError); fail(liesError);
+    fail(linksError); fail(impactsError); fail(factsError); fail(liesError);
     const selected = suspects.find((item) => item.id === result.selected_suspect_id);
     const culprit = suspects.find((item) => item.id === episode.culprit_suspect_id);
     if (!selected || !culprit) return null;
@@ -76,16 +77,21 @@ export const endingRepository = {
     const acquiredIds = new Set((acquiredResult.data ?? []).map((item) => item.clue_id));
     const evidenceConnections: EvidenceConnection[] = (evidenceResult.data ?? []).map((evidence) => ({
       id: evidence.id, code: evidence.code, title: evidence.title, description: evidence.description,
-      relatedClues: (conditions ?? []).filter((condition) => condition.target_ref === evidence.id || condition.target_ref === `evidence:${evidence.id}` || stringValue(object(condition.expected_value).evidenceId) === evidence.id)
-        .map((condition) => clueById.get(condition.clue_id)).filter((clue): clue is NonNullable<typeof clue> => Boolean(clue))
-        .map((clue) => ({ id: clue.id, code: clue.code, title: clue.title }))
+      relatedClues: (links ?? []).filter((link) => link.evidence_id === evidence.id && acquiredIds.has(link.clue_id))
+        .map((link) => ({ clue: clueById.get(link.clue_id), link }))
+        .filter((item): item is { clue: NonNullable<typeof item.clue>; link: typeof item.link } => Boolean(item.clue))
+        .map(({ clue, link }) => ({ id: clue.id, code: clue.code, title: clue.title, linkType: link.link_type, explanation: link.explanation }))
     }));
     const suspectSecrets: SuspectSecret[] = suspects.map((suspect) => ({
       suspect: person(suspect),
       facts: (facts ?? []).filter((fact) => fact.suspect_id === suspect.id).map((fact) => fact.content),
       lies: (lies ?? []).filter((lie) => lie.suspect_id === suspect.id).map((lie) => ({
         claim: lie.claimed_content, truth: lie.true_content, reason: stringValue(object(lie.reveal_conditions).reason)
-      }))
+      })),
+      clueImpacts: (impacts ?? []).filter((impact) => impact.suspect_id === suspect.id && acquiredIds.has(impact.clue_id))
+        .map((impact) => ({ clue: clueById.get(impact.clue_id), impact }))
+        .filter((item): item is { clue: NonNullable<typeof item.clue>; impact: typeof item.impact } => Boolean(item.clue))
+        .map(({ clue, impact }) => ({ clueId: clue.id, clueCode: clue.code, clueTitle: clue.title, impactType: impact.impact_type, explanation: impact.explanation }))
     }));
     const profile = object(culprit.public_profile);
     const missedCoreClues: EndingClue[] = clues.filter((clue) => clue.clue_type === 'CORE' && !acquiredIds.has(clue.id))
