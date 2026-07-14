@@ -16,20 +16,24 @@ export const EVASION_TYPES = [
   'NONE', 'PARTIAL_ANSWER', 'DENIAL', 'DEFLECTION', 'UNKNOWN', 'PROMPT_REJECTION'
 ] as const;
 export type EvasionType = (typeof EVASION_TYPES)[number];
-export type ConsistencyStatus = 'VALID' | 'INVALID';
+export type CharacterConsistencyStatus = 'valid' | 'invalid';
 
 export type InterrogationInput = {
   requestId: string;
   suspectId: string;
   question: string;
+  presentedEvidenceIds?: string[];
 };
 
 export type StructuredInterrogationResponse = {
   dialectResponse: string;
-  emotion: Emotion;
+  emotionAfter: Emotion;
+  evasionType: EvasionType | null;
   usedFactIds: string[];
-  evasionType: EvasionType;
-  consistencyStatus: ConsistencyStatus;
+  revealedFactIds: string[];
+  claimedFactIds: string[];
+  characterConsistencyStatus: CharacterConsistencyStatus;
+  validationNotes: string[];
 };
 
 export type InterrogationMessageDto = StructuredInterrogationResponse & {
@@ -39,7 +43,29 @@ export type InterrogationMessageDto = StructuredInterrogationResponse & {
   requestId: string;
   question: string;
   questionType: QuestionType;
+  presentedEvidenceIds: string[];
   createdAt: string;
+};
+
+export type UnlockedClueDto = {
+  id: string;
+  code: string;
+  title: string;
+  content: string;
+  recordSummary: string | null;
+  clueType: string;
+  importance: string;
+};
+
+export type InterrogationResponse = {
+  message: {
+    id: string;
+    npcResponse: string;
+    emotionAfter: Emotion;
+    evasionType: EvasionType | null;
+  };
+  newlyUnlockedClues: UnlockedClueDto[];
+  remainingQuestions: number;
 };
 
 export type OwnedSession = {
@@ -53,6 +79,22 @@ export type OwnedSession = {
   current_suspect_id: string | null;
 };
 
+export type PromptFact = {
+  id: string;
+  code: string;
+  content: string;
+  factType: string;
+  disclosureLevel: string;
+};
+
+export type PresentedEvidence = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  evidenceType: string;
+};
+
 export type SuspectKnowledge = {
   suspect: {
     id: string;
@@ -63,19 +105,28 @@ export type SuspectKnowledge = {
     speechStyle: Json;
     publicProfile: Json;
   };
-  facts: Array<{ id: string; content: string; isPublic: boolean }>;
+  facts: PromptFact[];
   lies: Array<{ claim: string; truth: string }>;
-  responseRules: Array<{ ruleType: string; trigger: Json; guidance: Json }>;
+  responseRules: Array<{
+    ruleType: string;
+    trigger: Json;
+    guidance: Json;
+    allowedFactRefs: string[];
+    hiddenFactRefs: string[];
+  }>;
   emotionRules: Array<{ triggerType: string; trigger: Json; emotion: string; intensity: number }>;
   dialectExpressions: Array<{ standardText: string; dialectText: string; usageContext: string | null }>;
+  relationships: Array<{ targetSuspectId: string; relationshipType: string; publicDescription: string | null }>;
   previousMessages: Array<{ question: string; response: string; metadata: Json }>;
   currentEmotion: string;
   revealedFactIds: string[];
+  claimedFactIds: string[];
   knownEntities: string[];
 };
 
 export type LlmGeneration = {
   output: StructuredInterrogationResponse;
+  provider: 'openai';
   model: string;
   inputTokens: number | null;
   outputTokens: number | null;
