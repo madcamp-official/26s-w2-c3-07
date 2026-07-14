@@ -124,13 +124,41 @@ export type SuspectKnowledge = {
     hiddenFactRefs: string[];
   }>;
   emotionRules: Array<{ triggerType: string; trigger: Json; emotion: string; intensity: number }>;
-  dialectExpressions: Array<{ standardText: string; dialectText: string; usageContext: string | null }>;
+  dialectExpressions: Array<{
+    code: string;
+    standardText: string;
+    dialectText: string;
+    category: string;
+    intensity: number;
+    questionTypes: string[];
+    emotionTags: string[];
+    verificationStatus: string;
+  }>;
   relationships: Array<{ targetSuspectId: string; relationshipType: string; publicDescription: string | null }>;
-  previousMessages: Array<{ question: string; response: string; metadata: Json }>;
+  previousMessages: Array<{ question: string; response: string }>;
   currentEmotion: string;
+  difficulty: string;
+  dialectLevel: number;
   revealedFactIds: string[];
   claimedFactIds: string[];
   knownEntities: string[];
+};
+
+export type PromptMetrics = {
+  promptVersion: string;
+  characterCount: number;
+  estimatedTokens: number;
+  includedFactCount: number;
+  includedRuleCount: number;
+  includedDialectCount: number;
+  includedHistoryCount: number;
+};
+
+export type InterrogationPrompt = {
+  system: string;
+  user: string;
+  factKeyToId: Record<string, string>;
+  metrics: PromptMetrics;
 };
 
 export type LlmGeneration = {
@@ -139,5 +167,6 @@ export type LlmGeneration = {
   model: string;
   inputTokens: number | null;
   outputTokens: number | null;
+  cachedTokens: number | null;
   latencyMs: number;
 };
