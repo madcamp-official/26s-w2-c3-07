@@ -77,7 +77,7 @@ const specs: EpisodeSpec[] = [
       { name: '오갑수', age: 58, occupation: '목포 경쟁업체 사장', profile: '정춘삼과 서병만 몰래 회사 인수 협상을 진행했다.', fact: '정춘삼과 회사 인수 문제로 은밀히 통화했다.', lie: '서병만과 최근 연락하지 않았다고 주장한다.', response: '인수 협상을 언급하면 여유를 잃고 당황한다.' }
     ],
     timeline: [['전날 22:00', '서병만이 딸 서지영에게 유언장을 다시 쓰겠다고 전화한다.'], ['14:00', '최말자가 사장실에서 서병만의 진단서를 목격한다.'], ['17:00', '서병만이 외부 회계사에게 장부를 모두 보자고 전화한다.'], ['19:00', '정춘삼이 서병만을 살해하고 실족사로 위장한다.'], ['19:30', '오갑수가 정춘삼과 회사 인수 건으로 통화한다.'], ['익일 07:00', '최말자가 창고에서 시신을 발견한다.']],
-    evidence: [['조작 흔적이 있는 회계장부', '회사 자금 횡령 정황이 남아 있다.'], ['창고 잠금장치', '강제로 열린 흔적이 없어 내부인 소행을 암시한다.'], ['휴대전화 통화기록', '회계사, 딸, 정춘삼 순의 마지막 발신 내역이다.'], ['발효통 주변 흔적', '미끄러진 흔적과 몸싸움 흔적이 남아 있다.'], ['병원 진단서', '서병만의 위암 말기 진단서다.']],
+    evidence: [['조작 흔적이 있는 회계장부', '회사 자금 횡령 정황이 남아 있다.'], ['창고 잠금장치', '강제로 열린 흔적이 없어 내부인 소행을 암시한다.'], ['휴대전화 통화기록', '회계사, 딸, 정춘삼 순의 마지막 발신 내역이다.'], ['발효통 주변 흔적', '미끄러진 흔적과 몸싸움 흔적이 남아 있다.'], ['병원 진단서', '서병만의 위암 말기 진단서다.'], ['창고 주변 CCTV', '정춘삼이 주장한 시각에 사무실이 아닌 창고 주변으로 이동한 모습이 남아 있다.']],
     clues: [['조작된 장부 숫자', '정춘삼의 횡령 정황을 보여준다.'], ['회계사 통화', '정춘삼에게 장부 검사를 막아야 할 긴급한 동기가 있었다.'], ['CCTV와 진술의 모순', '정춘삼의 사무실 알리바이를 무너뜨린다.'], ['최말자가 본 진단서', '최말자의 침묵이 살인 은폐가 아니었음을 보여준다.'], ['서지영의 마지막 통화', '유언장 이야기가 상속이 아니라 화해 시도였음을 보여준다.']],
     dialect: [['거시기', '애매하게 지칭하거나 얼버무리는 말', '정춘삼의 습관어'], ['몰것는디', '모르겠습니다', '회피 표현'], ['참말이여', '정말이에요', '확인 표현'], ['겁나', '매우, 엄청', '강조 표현']],
     endings: { correct: '3년간의 횡령이 발각될 위기에서 정춘삼이 벌인 계획적 살인임이 드러난다.', wrongA: '서지영은 아버지의 마지막 화해 시도를 놓친 채 무고하게 체포되고 정춘삼은 비웃는다.', wrongB: '최말자는 진단서 비밀을 털어놓지만 정춘삼은 안도한다.' }
@@ -128,9 +128,10 @@ export const fourEpisodeContent = (): SeedTables => {
 
     tables.regions.push({ id: regionId, code: spec.regionCode, name: spec.regionName, description: `${spec.regionName} 사건 지역`, image_url: null, display_order: group, is_active: true });
     tables.episodes.push({ id: episodeId, region_id: regionId, code: spec.code, title: spec.title, location: spec.location, incident_type: '살인 사건', synopsis: spec.synopsis, estimated_play_minutes: 15, culprit_suspect_id: null, _culprit_suspect_id: culpritId, status: 'published', content_version: 1, cover_image_url: null, display_order: group });
+    const difficultyConfigIds = ['easy', 'normal', 'hard'].map((_, index) => id(group, 20 + index));
     ['easy', 'normal', 'hard'].forEach((difficulty, index) => {
       const total = difficulty === 'easy' ? 12 : difficulty === 'normal' ? 8 : spec.code === 'JJ-01' ? 6 : 4;
-      tables.episode_difficulty_configs.push({ id: id(group, 20 + index), episode_id: episodeId, difficulty, questions_per_suspect: difficulty === 'easy' ? 3 : difficulty === 'normal' ? 2 : 1, total_questions: total, time_limit_seconds: difficulty === 'easy' ? 900 : difficulty === 'normal' ? 720 : 600, dialect_level: difficulty === 'easy' ? 1 : difficulty === 'normal' ? 2 : 3, hint_limit: difficulty === 'easy' ? 3 : difficulty === 'normal' ? 1 : 0, config: {} });
+      tables.episode_difficulty_configs.push({ id: difficultyConfigIds[index], episode_id: episodeId, difficulty, questions_per_suspect: difficulty === 'easy' ? 3 : difficulty === 'normal' ? 2 : 1, total_questions: total, time_limit_seconds: difficulty === 'easy' ? 900 : difficulty === 'normal' ? 720 : 600, dialect_level: difficulty === 'easy' ? 1 : difficulty === 'normal' ? 2 : 3, hint_limit: difficulty === 'easy' ? 3 : difficulty === 'normal' ? 1 : 0, config: {} });
     });
 
     tables.victims.push({ id: victimId, episode_id: episodeId, name: spec.victim.name, age: spec.victim.age, role: spec.victim.occupation, public_profile: { summary: spec.victim.profile }, server_truth: { synopsis: spec.synopsis }, image_url: null });
@@ -139,9 +140,19 @@ export const fourEpisodeContent = (): SeedTables => {
       const code = `${spec.code}-S${index + 1}`;
       const factId = id(group, 100 + index);
       tables.suspects.push({ id: suspectId, episode_id: episodeId, code, name: suspect.name, age: suspect.age, occupation: suspect.occupation, public_profile: { summary: suspect.profile }, personality: { summary: suspect.profile }, speech_style: { guidance: suspect.response }, victim_relation: suspect.occupation, actual_route: [], claimed_route: [], initial_emotion: 'NEUTRAL', display_order: index + 1, image_url: suspectImagePaths[code], is_active: true });
-      tables.suspect_facts.push({ id: factId, suspect_id: suspectId, code: `${code}-FACT`, fact_type: 'KNOWN', content: suspect.fact, disclosure_level: 'LLM_ALLOWED', priority: 10, metadata: {} });
+      tables.suspect_facts.push({ id: factId, suspect_id: suspectId, code: `${code}-FACT`, fact_type: 'KNOWN', content: suspect.fact, disclosure_level: suspect.culprit ? 'SERVER_ONLY' : 'LLM_HIDDEN', priority: 10, metadata: {} });
       tables.suspect_lies.push({ id: id(group, 110 + index), suspect_id: suspectId, code: `${code}-LIE`, topic: '알리바이', true_content: suspect.fact, claimed_content: suspect.lie, reveal_conditions: {} });
-      tables.suspect_response_rules.push({ id: id(group, 120 + index), suspect_id: suspectId, question_type: 'Q-OTHER', response_policy: { guidance: suspect.response }, allowed_fact_refs: [factId], hidden_fact_refs: [], evasion_type: 'PARTIAL_ANSWER', difficulty_overrides: {} });
+      tables.suspect_response_rules.push({ id: id(group, 120 + index), suspect_id: suspectId, question_type: 'Q-OTHER', response_policy: { guidance: suspect.response }, allowed_fact_refs: suspect.culprit ? [] : [factId], hidden_fact_refs: suspect.culprit ? [factId] : [], evasion_type: 'PARTIAL_ANSWER', difficulty_overrides: {} });
+      const progressionQuestionTypes: Record<string, string[]> = {
+        'GS-01-S2': ['Q-EVIDENCE', 'Q-CONTRADICTION'], 'GS-01-S3': ['Q-TIME', 'Q-EVIDENCE'],
+        'JL-01-S2': ['Q-TIME', 'Q-EVIDENCE', 'Q-RELATION'], 'JL-01-S3': ['Q-TIME', 'Q-RELATION'],
+        'CC-01-S1': ['Q-TIME', 'Q-PLACE'], 'CC-01-S3': ['Q-TIME', 'Q-EVIDENCE', 'Q-CONTRADICTION'],
+        'CC-01-S4': ['Q-EVIDENCE', 'Q-CONTRADICTION'], 'JJ-01-S1': ['Q-TIME', 'Q-PLACE'],
+        'JJ-01-S3': ['Q-TIME', 'Q-EVIDENCE'], 'JJ-01-S4': ['Q-EVIDENCE', 'Q-CONTRADICTION']
+      };
+      (progressionQuestionTypes[code] ?? []).forEach((questionType, questionIndex) => {
+        tables.suspect_response_rules.push({ id: id(group, 1000 + index * 20 + questionIndex), suspect_id: suspectId, question_type: questionType, response_policy: { guidance: suspect.response }, allowed_fact_refs: [factId], hidden_fact_refs: [], evasion_type: 'PARTIAL_ANSWER', difficulty_overrides: {} });
+      });
       tables.suspect_emotion_rules.push({ id: id(group, 130 + index), suspect_id: suspectId, trigger_type: 'INTERROGATION', from_emotion: 'NEUTRAL', to_emotion: 'DEFENSIVE', condition: {}, priority: 10 });
     });
 
@@ -164,6 +175,44 @@ export const fourEpisodeContent = (): SeedTables => {
       ];
       tables.clue_unlock_conditions.push({ id: id(group, 500 + index), clue_id: clueIds[index], group_no: 1, condition_order: 1, ...conditions[index] });
     });
+
+    let initialClueId = clueIds[0];
+    if (spec.code === 'JJ-01') {
+      initialClueId = id(group, 406);
+      tables.clues.push({ id: initialClueId, episode_id: episodeId, code: 'JJ-01-C7', title: '찻잔의 백색 분말 흔적', content: '피해자의 전용 찻잔에서 일반 찻잎과 다른 백색 분말 흔적이 발견됐다.', clue_type: 'PHYSICAL', importance: 'SUPPORT', record_summary: '찻잔에 일반 찻잎과 다른 백색 분말이 남아 있어 독성 물질 가능성을 조사해야 한다.', supports_culprit_id: null, source_refs: [], excludes_suspect_refs: [], is_repeatable: false, is_required_for_full_resolution: false, display_order: 7, _is_core: false });
+    }
+
+    const easyEvidenceIndexes: Record<string, number[]> = {
+      'GS-01': [0, 2, 3], 'JL-01': [0, 2, 1],
+      'CC-01': [0, 1, 2], 'JJ-01': [0, 1, 3]
+    };
+    const initialEvidenceIndexes = [easyEvidenceIndexes[spec.code], [0, spec.code === 'CC-01' ? 1 : spec.code === 'JJ-01' ? 1 : 2], [0]];
+    initialEvidenceIndexes.forEach((indexes, difficultyIndex) => indexes.forEach((evidenceIndex, displayIndex) => {
+      tables.difficulty_initial_evidence.push({ id: id(group, 1100 + difficultyIndex * 10 + displayIndex), difficulty_config_id: difficultyConfigIds[difficultyIndex], evidence_id: evidenceIds[evidenceIndex], display_order: displayIndex + 1 });
+    }));
+    tables.difficulty_initial_clues.push({ id: id(group, 1140), difficulty_config_id: difficultyConfigIds[0], clue_id: initialClueId, display_order: 1 });
+
+    const unlockIndexes: Record<string, [number, number][]> = {
+      'GS-01': [[3, 4], [1, 3], [2, 1]],
+      'JL-01': [[0, 2], [1, 5], [2, 4]],
+      'CC-01': [[2, 1], [3, 3], [4, 2]],
+      'JJ-01': [[0, 5], [1, 3], [2, 2], [4, 4]]
+    };
+    (unlockIndexes[spec.code] ?? []).forEach(([clueIndex, evidenceIndex], index) => {
+      tables.clue_evidence_unlocks.push({ id: id(group, 1160 + index), clue_id: clueIds[clueIndex], evidence_id: evidenceIds[evidenceIndex], display_order: 1, source_type: 'CLUE_UNLOCK' });
+    });
+
+    const semanticLinks: Record<string, [number, number, string][]> = {
+      'GS-01': [[2, 0, 'REVEALS'], [4, 1, 'REVEALS'], [3, 2, 'CORROBORATES'], [1, 4, 'CORROBORATES']],
+      'JL-01': [[0, 0, 'REVEALS'], [2, 1, 'CORROBORATES'], [5, 2, 'CONTRADICTS'], [4, 3, 'REVEALS'], [2, 4, 'CORROBORATES']],
+      'CC-01': [[0, 0, 'REVEALS'], [0, 1, 'REQUIRED_WITH'], [1, 3, 'REVEALS'], [3, 4, 'REVEALS'], [2, 5, 'REVEALS']],
+      'JJ-01': [[0, 0, 'CORROBORATES'], [3, 2, 'CONTRADICTS'], [4, 3, 'REVEALS'], [2, 4, 'REVEALS'], [0, 5, 'REQUIRED_WITH']]
+    };
+    (semanticLinks[spec.code] ?? []).forEach(([evidenceIndex, clueIndex, linkType], index) => {
+      tables.evidence_clue_links.push({ id: id(group, 1180 + index), episode_id: episodeId, evidence_id: evidenceIds[evidenceIndex], clue_id: clueIds[clueIndex], link_type: linkType, explanation: `${spec.evidence[evidenceIndex][0]}와 ${spec.clues[clueIndex][0]}의 사건 진행 관계`, strength: 100, is_required: linkType === 'REQUIRED_WITH' });
+    });
+    if (spec.code === 'JJ-01') tables.evidence_clue_links.push({ id: id(group, 1189), episode_id: episodeId, evidence_id: evidenceIds[0], clue_id: initialClueId, link_type: 'REVEALS', explanation: '찻잔에서 발견된 백색 분말 흔적을 기초 단서로 기록한다.', strength: 100, is_required: false });
+    clueIds.forEach((clueId, index) => tables.clue_suspect_impacts.push({ id: id(group, 1200 + index), clue_id: clueId, suspect_id: culpritId, impact_type: 'SUPPORTS_GUILT', weight: 50, explanation: `${spec.clues[index][0]}이 실제 범인 판단에 기여한다.` }));
 
     spec.dialect.forEach(([expression, standardMeaning, usageContext], index) => tables.dialect_expressions.push({ id: id(group, 600 + index), episode_id: episodeId, code: `${spec.code}-D${index + 1}`, expression, standard_meaning: standardMeaning, usage_context: usageContext, importance: 'SUPPORT', related_clue_id: clueIds[clueIds.length - 1], difficulty_rules: {}, is_post_ending_only: false, display_order: index + 1, _episode_id: episodeId, _related_clue_id: clueIds[clueIds.length - 1] }));
 
