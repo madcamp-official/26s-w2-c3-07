@@ -19,13 +19,14 @@ export type EvidenceConnection = {
   code: string;
   title: string;
   description: string;
-  relatedClues: Array<{ id: string; code: string; title: string }>;
+  relatedClues: Array<{ id: string; code: string; title: string; linkType: string; explanation: string }>;
 };
 
 export type SuspectSecret = {
   suspect: EndingPerson;
   facts: string[];
   lies: Array<{ claim: string; truth: string; reason: string | null }>;
+  clueImpacts: Array<{ clueId: string; clueCode: string; clueTitle: string; impactType: string; explanation: string }>;
 };
 
 export type EndingClue = {
