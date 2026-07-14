@@ -8,7 +8,11 @@ export class InterrogationLlmError extends Error {
     message: string,
     readonly status: number | null,
     readonly providerCode: string | null,
-    readonly retryable: boolean
+    readonly retryable: boolean,
+    readonly inputTokens: number | null = null,
+    readonly outputTokens: number | null = null,
+    readonly cachedTokens: number | null = null,
+    readonly latencyMs: number | null = null
   ) {
     super(message);
     this.name = 'InterrogationLlmError';
@@ -57,6 +61,7 @@ function mapFactKeys(keys: string[], factKeyToId: Record<string, string>): strin
 export const interrogationLlm = {
   async generate(prompt: InterrogationPrompt): Promise<LlmGeneration> {
     const startedAt = Date.now();
+    let usage: { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number | null } } | undefined;
     try {
       const completion = await openai.chat.completions.create({
         model: env.OPENAI_MODEL,
@@ -71,6 +76,7 @@ export const interrogationLlm = {
           { role: 'user', content: prompt.user }
         ]
       });
+      usage = completion.usage;
       const content = completion.choices[0]?.message.content;
       if (!content) throw new Error('LLM_EMPTY_RESPONSE');
       const compact = compactInterrogationOutputSchema.parse(JSON.parse(content));
@@ -94,7 +100,14 @@ export const interrogationLlm = {
         latencyMs: Date.now() - startedAt
       };
     } catch (error) {
-      throw toLlmError(error);
+      const normalized = toLlmError(error);
+      throw new InterrogationLlmError(
+        normalized.message, normalized.status, normalized.providerCode, normalized.retryable,
+        usage?.prompt_tokens ?? normalized.inputTokens,
+        usage?.completion_tokens ?? normalized.outputTokens,
+        usage?.prompt_tokens_details?.cached_tokens ?? normalized.cachedTokens,
+        Date.now() - startedAt
+      );
     }
   }
 };
