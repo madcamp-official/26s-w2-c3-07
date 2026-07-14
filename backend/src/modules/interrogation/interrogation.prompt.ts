@@ -25,6 +25,8 @@ const stringList = (value: Json | undefined): string[] => (
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string').slice(0, 3) : []
 );
 
+const bounded = (value: string | null | undefined, limit: number) => (value ?? '').trim().slice(0, limit);
+
 export function buildPromptCharacterProfile(knowledge: SuspectKnowledge) {
   const personality = objectValue(knowledge.suspect.personality);
   const speech = objectValue(knowledge.suspect.speechStyle);
@@ -51,9 +53,9 @@ function compactPolicy(knowledge: SuspectKnowledge) {
   if (!rule) return { behavior: '질문과 직접 관련된 허용 사실만 짧게 답한다.', evasionAllowed: true };
   const guidance = objectValue(rule.guidance);
   return {
-    behavior: stringValue(guidance.guidance)
+    behavior: bounded(stringValue(guidance.guidance)
       ?? stringValue(guidance.initialBehavior)
-      ?? '질문과 직접 관련된 허용 사실만 짧게 답한다.',
+      ?? '질문과 직접 관련된 허용 사실만 짧게 답한다.', 300),
     evasionAllowed: true
   };
 }
@@ -72,7 +74,7 @@ export function buildInterrogationPrompt(
   const facts = knowledge.facts.map((fact, index) => {
     const key = `F${index + 1}`;
     factKeyToId[key] = fact.id;
-    return { key, text: fact.content, type: fact.factType };
+    return { key, text: bounded(fact.content, 280), type: fact.factType };
   });
   const dialect = knowledge.dialectExpressions.map((expression, index) => ({
     key: `D${index + 1}`,
@@ -89,20 +91,26 @@ export function buildInterrogationPrompt(
     questionType: type,
     policy: compactPolicy(knowledge),
     facts,
-    lies: knowledge.lies.slice(0, 2),
+    lies: knowledge.lies.slice(0, 2).map((lie) => ({
+      claim: bounded(lie.claim, 180), truth: bounded(lie.truth, 180)
+    })),
     relationships: knowledge.relationships.slice(0, 3).map((item) => ({
       type: item.relationshipType,
-      description: item.publicDescription
+      description: bounded(item.publicDescription, 180)
     })),
     emotionGuidance: knowledge.emotionRules.slice(0, 2).map((rule) => ({
       when: rule.triggerType,
       to: rule.emotion
     })),
     dialect,
-    history: knowledge.previousMessages.slice(-3).map((message) => ({ q: message.question, a: message.response })),
-    presentedEvidence: presentedEvidence.map((item) => ({ title: item.title, description: item.description })),
+    history: knowledge.previousMessages.slice(-3).map((message) => ({
+      q: bounded(message.question, 180), a: bounded(message.response, 240)
+    })),
+    presentedEvidence: presentedEvidence.map((item) => ({
+      title: bounded(item.title, 100), description: bounded(item.description, 300)
+    })),
     knownEntities: promptKnownEntities,
-    question
+    question: bounded(question, 500)
   };
   const user = JSON.stringify(payload);
   const characterCount = FIXED_INTERROGATION_SYSTEM_PROMPT.length + user.length;
