@@ -1,6 +1,7 @@
 import { serviceRoleClient } from '../../config/supabase.js';
 import type { Json } from '../../shared/types/database.types.js';
 import { toAppError } from '../../shared/utils/supabase.js';
+import { selectDialectExpressions } from './interrogation.knowledge.js';
 import type { OwnedSession, PresentedEvidence, PromptMetrics, QuestionType, StructuredInterrogationResponse, SuspectKnowledge, UnlockedClueDto, UnlockedEvidenceDto } from './interrogation.types.js';
 
 const messageColumns = 'id, session_id, suspect_id, request_id, user_question, question_type, npc_response, emotion_after, evasion_type, used_fact_refs, revealed_fact_refs, claimed_fact_refs, presented_evidence_refs, response_metadata, created_at';
@@ -71,7 +72,6 @@ export const interrogationRepository = {
     throwIfError(fallbackRuleResult.error);
     const responseRules = (responseRuleResult.data ?? []).length ? responseRuleResult.data ?? [] : fallbackRuleResult.data ?? [];
 
-    const dialectLimit = config.difficulty === 'easy' ? 5 : config.difficulty === 'hard' ? 10 : 7;
     const [dialectResult, liesResult] = await Promise.all([
       content.from('dialect_expressions')
         .select('code, standard_meaning, expression, difficulty_rules')
@@ -108,22 +108,10 @@ export const interrogationRepository = {
         emotionTags: stringArray(rules.emotion_tags ?? []),
         verificationStatus: typeof rules.verification_status === 'string' ? rules.verification_status : ''
       };
-    }).filter((row) => row.intensity <= config.dialect_level)
-      .sort((a, b) => {
-        const score = (row: typeof a) => (row.questionTypes.includes(questionType) ? 4 : 0)
-          + (row.emotionTags.includes(state.current_emotion) ? 2 : 0);
-        return score(b) - score(a) || a.code.localeCompare(b.code);
-      });
-
-    const categoryCaps: Record<string, number> = { VOCABULARY: 2, ENDING: 2, FILLER: 1, EMOTION: 1, EVASION: 1 };
-    const categoryCounts = new Map<string, number>();
-    const dialectExpressions = dialectRows.filter((row) => {
-      const cap = categoryCaps[row.category] ?? dialectLimit;
-      const count = categoryCounts.get(row.category) ?? 0;
-      if (count >= cap) return false;
-      categoryCounts.set(row.category, count + 1);
-      return true;
-    }).slice(0, dialectLimit);
+    });
+    const dialectExpressions = selectDialectExpressions(
+      dialectRows, questionType, state.current_emotion, config.difficulty, config.dialect_level
+    );
 
     return {
       suspect: {
