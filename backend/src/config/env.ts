@@ -8,6 +8,8 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().max(65535),
   CORS_ORIGIN: z.string().min(1),
   OPENAI_API_KEY: z.string().min(1),
+  OPENAI_MODEL: z.string().min(1).default('gpt-4o-mini'),
+  OPENAI_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(120_000).default(30_000),
   SUPABASE_URL: z.string().url(),
   SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1)
