@@ -44,4 +44,13 @@ describe('interrogation LLM adapter', () => {
       providerCode: 'unknown_fact_key', retryable: false
     });
   });
+
+  it('preserves usage when a completed response cannot be parsed', async () => {
+    const malformed = completion(output);
+    malformed.choices[0]!.message.content = '{not-json';
+    vi.spyOn(openai.chat.completions, 'create').mockResolvedValue(malformed as never);
+    await expect(interrogationLlm.generate(prompt)).rejects.toMatchObject<Partial<InterrogationLlmError>>({
+      retryable: true, inputTokens: 120, outputTokens: 20, cachedTokens: 80
+    });
+  });
 });
