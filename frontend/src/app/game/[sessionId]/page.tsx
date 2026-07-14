@@ -7,6 +7,7 @@ import { useApiResource } from '@/features/api/useApiResource';
 import { api } from '@/lib/api-client';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/ApiState';
 import { SuspectImage } from '@/features/suspect/components/SuspectImage';
+import { AppHeader } from '@/components/layout/AppHeader';
 import type { EpisodeDetail, PublicSuspect } from '@/types/content';
 import type { Clue, Evidence, EvidenceViewResult } from '@/types/clue';
 import type { SessionView } from '@/types/session';
@@ -25,6 +26,7 @@ export default function GamePage() {
   async function deduction() { setBusy('deduction'); try { await api.post(`/sessions/${sessionId}/enter-deduction`); router.push(`/game/${sessionId}/deduction`); } catch (e) { setActionError(e as ApiError); setBusy(''); } }
   if (session.loading) return <LoadingState label="게임 세션을 복구하는 중..." />;
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-5xl space-y-7">
+    <AppHeader />
     {session.error ? <ErrorState error={session.error} retry={session.reload} /> : session.data && <>
       <header className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-evidence-red">{session.data.status} · {session.data.difficulty}</p><h1 className="font-display text-4xl">{episode.data?.title ?? '사건 수사'}</h1></div><Link href={`/game/${sessionId}/records`} className="border border-brass-600/40 px-4 py-2">사건 기록</Link></header>
       {terminalMessage[session.data.status] && <div className="border border-evidence-red/50 bg-evidence-red/10 p-4">{terminalMessage[session.data.status]} {session.data.status === 'COMPLETED' && <Link className="ml-2 underline" href={`/game/${sessionId}/result`}>결과 보기</Link>}</div>}

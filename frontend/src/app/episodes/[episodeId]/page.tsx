@@ -11,6 +11,7 @@ import type { EpisodeDetail, PublicSuspect, Scene } from '@/types/content';
 import type { SessionView } from '@/types/session';
 import { ApiError } from '@/types/api';
 import { SuspectImage } from '@/features/suspect/components/SuspectImage';
+import { AppHeader } from '@/components/layout/AppHeader';
 
 export default function EpisodePage() {
   const { episodeId } = useParams<{ episodeId: string }>();
@@ -22,6 +23,7 @@ export default function EpisodePage() {
   const [starting, setStarting] = useState(false); const [startError, setStartError] = useState<ApiError | null>(null);
   async function start() { if (starting) return; setStarting(true); setStartError(null); try { const session = await api.post<SessionView>('/sessions', { episodeId, difficulty }); router.push(`/game/${session.sessionId}`); } catch (cause) { setStartError(cause as ApiError); setStarting(false); } }
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-3xl space-y-7">
+    <AppHeader />
     <Link href="/regions" className="text-sm opacity-70">← 지역 목록</Link>
     {detail.loading ? <LoadingState /> : detail.error ? <ErrorState error={detail.error} retry={detail.reload} /> : detail.data ? <>
       <header><p className="text-xs text-evidence-red">{detail.data.code} · {detail.data.incidentType}</p><h1 className="mt-2 font-display text-4xl">{detail.data.title}</h1><p className="mt-3 opacity-70">{detail.data.synopsis}</p></header>
