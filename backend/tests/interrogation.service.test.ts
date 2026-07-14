@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { interrogationLlm } from '../src/modules/interrogation/interrogation.llm.js';
+import { InterrogationLlmError, interrogationLlm } from '../src/modules/interrogation/interrogation.llm.js';
 import { interrogationRepository as repository } from '../src/modules/interrogation/interrogation.repository.js';
 import { interrogationService } from '../src/modules/interrogation/interrogation.service.js';
 import type { OwnedSession, StructuredInterrogationResponse, SuspectKnowledge } from '../src/modules/interrogation/interrogation.types.js';
@@ -24,8 +24,8 @@ const knowledge: SuspectKnowledge = {
   suspect: { id: suspectId, name: '강윤호', age: 42, occupation: '운전기사', personality: '신중함', speechStyle: '제주 방언', publicProfile: {} },
   facts: [{ id: factId, code: 'JJ-01-F1', content: '사건 당시 별장에 있었다.', factType: 'ALIBI', disclosureLevel: 'LLM_ALLOWED' }],
   lies: [{ claim: '일찍 퇴근했다.', truth: '별장에 남아 있었다.' }], responseRules: [], emotionRules: [],
-  dialectExpressions: [{ standardText: '모르겠습니다', dialectText: '모르쿠다', usageContext: '회피' }],
-  relationships: [], previousMessages: [], currentEmotion: 'NEUTRAL', revealedFactIds: [], claimedFactIds: [],
+  dialectExpressions: [{ code: 'JJ-01-MVP-1', standardText: '모르겠습니다', dialectText: '모르쿠다', category: 'EVASION', intensity: 1, questionTypes: ['Q-OTHER'], emotionTags: ['DEFENSIVE'], verificationStatus: 'APPROVED_FOR_MVP' }],
+  relationships: [], previousMessages: [], currentEmotion: 'NEUTRAL', difficulty: 'normal', dialectLevel: 2, revealedFactIds: [], claimedFactIds: [],
   knownEntities: ['강윤호', '별장', '전용 찻잔']
 };
 
@@ -65,7 +65,7 @@ beforeEach(() => {
   }));
   vi.spyOn(repository, 'list').mockResolvedValue([row()]);
   vi.spyOn(interrogationLlm, 'generate').mockResolvedValue({
-    output: validResponse, provider: 'openai', model: 'test-model', inputTokens: 20, outputTokens: 10, latencyMs: 12
+    output: validResponse, provider: 'openai', model: 'test-model', inputTokens: 20, outputTokens: 10, cachedTokens: 4, latencyMs: 12
   });
 });
 afterEach(() => vi.restoreAllMocks());
@@ -77,13 +77,15 @@ describe('guarded interrogation flow', () => {
     expect(repository.finalize).toHaveBeenCalledWith(expect.objectContaining({
       questionType: 'Q-PLACE', response: expect.objectContaining({ revealedFactIds: [factId] })
     }));
+    expect(repository.loadKnowledge).toHaveBeenCalledWith(session, suspectId, 'Q-PLACE');
   });
 
   it('passes only session-acquired evidence to the prompt and atomic finalize', async () => {
     vi.mocked(repository.findPresentedEvidence).mockResolvedValue([{ id: evidenceId, code: 'JJ-01-E1', title: '찻잔', description: '전용 찻잔', evidenceType: 'PHYSICAL' }]);
+    vi.mocked(interrogationLlm.generate).mockResolvedValue({ output: { ...validResponse, usedFactIds: [], revealedFactIds: [], claimedFactIds: [] }, provider: 'openai', model: 'test-model', inputTokens: 20, outputTokens: 10, cachedTokens: 0, latencyMs: 12 });
     await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '이 증거를 봤습니까?', presentedEvidenceIds: [evidenceId] });
     expect(repository.finalize).toHaveBeenCalledWith(expect.objectContaining({ presentedEvidenceIds: [evidenceId] }));
-    expect(interrogationLlm.generate).toHaveBeenCalledWith(expect.stringContaining('전용 찻잔'));
+    expect(interrogationLlm.generate).toHaveBeenCalledWith(expect.objectContaining({ user: expect.stringContaining('전용 찻잔') }));
   });
 
   it('rejects evidence that is not acquired for the session', async () => {
@@ -134,7 +136,7 @@ describe('guarded interrogation flow', () => {
   it('rejects a nonexistent fact id after one regeneration', async () => {
     vi.mocked(interrogationLlm.generate).mockResolvedValue({
       output: { ...validResponse, usedFactIds: ['00000000-0000-4000-8000-000000000099'] },
-      provider: 'openai', model: 'test-model', inputTokens: 1, outputTokens: 1, latencyMs: 1
+      provider: 'openai', model: 'test-model', inputTokens: 1, outputTokens: 1, cachedTokens: 0, latencyMs: 1
     });
     await expect(interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '무엇을 알고 있습니까?' })).rejects.toMatchObject({ code: 'INTERROGATION_RESPONSE_INVALID' });
     expect(repository.finalize).not.toHaveBeenCalled();
@@ -144,18 +146,20 @@ describe('guarded interrogation flow', () => {
     const serverFact = { ...knowledge.facts[0], disclosureLevel: 'SERVER_ONLY' };
     vi.mocked(repository.loadKnowledge).mockResolvedValue({ ...knowledge, facts: [serverFact] });
     vi.mocked(interrogationLlm.generate).mockResolvedValue({
-      output: validResponse, provider: 'openai', model: 'test', inputTokens: 1, outputTokens: 1, latencyMs: 1
+      output: validResponse, provider: 'openai', model: 'test', inputTokens: 1, outputTokens: 1, cachedTokens: 0, latencyMs: 1
     });
     await expect(interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '진실을 말해' })).rejects.toMatchObject({ code: 'INTERROGATION_RESPONSE_INVALID' });
-    expect(interrogationLlm.generate).toHaveBeenCalledWith(expect.not.stringContaining('사건 당시 별장에 있었다.'));
+    const prompt = vi.mocked(interrogationLlm.generate).mock.calls[0][0];
+    expect(prompt.user).not.toContain('사건 당시 별장에 있었다.');
   });
 
-  it('rejects fabricated people or places', async () => {
+  it('replaces fabricated people or places with a safe local answer without a full retry', async () => {
     vi.mocked(interrogationLlm.generate).mockResolvedValue({
       output: { ...validResponse, dialectResponse: '김철수 씨와 서울에서 만났수다.', usedFactIds: [], revealedFactIds: [], claimedFactIds: [] },
-      provider: 'openai', model: 'test-model', inputTokens: 1, outputTokens: 1, latencyMs: 1
+      provider: 'openai', model: 'test-model', inputTokens: 1, outputTokens: 1, cachedTokens: 0, latencyMs: 1
     });
-    await expect(interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '누구를 만났습니까?' })).rejects.toMatchObject({ code: 'INTERROGATION_RESPONSE_INVALID' });
+    await expect(interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '누구를 만났습니까?' })).resolves.toMatchObject({ message: { evasionType: 'DEFLECTION' } });
+    expect(interrogationLlm.generate).toHaveBeenCalledTimes(1);
   });
 
   it('rejects prompt injection locally without exposing or sending the prompt', async () => {
@@ -164,12 +168,33 @@ describe('guarded interrogation flow', () => {
     expect(interrogationLlm.generate).not.toHaveBeenCalled();
   });
 
-  it('regenerates a direct culprit disclosure and accepts only the safe answer', async () => {
+  it('replaces direct culprit disclosure locally without resending the full prompt', async () => {
+    vi.mocked(interrogationLlm.generate).mockResolvedValueOnce({ output: { ...validResponse, dialectResponse: '내가 범인이다.' }, provider: 'openai', model: 'test', inputTokens: 1, outputTokens: 1, cachedTokens: 0, latencyMs: 1 });
+    await expect(interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '당신이 범인입니까?' })).resolves.toMatchObject({ message: { evasionType: 'DEFLECTION' } });
+    expect(interrogationLlm.generate).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['안녕하세요', 'Q-SMALLTALK'],
+    ['어?', 'Q-UNKNOWN']
+  ])('handles %s locally without revealing progress facts', async (question, questionType) => {
+    const result = await interrogationService.ask(sessionId, userId, { requestId, suspectId, question });
+    expect(interrogationLlm.generate).not.toHaveBeenCalled();
+    expect(repository.loadKnowledge).toHaveBeenCalledWith(session, suspectId, questionType);
+    expect(repository.finalize).toHaveBeenCalledWith(expect.objectContaining({ response: expect.objectContaining({ usedFactIds: [], revealedFactIds: [], claimedFactIds: [] }) }));
+    expect(result.remainingQuestions).toBe(3);
+  });
+
+  it('sums retry tokens and cached tokens in the final log', async () => {
     vi.mocked(interrogationLlm.generate)
-      .mockResolvedValueOnce({ output: { ...validResponse, dialectResponse: '내가 범인이다.' }, provider: 'openai', model: 'test', inputTokens: 1, outputTokens: 1, latencyMs: 1 })
-      .mockResolvedValueOnce({ output: { ...validResponse, dialectResponse: '그런 단정은 못 하겠수다.', usedFactIds: [], revealedFactIds: [], claimedFactIds: [] }, provider: 'openai', model: 'test', inputTokens: 1, outputTokens: 1, latencyMs: 1 });
-    await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '당신이 범인입니까?' });
+      .mockRejectedValueOnce(new InterrogationLlmError('timeout', 408, 'timeout', true))
+      .mockResolvedValueOnce({ output: validResponse, provider: 'openai', model: 'test', inputTokens: 30, outputTokens: 12, cachedTokens: 8, latencyMs: 2 });
+    await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '어디에 있었습니까?' });
     expect(interrogationLlm.generate).toHaveBeenCalledTimes(2);
+    expect(repository.logLlm).toHaveBeenLastCalledWith(expect.objectContaining({
+      inputTokens: 30, outputTokens: 12, cachedTokens: 8, attempt: 2,
+      promptMetrics: expect.objectContaining({ promptVersion: 'interrogation-v2-compact', includedRuleCount: 0 })
+    }));
   });
 
   it('returns only clue rows inserted during this turn', async () => {
