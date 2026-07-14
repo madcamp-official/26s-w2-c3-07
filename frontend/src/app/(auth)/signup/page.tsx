@@ -42,9 +42,6 @@ export default function SignupPage() {
             <button type="button" className="transition-colors hover:text-parchment-100">
               ⚙ 설정
             </button>
-            <button type="button" className="transition-colors hover:text-parchment-100">
-              🎧 고객센터
-            </button>
           </div>
           <p className="text-xs text-parchment-300/40">v1.0.0</p>
         </div>
