@@ -1,76 +1,50 @@
-import Link from "next/link";
-import { AuthTextField } from "@/components/auth/AuthTextField";
-import { PasswordField } from "@/components/auth/PasswordField";
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState, type FormEvent } from 'react';
+import { AuthTextField } from '@/components/auth/AuthTextField';
+import { PasswordField } from '@/components/auth/PasswordField';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { ApiError } from '@/types/api';
 
 export function SignupPanel() {
-  return (
-    <div className="relative w-full max-w-md border border-brass-600/50 bg-noir-800/90 p-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] backdrop-blur-sm md:p-10">
-      <span aria-hidden className="absolute left-3 top-3 h-4 w-4 border-l border-t border-brass-500/70" />
-      <span aria-hidden className="absolute right-3 top-3 h-4 w-4 border-r border-t border-brass-500/70" />
-      <span aria-hidden className="absolute bottom-3 left-3 h-4 w-4 border-b border-l border-brass-500/70" />
-      <span aria-hidden className="absolute bottom-3 right-3 h-4 w-4 border-b border-r border-brass-500/70" />
+  const { signUp } = useAuth();
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-      <div className="mb-8 flex items-center justify-center gap-3 text-brass-400">
-        <span aria-hidden>◈</span>
-        <span className="h-px w-8 bg-brass-600/40" />
-        <h1 className="font-display text-2xl text-parchment-100">수사관 등록</h1>
-        <span className="h-px w-8 bg-brass-600/40" />
-        <span aria-hidden>◈</span>
-      </div>
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting) return;
+    const values = new FormData(event.currentTarget);
+    const password = String(values.get('password'));
+    if (password !== String(values.get('passwordConfirm'))) {
+      setError('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      await signUp(String(values.get('email')), password, String(values.get('displayName')));
+      router.replace('/regions');
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : '회원가입에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
-      <form className="space-y-5">
-        <AuthTextField id="nickname" type="text" label="닉네임" placeholder="사용할 닉네임을 입력하세요" />
-        <AuthTextField id="email" type="email" label="이메일" placeholder="이메일을 입력하세요" />
-        <PasswordField id="password" label="비밀번호" placeholder="비밀번호를 입력하세요" />
-        <PasswordField id="password-confirm" label="비밀번호 확인" placeholder="비밀번호를 다시 입력하세요" />
-
-        <label className="flex items-start gap-2 text-sm text-parchment-300">
-          <input
-            type="checkbox"
-            className="mt-0.5 h-4 w-4 border border-brass-600/50 bg-noir-900 accent-evidence-red"
-          />
-          <span>
-            <Link href="/terms" className="text-brass-400 underline-offset-2 hover:underline">
-              이용약관
-            </Link>{" "}
-            및{" "}
-            <Link href="/privacy" className="text-brass-400 underline-offset-2 hover:underline">
-              개인정보 처리방침
-            </Link>
-            에 동의합니다
-          </span>
-        </label>
-
-        <button
-          type="submit"
-          className="w-full bg-evidence-red py-3.5 font-display text-base font-bold tracking-wide text-parchment-100 transition-colors hover:bg-[#c94539]"
-        >
-          수사관 등록하기
-        </button>
-      </form>
-
-      <div className="my-6 flex items-center gap-4 text-xs text-parchment-300/50">
-        <span className="h-px flex-1 bg-brass-600/20" />
-        또는
-        <span className="h-px flex-1 bg-brass-600/20" />
-      </div>
-
-      <button
-        type="button"
-        className="flex w-full items-center justify-center gap-2 border border-brass-600/30 bg-noir-900/60 py-3.5 text-sm text-parchment-100 transition-colors hover:border-brass-400"
-      >
-        <span aria-hidden className="font-bold text-[#4285F4]">
-          G
-        </span>
-        Google로 시작하기
-      </button>
-
-      <p className="mt-6 text-center text-sm text-parchment-300/70">
-        이미 등록된 수사관이십니까?{" "}
-        <Link href="/login" className="text-brass-400 underline-offset-2 hover:underline">
-          신원 확인하기
-        </Link>
-      </p>
-    </div>
-  );
+  return <div className="relative w-full max-w-md border border-brass-600/50 bg-noir-800/90 p-8 shadow-2xl">
+    <h1 className="mb-8 text-center font-display text-2xl text-parchment-100">수사관 등록</h1>
+    <form className="space-y-5" onSubmit={submit}>
+      <AuthTextField id="displayName" name="displayName" type="text" label="탐정 이름" required maxLength={50} />
+      <AuthTextField id="email" name="email" type="email" label="이메일" required autoComplete="email" />
+      <PasswordField id="password" name="password" required minLength={6} />
+      <PasswordField id="passwordConfirm" name="passwordConfirm" required minLength={6} label="비밀번호 확인" />
+      {error && <p role="alert" className="border border-evidence-red/50 bg-evidence-red/10 p-3 text-sm text-parchment-100">{error}</p>}
+      <button disabled={submitting} type="submit" className="w-full bg-evidence-red py-3.5 font-display font-bold text-parchment-100 disabled:opacity-50">{submitting ? '등록 중...' : '수사관 등록하기'}</button>
+    </form>
+    <p className="mt-6 text-center text-sm text-parchment-300/70">이미 등록하셨나요? <Link href="/login" className="text-brass-400 hover:underline">신원 확인하기</Link></p>
+  </div>;
 }

@@ -1,0 +1,11 @@
+{
+  "name": "satoori-detective",
+  "private": true,
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "dev": "pnpm --parallel --filter ./backend --filter ./frontend dev",
+    "build": "pnpm --filter ./backend build && pnpm --filter ./frontend build",
+    "test": "pnpm --filter ./backend test && pnpm --filter ./frontend test",
+    "lint": "pnpm --filter ./frontend lint"
+  }
+}

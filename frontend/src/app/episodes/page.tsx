@@ -1,5 +1,2 @@
-import { redirect } from "next/navigation";
-
-export default function EpisodesIndexPage() {
-  redirect("/regions");
-}
+import { redirect } from 'next/navigation';
+export default function EpisodesPage() { redirect('/regions'); }

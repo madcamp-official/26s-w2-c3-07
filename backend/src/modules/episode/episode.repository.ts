@@ -1,9 +1,17 @@
-import type { Episode } from './episode.types.js';
+import { serviceRoleClient } from '../../config/supabase.js';
+import { toAppError } from '../../shared/utils/supabase.js';
+import type { Difficulty, EpisodeSummary, Scene, VictimPublic } from './episode.types.js';
 
-const episodes: Episode[] = [];
+const content = serviceRoleClient.schema('game_content');
+const episodeColumns = 'id, code, title, location, incident_type, synopsis, estimated_play_minutes, status, cover_image_url';
+const mapEpisode = (row: Record<string, unknown>): EpisodeSummary => ({ id: String(row.id), code: String(row.code), title: String(row.title), location: row.location as string | null, incidentType: row.incident_type as string | null, synopsis: row.synopsis as string | null, estimatedPlayMinutes: Number(row.estimated_play_minutes), status: String(row.status), imageUrl: row.cover_image_url as string | null, progressStatus: null });
+const mapVictim = (row: Record<string, unknown>): VictimPublic => ({ name: String(row.name), age: row.age as number | null, occupation: row.role as string | null, profile: row.public_profile });
 
 export const episodeRepository = {
-  async findAll() {
-    return episodes;
-  }
+  async findByRegion(regionId: string) { const { data, error } = await content.from('episodes').select(episodeColumns).eq('region_id', regionId).eq('status', 'published').order('display_order'); if (error) throw toAppError(error); return (data as unknown as Record<string, unknown>[]).map(mapEpisode); },
+  async findById(episodeId: string) { const { data, error } = await content.from('episodes').select(episodeColumns).eq('id', episodeId).eq('status', 'published').maybeSingle(); if (error) throw toAppError(error); const row = data as unknown as Record<string, unknown> | null; return row ? { ...mapEpisode(row), sceneDescription: row.synopsis as string | null } : null; },
+  async findDifficulties(episodeId: string): Promise<Difficulty[]> { const { data, error } = await content.from('episode_difficulty_configs').select('difficulty, questions_per_suspect, total_questions, time_limit_seconds, dialect_level, hint_limit').eq('episode_id', episodeId); if (error) throw toAppError(error); return (data ?? []).map((row) => ({ difficulty: row.difficulty, questionsPerSuspect: row.questions_per_suspect, totalQuestions: row.total_questions, timeLimitSeconds: row.time_limit_seconds, dialectLevel: row.dialect_level, hintLimit: row.hint_limit })); },
+  async findVictim(episodeId: string): Promise<VictimPublic | null> { const { data, error } = await content.from('victims').select('name, age, role, public_profile').eq('episode_id', episodeId).maybeSingle(); if (error) throw toAppError(error); return data ? mapVictim(data as unknown as Record<string, unknown>) : null; },
+  async findSceneParts(episodeId: string): Promise<Pick<Scene, 'timeline' | 'evidence'>> { const [timelineResult, evidenceResult] = await Promise.all([content.from('episode_timelines').select('occurred_at_label, public_description').eq('episode_id', episodeId).eq('visibility', 'PUBLIC_INITIAL').order('sequence_no'), content.from('evidence').select('id, code, title, description, evidence_type').eq('episode_id', episodeId).eq('initial_visible', true).order('display_order')]); if (timelineResult.error) throw toAppError(timelineResult.error); if (evidenceResult.error) throw toAppError(evidenceResult.error); return { timeline: (timelineResult.data ?? []).map((row) => ({ occurredAt: row.occurred_at_label, title: row.occurred_at_label, description: row.public_description ?? '' })), evidence: (evidenceResult.data ?? []).map((row) => ({ id: row.id, code: row.code, title: row.title, description: row.description, evidenceType: row.evidence_type })) }; },
+  async findProgress(userId: string, episodeIds: string[]) { if (!episodeIds.length) return new Map<string, string>(); const { data, error } = await serviceRoleClient.from('user_episode_progress').select('episode_id, state').eq('user_id', userId).in('episode_id', episodeIds); if (error) throw toAppError(error); return new Map((data ?? []).map((row) => [row.episode_id, row.state])); }
 };

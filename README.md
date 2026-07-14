@@ -1,236 +1,131 @@
-# 26s-w2-c3-07
+# 그 뜻이 아니예라
 
-## 공통과제 II : 협업형 실전 산출물 제작 (2인 1팀)
+한국 지역 사투리를 단서로 활용하는 AI 심문 추리 게임입니다. Next.js 프론트엔드는 화면과 입력만 담당하고, Express API가 인증, 게임 세션, 질문 제한, 심문 생성, 단서 해금, 추리 판정, 엔딩과 진행도를 관리합니다.
 
-**목적:** 실시간 인터랙션, LLM Wrapper, Cross-Platform 중 하나의 옵션을 선택해 구현하며, 선택한 기술을 실제로 동작하는 형태의 산출물로 완성한다.
+## 기술 스택
 
-**선택 옵션:**
+- Frontend: Next.js 15, React 19, TypeScript, Tailwind CSS
+- Backend: Express, TypeScript, Zod, OpenAI API
+- Data/Auth: Supabase Auth, PostgreSQL, RLS, SQL RPC
+- Tooling: pnpm workspace, Vitest, ESLint, GitHub Actions
 
-| 옵션 | 설명 |
-|---|---|
-| 실시간 인터랙션 | 사용자 간 상태 변화, 실시간 데이터 흐름, 스트리밍 응답 등 실시간성이 드러나는 기능을 구현 |
-| LLM Wrapper | LLM API를 활용하여 AI 기능이 포함된 산출물을 구현 |
-| Cross-Platform | 하나의 산출물을 여러 실행 환경에서 사용할 수 있도록 구현* |
+## 디렉터리
 
-> *데스크톱 앱 ↔ 모바일 앱; 혹은 다른 폼팩터에서의 앱; 웹만/웹 기반 프레임워크(Electron, Tauri 등) 대신 다른 프레임워크를 시도해보는 것을 적극 권장
-
-**결과물:** 선택한 옵션이 적용된 작동 가능한 산출물, 실행 가능한 코드, 시연 자료 및 관련 문서
-
----
-
-## 팀원
-
-| 이름 | 학교 | GitHub | 역할 |
-|---|---|---|---|
-| 안소희 |  |  |  |
-| 손기환 |  |  |  |
-
----
-
-## 선택 옵션
-
-- [ ] 실시간 인터랙션
-- [ ] LLM Wrapper
-- [ ] Cross-Platform
-
----
-
-## 기획안
-
-- **산출물 주제:**
-- **제작 목적:**
-- **선택 옵션:**
-- **핵심 구현 요소:**
-  -
-  -
-  -
-- **사용 / 시연 시나리오:**
-- **팀원별 역할:**
-
-### 개발 일정
-
-| 날짜 | 목표 |
-|---|---|
-| Day 1 |  |
-| Day 2 |  |
-| Day 3 |  |
-| Day 4 |  |
-| Day 5 |  |
-| Day 6 |  |
-| Day 7 |  |
-
----
-
-## 구현 명세서
-
-| 구현 요소 | 설명 | 우선순위 |
-|---|---|---|
-|  |  | 필수 |
-|  |  | 필수 |
-|  |  | 선택 |
-|  |  | 선택 |
-
----
-
-## 아키텍처
-
-<!-- 실시간 인터랙션: WebSocket/SSE/WebRTC 구조도 / LLM Wrapper: API 연동 흐름도 / Cross-Platform: 플랫폼 구성도 -->
-
----
-
-## 설계 문서
-
-> 프로젝트 성격에 따라 필요한 항목만 작성
-
-### 화면 / 인터페이스 설계
-
-<!-- Figma 링크, 화면 이미지, CLI 사용 예시, 앱 화면 등 -->
-
-### 데이터 구조
-
-<!-- DB 스키마, JSON 구조, 파일 저장 방식 등 -->
-
-### API / 외부 서비스 연동
-
-| Method / 방식 | Endpoint / 서비스 | 설명 | 요청 | 응답 | 비고 |
-|---|---|---|---|---|---|
-|  |  |  |  |  |  |
-
----
-
-## 산출물 및 실행 방법
-
-- **산출물 설명:**
-- **실행 환경:**
-- **실행 방법:**
-- **시연 영상 / 이미지:** (선택)
-
-### 실행 방법
-
-```bash
-# 환경 설정
-cp .env.example .env
-
-# 의존성 설치
-npm install   # 또는 pip install -r requirements.txt 등
-
-# 실행
-npm run dev   # 또는 python main.py 등
+```text
+frontend/                 Next.js App Router UI
+backend/src/modules/      도메인별 Express API
+backend/supabase/         migration과 seed
+backend/scripts/          콘텐츠 seed 실행 스크립트
+.github/workflows/ci.yml  lint, test, build CI
 ```
 
-### 기술 구성
+## 사전 요구사항
 
-| 분류 | 사용 기술 |
-|---|---|
-| 핵심 기술 |  |
-| 실행 환경 |  |
-| 데이터 저장 |  |
-| 외부 API / 서비스 |  |
-| 기타 |  |
+- Node.js 22 이상
+- pnpm 10.12 이상
+- Supabase 프로젝트 또는 Supabase CLI 로컬 환경
+- 심문·보고서 생성을 위한 OpenAI API 키
 
----
+## 설치와 환경변수
 
-## 회고 문서
+```bash
+pnpm install
+cp backend/.env.example backend/.env
+cp frontend/.env.local.example frontend/.env.local
+```
 
-> [KPT 방법론 참고](https://velog.io/@habwa/%EB%8B%A8%EA%B8%B0-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%ED%9A%8C%EA%B3%A0-KPT-%EB%B0%A9%EB%B2%95%EB%A1%A0)
+백엔드 필수 환경변수:
 
-### Keep — 잘 된 점, 다음에도 유지할 것
+```env
+NODE_ENV=development
+PORT=4000
+CORS_ORIGIN=http://localhost:3000
+OPENAI_API_KEY=
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
 
--
--
--
+프론트 공개 환경변수:
 
-### Problem — 아쉬웠던 점, 개선이 필요한 것
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_USE_MOCK_API=false
+```
 
--
--
--
+`SUPABASE_SERVICE_ROLE_KEY`는 백엔드에만 설정합니다. 실제 `.env`와 `.env.local`은 Git에서 제외됩니다.
 
-### Try — 다음번에 시도해볼 것
+## 데이터베이스 생성과 콘텐츠 입력
 
--
--
--
+Supabase CLI 명령은 `backend`에서 실행합니다.
 
-### 팀원별 소감
+```bash
+cd backend
+pnpm exec supabase start
+pnpm exec supabase db reset
+pnpm seed:content
+```
 
-**안소희:**
+원격 프로젝트에 적용할 때는 프로젝트 연결과 migration 검토 후 Supabase CLI의 `db push`를 사용합니다. 콘텐츠 seed는 `code`/`id` 기준 upsert라 반복 실행해도 중복되지 않습니다.
 
-> 
+## 실행
 
-**손기환:**
+루트에서 동시에 실행:
 
-> 
+```bash
+pnpm dev
+```
 
----
+개별 실행:
 
-## 참고 자료
+```bash
+pnpm --filter ./backend dev
+pnpm --filter ./frontend dev
+```
 
-### 실시간 인터랙션
+- Frontend: http://localhost:3000
+- Backend: http://localhost:4000
+- Health check: http://localhost:4000/health
 
-**WebSocket**
-- https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API
-- https://techblog.woowahan.com/5268/
-- https://tech.kakao.com/posts/391
-- https://daleseo.com/websocket/
-- https://kakaoentertainment-tech.tistory.com/110
+## 테스트와 빌드
 
-**Socket.IO**
-- https://socket.io/docs/v4/
-- https://inpa.tistory.com/entry/SOCKET-%F0%9F%93%9A-Namespace-Room-%EA%B8%B0%EB%8A%A5
-- https://adjh54.tistory.com/549
-- https://fred16157.github.io/node.js/nodejs-socketio-communication-room-and-namespace/
+```bash
+pnpm lint
+pnpm test
+pnpm build
+```
 
-**SSE (Server-Sent Events)**
-- https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
-- https://developer.mozilla.org/ko/docs/Web/API/Server-sent_events/Using_server-sent_events
-- https://api7.ai/ko/blog/what-is-sse
+CI 단위 테스트는 외부 Supabase/OpenAI를 호출하지 않습니다. 실제 DB 트랜잭션 E2E는 로컬 Supabase 또는 별도 테스트 프로젝트 환경변수가 필요합니다.
 
-**TCP / UDP Socket**
-- https://docs.python.org/3/library/socket.html
-- https://inpa.tistory.com/entry/NW-%F0%9F%8C%90-%EC%95%84%EC%A7%81%EB%8F%84-%EB%AA%A8%ED%98%B8%ED%95%9C-TCP-UDP-%EA%B0%9C%EB%85%90-%E2%9D%93-%EC%89%BD%EA%B2%8C-%EC%9D%B4%ED%95%B4%ED%95%98%EC%9E%90
+## 주요 API 흐름
 
-**gRPC Streaming**
-- https://grpc.io/docs/what-is-grpc/core-concepts/
-- https://tech.ktcloud.com/entry/gRPC%EC%9D%98-%EB%82%B4%EB%B6%80-%EA%B5%AC%EC%A1%B0-%ED%8C%8C%ED%97%A4%EC%B9%98%EA%B8%B0-HTTP2-Protobuf-%EA%B7%B8%EB%A6%AC%EA%B3%A0-%EC%8A%A4%ED%8A%B8%EB%A6%AC%EB%B0%8D
-- https://tech.ktcloud.com/entry/gRPC%EC%9D%98-%EB%82%B4%EB%B6%80-%EA%B5%AC%EC%A1%B0-%ED%8C%8C%ED%97%A4%EC%B9%98%EA%B8%B02-Channel-Stub
-- https://inspirit941.tistory.com/371
-- https://devocean.sk.com/blog/techBoardDetail.do?ID=167433
+```text
+회원가입/로그인
+→ 지역 및 에피소드 조회
+→ 서버 세션 생성
+→ 증거 열람과 용의자 선택
+→ OpenAI 심문 및 서버 단서 평가
+→ 사건 기록 조회
+→ 서버 최종 판정
+→ 고정 엔딩과 선택적 보고서 생성
+→ 진행도/사투리 기록 반영
+```
 
-**WebRTC**
-- https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API
-- https://webrtc.org/getting-started/overview
-- https://web.dev/articles/webrtc-basics?hl=ko
-- https://devocean.sk.com/blog/techBoardDetail.do?ID=164885
-- https://beomkey-nkb.github.io/%EA%B0%9C%EB%85%90%EC%A0%95%EB%A6%AC/webRTC%EC%A0%95%EB%A6%AC/
-- https://gh402.tistory.com/45
-- https://on.com2us.com/tech/webrtc-coturn-turn-stun-server-setup-guide/
+프론트는 Supabase access token을 Bearer 헤더로 전달합니다. 질문 수, 만료 시간, 범인 판정, 단서 해금과 숨겨진 사건 정보는 서버만 관리합니다.
 
-**QUIC / WebTransport**
-- https://developer.mozilla.org/en-US/docs/Web/API/WebTransport_API
-- https://datatracker.ietf.org/doc/html/rfc9000
-- https://news.hada.io/topic?id=13888
+## 브랜치 전략
 
-#### KCLOUD VM / Cloudflare Tunnel 환경별 주의사항
+- `main`: 직접 수정하지 않는 안정 브랜치
+- `dev`: 기능 통합 브랜치
+- `feat/*`: 백엔드 도메인 기능 브랜치
+- `frontend`: UI 개발 브랜치
+- `integration/*`: diverged 브랜치의 검증용 임시 통합 브랜치
 
-| 환경 | 사용 가능(권장) 기술 | 포트/조건 | 주의할 기술 |
-|---|---|---|---|
-| **로컬 / 일반 VM** | HTTP/REST, WebSocket, Socket.IO, SSE, TCP Socket, gRPC Streaming, WebRTC, QUIC/WebTransport 등 대부분 가능 | 직접 포트 개방 가능. 예: 3000, 5000, 8000, 8080, 9000 등. 외부 공개 시 방화벽/보안그룹/공인 IP 설정 필요 | WebRTC는 STUN/TURN 필요 가능. QUIC/WebTransport는 HTTP/3 · UDP 지원 필요 |
-| **KCLOUD VM (VPN 내부)** | HTTP/REST, WebSocket, Socket.IO, SSE, WebRTC 시그널링 | 접속 기기 VPN 필요. 기본 허용 포트: **22, 80, 443**. 개발 포트(3000, 8000, 8080 등)는 직접 접근 제한 가능 | TCP Socket은 포트 제한 있음. gRPC는 HTTP/2 설정 필요. WebRTC 미디어·UDP·QUIC/WebTransport 비권장 |
-| **KCLOUD VM + Tunnel** | HTTP/REST, WebSocket, Socket.IO, SSE, WebRTC 시그널링 | VM의 `localhost:<port>`를 도메인에 연결. `localPort`는 **1024~65535**. 예: 3000, 8000, 8080 가능 | 순수 TCP Socket, UDP, WebRTC 미디어/DataChannel, QUIC/WebTransport 불가. gRPC 보장 어려움 |
-| **외부 서비스 + 우리 도메인** | HTTP/REST, WebSocket, Socket.IO, SSE, WebRTC 시그널링 | Vercel/Netlify/Railway/Render/AWS/GCP 등에 배포 후 CNAME/A 레코드 연결. 보통 외부는 **443** 사용 | WebSocket/gRPC/TCP/UDP는 플랫폼 지원 여부 확인 필요. 서버리스 플랫폼은 장시간 연결 제한 가능 |
-| **서버 없이 외부 SaaS 사용** | Supabase Realtime, Firebase, Pusher/Ably, LLM API Streaming | 직접 포트 관리 불필요. 각 서비스 SDK/API 사용 | 커스텀 TCP/UDP 서버 구현 불가. WebRTC는 STUN/TURN 필요할 수 있음 |
+## 알려진 제한 사항
 
-### LLM Wrapper
-
-- https://github.com/teddylee777/openai-api-kr
-- https://github.com/teddylee777/langchain-kr
-- https://devocean.sk.com/blog/techBoardDetail.do?ID=167407
-- https://mastra.ai/docs
-
-### Cross-Platform
-
-- https://flutter.dev/
-- https://reactnative.dev/
-- https://docs.expo.dev/
-- https://kotlinlang.org/multiplatform/
+- 실제 로그인/회원가입은 유효한 Supabase 프로젝트 설정이 필요합니다.
+- 심문과 동적 보고서는 유효한 OpenAI API 키가 필요합니다.
+- Google OAuth는 아직 구현되지 않아 UI에서 준비 중으로 표시합니다.
+- 로컬 Supabase가 실행되지 않은 환경에서는 migration 적용 및 실제 DB E2E를 검증할 수 없습니다.

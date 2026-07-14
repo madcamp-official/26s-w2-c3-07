@@ -1,88 +1,29 @@
-"use client";
+'use client';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useState, type FormEvent } from 'react';
+import { AuthGuard } from '@/features/auth/AuthProvider';
+import { useApiResource } from '@/features/api/useApiResource';
+import { api } from '@/lib/api-client';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/ApiState';
+import type { InvestigationRecord, Note } from '@/types/record';
+import { ApiError } from '@/types/api';
 
-import { notFound, useParams, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { AlleyBackground } from "@/components/layout/AlleyBackground";
-import { BrandMark } from "@/components/layout/BrandMark";
-import { getCaseById } from "@/features/case/data";
-import type { Difficulty } from "@/features/case/types";
-import { QUESTIONS_PER_SUSPECT } from "@/features/case/types";
-import { ClueListPanel } from "@/features/records/components/ClueListPanel";
-import { InterrogationProgressCard } from "@/features/records/components/InterrogationProgressCard";
-import { RecordsHeaderActions } from "@/features/records/components/RecordsHeaderActions";
-import { StepNavigation } from "@/features/records/components/StepNavigation";
-import { StepTabs } from "@/features/records/components/StepTabs";
-import { SuspectListPanel } from "@/features/records/components/SuspectListPanel";
-import { TestimonyLogPanel } from "@/features/records/components/TestimonyLogPanel";
-import { RECORD_STEPS } from "@/features/records/constants";
-import { useGameSession } from "@/features/session/hooks/useGameSession";
-
+type Tab = 'overview' | 'testimonies' | 'timeline' | 'relationships' | 'notes';
 export default function RecordsPage() {
-  const params = useParams<{ sessionId: string }>();
-  const searchParams = useSearchParams();
-  const difficulty = (searchParams.get("difficulty") as Difficulty | null) ?? "normal";
-
-  const caseData = getCaseById(params.sessionId);
-  const { session } = useGameSession(params.sessionId, params.sessionId, difficulty);
-
-  const [selectedSuspectId, setSelectedSuspectId] = useState(caseData?.suspects[0]?.id ?? "");
-  const [activeStepId, setActiveStepId] = useState(1);
-
-  if (!caseData) {
-    notFound();
-  }
-
-  const questionsPerSuspect = QUESTIONS_PER_SUSPECT[difficulty];
-  const totalQuestions = questionsPerSuspect * caseData.suspects.length;
-  const totalQuestionsUsed = session?.conversations.reduce((acc, c) => acc + c.questionsUsed, 0) ?? 0;
-  const foundClueIds = session?.foundClueIds ?? [];
-
-  return (
-    <main className="relative min-h-screen overflow-hidden bg-noir-950">
-      <AlleyBackground />
-
-      <div className="relative flex flex-col gap-6 px-6 py-8 md:px-12 md:py-10">
-        {/* 상단 헤더 */}
-        <div className="flex items-start justify-between gap-6">
-          <BrandMark />
-
-          <div className="flex flex-1 flex-col items-center text-center">
-            <h1 className="font-display text-3xl font-bold text-parchment-100 md:text-4xl">사건 기록 열람</h1>
-            <p className="mt-2 text-sm text-parchment-300/70">지금까지의 진술과 단서를 확인하세요.</p>
-          </div>
-
-          <div className="flex shrink-0 items-start gap-3">
-            <InterrogationProgressCard answered={totalQuestionsUsed} total={totalQuestions} />
-            <RecordsHeaderActions />
-          </div>
-        </div>
-
-        {/* 단계 탭 */}
-        <StepTabs steps={RECORD_STEPS} activeStepId={activeStepId} onSelectStep={setActiveStepId} />
-
-        {/* 본문 3단 레이아웃 */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr_320px]">
-          <SuspectListPanel
-            suspects={caseData.suspects}
-            selectedSuspectId={selectedSuspectId}
-            onSelectSuspect={setSelectedSuspectId}
-          />
-          <TestimonyLogPanel
-            conversations={session?.conversations ?? []}
-            suspects={caseData.suspects}
-            highlightedSuspectId={selectedSuspectId}
-          />
-          <ClueListPanel clues={caseData.clues} foundClueIds={foundClueIds} />
-        </div>
-
-        {/* 하단 네비게이션 */}
-        <StepNavigation
-          canGoPrev={activeStepId > 1}
-          canGoNext={activeStepId < RECORD_STEPS.length}
-          onPrev={() => setActiveStepId((id) => Math.max(1, id - 1))}
-          onNext={() => setActiveStepId((id) => Math.min(RECORD_STEPS.length, id + 1))}
-        />
-      </div>
-    </main>
-  );
+  const { sessionId } = useParams<{ sessionId: string }>(); const record = useApiResource<InvestigationRecord>(`/sessions/${sessionId}/records`);
+  const [tab, setTab] = useState<Tab>('overview'); const [error, setError] = useState<ApiError | null>(null); const [saving, setSaving] = useState(false);
+  async function createNote(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (saving) return; const data = new FormData(event.currentTarget); setSaving(true); setError(null); try { await api.post<Note>(`/sessions/${sessionId}/notes`, { noteType: data.get('noteType'), content: data.get('content'), suspectId: null, relatedRef: {} }); event.currentTarget.reset(); await record.reload(); } catch (cause) { setError(cause as ApiError); } finally { setSaving(false); } }
+  async function remove(noteId: string) { try { await api.delete(`/sessions/${sessionId}/notes/${noteId}`); await record.reload(); } catch (cause) { setError(cause as ApiError); } }
+  const tabs: Array<[Tab,string]> = [['overview','전체 기록'],['testimonies','증언'],['timeline','타임라인'],['relationships','관계'],['notes','메모']];
+  return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-5xl space-y-6"><header className="flex justify-between"><div><p className="text-xs text-evidence-red">INVESTIGATION RECORD</p><h1 className="font-display text-4xl">사건 기록</h1></div><Link href={`/game/${sessionId}`}>게임으로 →</Link></header>
+    <nav className="flex flex-wrap gap-2">{tabs.map(([id,label]) => <button key={id} onClick={() => setTab(id)} className={`border px-4 py-2 ${tab === id ? 'bg-evidence-red' : 'border-brass-600/30'}`}>{label}</button>)}</nav>
+    {error && <ErrorState error={error} />}{record.loading ? <LoadingState /> : record.error ? <ErrorState error={record.error} retry={record.reload} /> : record.data && <>
+      {tab === 'overview' && <div className="grid gap-5 md:grid-cols-2"><section className="border p-5"><h2 className="font-display text-2xl">{record.data.caseOverview.title}</h2><p className="mt-2 text-sm opacity-70">{record.data.caseOverview.synopsis}</p></section><section className="border p-5"><h2 className="font-bold text-brass-400">확인한 증거</h2>{record.data.evidence.map((item) => <p key={item.id} className="mt-2">• {item.title}</p>)}</section><section className="border p-5"><h2 className="font-bold text-brass-400">획득 단서</h2>{record.data.clues.map((item) => <p key={item.id} className="mt-2">• [{item.clueType}] {item.title}</p>)}</section><section className="border p-5"><h2 className="font-bold text-brass-400">사투리 표현</h2>{record.data.dialectExpressions.map((item) => <p key={item.id} className="mt-2">• {item.dialectText}{item.standardMeaning ? ` — ${item.standardMeaning}` : ''}</p>)}</section></div>}
+      {tab === 'testimonies' && (!record.data.testimonies.length ? <EmptyState label="저장된 증언이 없습니다." /> : <div className="space-y-3">{record.data.testimonies.map((item) => <article key={item.id} className="border border-brass-600/30 p-4"><b>{item.suspectName}</b><p className="mt-2 text-sm">Q. {item.question}</p><p className="mt-1">A. {item.response}</p></article>)}</div>)}
+      {tab === 'timeline' && (!record.data.timeline.length ? <EmptyState label="공개되거나 해금된 타임라인이 없습니다." /> : <ol className="space-y-3">{record.data.timeline.map((item) => <li key={item.id} className="border-l-2 border-brass-400 pl-4"><b>{item.occurredAt} · {item.title}</b><p className="text-sm opacity-70">{item.description}</p></li>)}</ol>)}
+      {tab === 'relationships' && (!record.data.relationships.length ? <EmptyState label="공개된 관계 정보가 없습니다." /> : <div className="space-y-3">{record.data.relationships.map((item) => <p key={item.id} className="border p-4"><b>{item.suspect.name}</b> · {item.relationshipType}<br/><span className="text-sm opacity-70">{item.description}</span></p>)}</div>)}
+      {tab === 'notes' && <section className="space-y-4"><form onSubmit={createNote} className="flex flex-col gap-3 border p-4"><select name="noteType" className="bg-noir-900 p-2"><option value="FREE">자유 메모</option><option value="CONTRADICTION">모순</option><option value="DIALECT">사투리</option></select><textarea name="content" required maxLength={2000} className="min-h-24 bg-noir-900 p-3"/><button disabled={saving} className="bg-evidence-red py-2">메모 저장</button></form>{record.data.notes.map((note) => <article key={note.id} className="flex justify-between border p-4"><div><b>{note.noteType}</b><p>{note.content}</p></div><button onClick={() => remove(note.id)} className="text-evidence-red">삭제</button></article>)}</section>}
+    </>}
+  </div></main></AuthGuard>;
 }
