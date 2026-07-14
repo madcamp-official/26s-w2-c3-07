@@ -1,7 +1,7 @@
 import { serviceRoleClient } from '../../config/supabase.js';
 import type { Json } from '../../shared/types/database.types.js';
 import { toAppError } from '../../shared/utils/supabase.js';
-import type { OwnedSession, PresentedEvidence, QuestionType, StructuredInterrogationResponse, SuspectKnowledge, UnlockedClueDto, UnlockedEvidenceDto } from './interrogation.types.js';
+import type { OwnedSession, PresentedEvidence, PromptMetrics, QuestionType, StructuredInterrogationResponse, SuspectKnowledge, UnlockedClueDto, UnlockedEvidenceDto } from './interrogation.types.js';
 
 const messageColumns = 'id, session_id, suspect_id, request_id, user_question, question_type, npc_response, emotion_after, evasion_type, used_fact_refs, revealed_fact_refs, claimed_fact_refs, presented_evidence_refs, response_metadata, created_at';
 type MessageRow = {
@@ -226,9 +226,10 @@ export const interrogationRepository = {
 
   async logLlm(input: {
     sessionId: string; userId: string; requestId: string; provider: string; model: string; promptHash: string | null;
-    inputTokens: number | null; outputTokens: number | null; latencyMs: number | null; status: string; errorCode: string | null;
+    inputTokens: number | null; outputTokens: number | null; cachedTokens: number | null; latencyMs: number | null; status: string; errorCode: string | null;
     errorMessage: string | null; httpStatus: number | null; providerCode: string | null; attempt: number; stage: string;
-    questionType: string; suspectId: string;
+    questionType: string; suspectId: string; promptMetrics: PromptMetrics | null; localResponse: boolean;
+    attempts: Array<{ attempt: number; promptTokens: number | null; completionTokens: number | null; cachedTokens: number | null; errorCode: string | null }>;
   }): Promise<void> {
     const status = input.status === 'COMPLETED' ? 'SUCCEEDED' : input.status === 'FAILED' ? 'FAILED' : 'STARTED';
     const { error } = await serviceRoleClient.schema('game_private').from('llm_request_logs').insert({
@@ -245,7 +246,18 @@ export const interrogationRepository = {
         userId: input.userId, requestId: input.requestId, promptHash: input.promptHash,
         provider: input.provider, httpStatus: input.httpStatus, providerCode: input.providerCode,
         retryCount: Math.max(input.attempt - 1, 0), questionType: input.questionType,
-        suspectId: input.suspectId, validationStage: input.stage
+        suspectId: input.suspectId, validationStage: input.stage,
+        cachedTokens: input.cachedTokens,
+        totalTokens: input.inputTokens !== null && input.outputTokens !== null ? input.inputTokens + input.outputTokens : null,
+        attemptCount: input.attempt,
+        promptVersion: input.promptMetrics?.promptVersion ?? null,
+        promptCharacterCount: input.promptMetrics?.characterCount ?? 0,
+        includedFactCount: input.promptMetrics?.includedFactCount ?? 0,
+        includedRuleCount: input.promptMetrics?.includedRuleCount ?? 0,
+        includedDialectCount: input.promptMetrics?.includedDialectCount ?? 0,
+        includedHistoryCount: input.promptMetrics?.includedHistoryCount ?? 0,
+        localResponse: input.localResponse,
+        attempts: input.attempts
       }
     });
     throwIfError(error);
