@@ -163,6 +163,7 @@ describe('server-side clue service', () => {
 describe('clue SQL enforcement', () => {
   const sql = readFileSync(new URL('../supabase/migrations/20260714072622_llm_clue_unlock_integration.sql', import.meta.url), 'utf8');
   const progressionSql = readFileSync(new URL('../supabase/migrations/20260714101403_initial_evidence_clue_progression.sql', import.meta.url), 'utf8');
+  const viewedAtTypeSql = readFileSync(new URL('../supabase/migrations/20260714193200_fix_clue_evidence_viewed_at_type.sql', import.meta.url), 'utf8');
 
   it('deduplicates clue acquisition and implements AND/OR grouping', () => {
     expect(sql).toContain('bool_and');
@@ -193,5 +194,6 @@ describe('clue SQL enforcement', () => {
     expect(progressionSql).toContain('evaluate_clue_unlocks_with_evidence');
     expect(progressionSql).toContain("select v_session_id, initial.evidence_id, 'INITIAL', null");
     expect(progressionSql).toContain('set search_path = \'\'');
+    expect(viewedAtTypeSql).toContain('null::timestamptz');
   });
 });
