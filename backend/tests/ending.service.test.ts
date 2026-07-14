@@ -159,8 +159,10 @@ describe('ending persistence and privacy', () => {
     expect(repositorySource).not.toContain('response_guidance');
   });
 
-  it('uses unlock conditions only to build evidence links and never returns their raw data', () => {
-    expect(repositorySource).toContain("select('clue_id, target_ref, expected_value')");
+  it('uses explicit evidence and suspect relations without exposing internal weights', () => {
+    expect(repositorySource).toContain("from('evidence_clue_links').select('evidence_id, clue_id, link_type, explanation')");
+    expect(repositorySource).toContain("from('clue_suspect_impacts').select('clue_id, suspect_id, impact_type, explanation')");
+    expect(repositorySource).not.toContain("select('clue_id, suspect_id, impact_type, weight");
     expect(JSON.stringify(fixed)).not.toContain('condition_data');
     expect(JSON.stringify(fixed)).not.toContain('unlockCondition');
   });
