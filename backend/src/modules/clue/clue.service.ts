@@ -42,7 +42,8 @@ export const clueService = {
       ]);
       return {
         evidence: evidence.find((item) => item.id === evidenceId)!,
-        newClues: clues.filter((clue) => viewed.newClueIds.includes(clue.id))
+        newClues: clues.filter((clue) => viewed.newClueIds.includes(clue.id)),
+        newlyUnlockedEvidence: evidence.filter((item) => viewed.newEvidenceIds.includes(item.id))
       };
     } catch (error) {
       return mapEvidenceError(error);
