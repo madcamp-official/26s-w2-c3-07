@@ -4,7 +4,10 @@ import type { Json } from '../../shared/types/database.types.js';
 import { InterrogationLlmError, interrogationLlm } from './interrogation.llm.js';
 import { buildInterrogationPrompt } from './interrogation.prompt.js';
 import { interrogationRepository as repository, type MessageRow } from './interrogation.repository.js';
-import { classifyQuestion, promptRejectionResponse, selectPromptFacts, validateGuardedResponse } from './interrogation.guard.js';
+import {
+  classifyQuestion, localQuestionResponse, normalizeGuardedResponse, promptRejectionResponse,
+  safeValidationFallback, selectPromptFacts, validateGuardedResponse
+} from './interrogation.guard.js';
 import {
   EMOTIONS, EVASION_TYPES, QUESTION_TYPES,
   type Emotion, type InterrogationInput, type InterrogationMessageDto,
@@ -104,9 +107,10 @@ export const interrogationService = {
     if (new Date(session.expires_at).getTime() <= Date.now()) throw new AppError(409, 'Session expired', 'SESSION_EXPIRED');
     if (session.remaining_questions <= 0) throw new AppError(409, 'No questions remaining', 'INTERROGATION_QUESTIONS_EXHAUSTED');
 
+    const questionType = classifyQuestion(input.question);
     const presentedEvidenceIds = input.presentedEvidenceIds ?? [];
     const [knowledge, questionsUsed, perSuspectLimit, presentedEvidence] = await Promise.all([
-      repository.loadKnowledge(session, input.suspectId),
+      repository.loadKnowledge(session, input.suspectId, questionType),
       repository.getSuspectQuestionCount(session.id, input.suspectId),
       repository.getQuestionsPerSuspect(session.difficulty_config_id),
       repository.findPresentedEvidence(session, presentedEvidenceIds)
@@ -117,21 +121,30 @@ export const interrogationService = {
     if (perSuspectLimit === null) throw new AppError(409, 'Difficulty configuration missing', 'INTERROGATION_STATE_INVALID');
     if (questionsUsed >= perSuspectLimit) throw new AppError(409, 'Suspect question limit reached', 'INTERROGATION_SUSPECT_LIMIT_REACHED');
 
-    const questionType = classifyQuestion(input.question);
-    const guardedKnowledge = { ...knowledge, facts: selectPromptFacts(knowledge, questionType) };
+    const guardedKnowledge = { ...knowledge, facts: selectPromptFacts(knowledge, questionType, presentedEvidence) };
     let response: StructuredInterrogationResponse;
     let provider = 'local';
     let model = 'guarded-local';
-    let inputTokens: number | null = 0;
-    let outputTokens: number | null = 0;
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let cachedTokens = 0;
+    let hasTokenUsage = false;
     let latencyMs = 0;
     let promptHash: string | null = null;
     let usedAttempts = 0;
+    let localResponse = false;
+    const attempts: Array<{ attempt: number; promptTokens: number | null; completionTokens: number | null; cachedTokens: number | null; errorCode: string | null }> = [];
+    const prompt = ['Q-PROMPT', 'Q-SMALLTALK', 'Q-UNKNOWN'].includes(questionType)
+      ? null
+      : buildInterrogationPrompt(input.question, questionType, guardedKnowledge, presentedEvidence);
 
     if (questionType === 'Q-PROMPT') {
       response = promptRejectionResponse(knowledge.currentEmotion);
+      localResponse = true;
+    } else if (questionType === 'Q-SMALLTALK' || questionType === 'Q-UNKNOWN') {
+      response = localQuestionResponse(questionType, guardedKnowledge);
+      localResponse = true;
     } else {
-      let validationErrors: string[] = [];
       let accepted: StructuredInterrogationResponse | null = null;
       let lastErrorCode = 'INTERROGATION_LLM_FAILED';
       let lastErrorMessage = 'OpenAI did not return a safe structured response';
@@ -139,40 +152,50 @@ export const interrogationService = {
       let providerCode: string | null = null;
       for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) {
         usedAttempts = attempt;
-        const prompt = buildInterrogationPrompt(input.question, questionType, guardedKnowledge, presentedEvidence, validationErrors);
-        promptHash = createHash('sha256').update(prompt).digest('hex');
+        promptHash = createHash('sha256').update(`${prompt!.system}\n${prompt!.user}`).digest('hex');
         const attemptStartedAt = Date.now();
         try {
-          const generated = await interrogationLlm.generate(prompt);
+          const generated = await interrogationLlm.generate(prompt!);
           provider = generated.provider;
           model = generated.model;
-          inputTokens = generated.inputTokens;
-          outputTokens = generated.outputTokens;
+          if (generated.inputTokens !== null || generated.outputTokens !== null) hasTokenUsage = true;
+          inputTokens += generated.inputTokens ?? 0;
+          outputTokens += generated.outputTokens ?? 0;
+          cachedTokens += generated.cachedTokens ?? 0;
           latencyMs += generated.latencyMs;
-          validationErrors = validateGuardedResponse(generated.output, guardedKnowledge);
+          const normalized = normalizeGuardedResponse(generated.output);
+          const validationErrors = validateGuardedResponse(normalized, guardedKnowledge);
+          attempts.push({ attempt, promptTokens: generated.inputTokens, completionTokens: generated.outputTokens, cachedTokens: generated.cachedTokens, errorCode: validationErrors[0] ?? null });
           if (validationErrors.length === 0) {
-            accepted = generated.output;
+            accepted = normalized;
             break;
           }
           lastErrorCode = validationErrors[0];
           lastErrorMessage = `Guard validation failed: ${validationErrors.join(', ')}`;
+          if (['UNKNOWN_ENTITY', 'CULPRIT_DISCLOSURE', 'PROMPT_DISCLOSURE', 'CONSISTENCY_INVALID', 'RESPONSE_LENGTH_INVALID'].includes(lastErrorCode)) {
+            accepted = safeValidationFallback(guardedKnowledge);
+          }
+          break;
         } catch (error) {
           latencyMs += Date.now() - attemptStartedAt;
-          validationErrors = ['STRUCTURED_OUTPUT_INVALID'];
           lastErrorCode = 'INTERROGATION_LLM_FAILED';
           lastErrorMessage = error instanceof Error ? error.message : 'Unknown OpenAI error';
+          attempts.push({ attempt, promptTokens: null, completionTokens: null, cachedTokens: null, errorCode: lastErrorCode });
           if (error instanceof InterrogationLlmError) {
             httpStatus = error.status;
             providerCode = error.providerCode;
+            if (!error.retryable) break;
           }
         }
       }
       if (!accepted) {
         await safeLog({
           sessionId, userId, requestId: input.requestId, provider: 'openai', model, promptHash,
-          inputTokens, outputTokens, latencyMs, status: 'FAILED', errorCode: lastErrorCode,
+          inputTokens: hasTokenUsage ? inputTokens : null, outputTokens: hasTokenUsage ? outputTokens : null,
+          cachedTokens: hasTokenUsage ? cachedTokens : null, latencyMs, status: 'FAILED', errorCode: lastErrorCode,
           errorMessage: lastErrorMessage, httpStatus, providerCode, attempt: usedAttempts,
-          stage: 'LLM_RESULT_VALIDATION', questionType, suspectId: input.suspectId
+          stage: 'LLM_RESULT_VALIDATION', questionType, suspectId: input.suspectId,
+          promptMetrics: prompt!.metrics, localResponse: false, attempts
         });
         throw new AppError(502, 'Could not generate a safe interrogation response', lastErrorCode === 'INTERROGATION_LLM_FAILED' ? lastErrorCode : 'INTERROGATION_RESPONSE_INVALID');
       }
@@ -183,7 +206,9 @@ export const interrogationService = {
       const responseMetadata: Json = {
         provider, model, retryCount: Math.max(usedAttempts - 1, 0), validationStatus: 'valid',
         characterConsistencyStatus: response.characterConsistencyStatus,
-        validationNotes: response.validationNotes
+        validationNotes: response.validationNotes,
+        promptVersion: prompt?.metrics.promptVersion ?? null,
+        localResponse
       };
       const result = await repository.finalize({
         userId, sessionId, requestId: input.requestId, suspectId: input.suspectId,
@@ -194,18 +219,24 @@ export const interrogationService = {
         repository.findEvidenceByIds(session.episode_id, result.newEvidenceIds ?? [])
       ]);
       await safeLog({
-        sessionId, userId, requestId: input.requestId, provider, model, promptHash, inputTokens, outputTokens,
-        latencyMs, status: 'COMPLETED', errorCode: null, errorMessage: null, httpStatus: null,
-        providerCode: null, attempt: usedAttempts, stage: 'SESSION_UPDATE', questionType, suspectId: input.suspectId
+        sessionId, userId, requestId: input.requestId, provider, model, promptHash,
+        inputTokens: hasTokenUsage ? inputTokens : 0, outputTokens: hasTokenUsage ? outputTokens : 0,
+        cachedTokens: hasTokenUsage ? cachedTokens : 0, latencyMs, status: 'COMPLETED', errorCode: null,
+        errorMessage: null, httpStatus: null, providerCode: null, attempt: usedAttempts,
+        stage: 'SESSION_UPDATE', questionType, suspectId: input.suspectId,
+        promptMetrics: prompt?.metrics ?? null, localResponse, attempts
       });
       return toAskResponse(result.message, result.remainingQuestions, clues, evidence);
     } catch (error) {
       await safeLog({
-        sessionId, userId, requestId: input.requestId, provider, model, promptHash, inputTokens, outputTokens,
+        sessionId, userId, requestId: input.requestId, provider, model, promptHash,
+        inputTokens: hasTokenUsage ? inputTokens : 0, outputTokens: hasTokenUsage ? outputTokens : 0,
+        cachedTokens: hasTokenUsage ? cachedTokens : 0,
         latencyMs, status: 'FAILED', errorCode: 'INTERROGATION_FINALIZE_FAILED',
         errorMessage: error instanceof Error ? error.message.slice(0, 500) : 'Unknown finalize error',
         httpStatus: null, providerCode: null, attempt: usedAttempts,
-        stage: 'MESSAGE_PERSIST', questionType, suspectId: input.suspectId
+        stage: 'MESSAGE_PERSIST', questionType, suspectId: input.suspectId,
+        promptMetrics: prompt?.metrics ?? null, localResponse, attempts
       });
       return mapRpcError(error);
     }
