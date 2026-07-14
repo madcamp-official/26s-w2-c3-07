@@ -125,7 +125,9 @@ describe('guarded interrogation flow', () => {
     await expect(interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '어디에 있었습니까?' })).rejects.toMatchObject({ code: 'INTERROGATION_LLM_FAILED' });
     expect(interrogationLlm.generate).toHaveBeenCalledTimes(2);
     expect(repository.finalize).not.toHaveBeenCalled();
-    expect(repository.logLlm).toHaveBeenCalledWith(expect.objectContaining({ errorMessage: 'provider unavailable', stage: 'generation' }));
+    expect(repository.logLlm).toHaveBeenCalledWith(expect.objectContaining({
+      errorMessage: 'provider unavailable', stage: 'LLM_RESULT_VALIDATION', questionType: 'Q-PLACE', suspectId
+    }));
   });
 
   it('rejects a nonexistent fact id after one regeneration', async () => {
