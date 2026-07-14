@@ -1,7 +1,7 @@
 import { serviceRoleClient } from '../../config/supabase.js';
 import type { Json } from '../../shared/types/database.types.js';
 import { toAppError } from '../../shared/utils/supabase.js';
-import type { OwnedSession, PresentedEvidence, StructuredInterrogationResponse, SuspectKnowledge, UnlockedClueDto } from './interrogation.types.js';
+import type { OwnedSession, PresentedEvidence, StructuredInterrogationResponse, SuspectKnowledge, UnlockedClueDto, UnlockedEvidenceDto } from './interrogation.types.js';
 
 const messageColumns = 'id, session_id, suspect_id, request_id, user_question, question_type, npc_response, emotion_after, evasion_type, used_fact_refs, revealed_fact_refs, claimed_fact_refs, presented_evidence_refs, response_metadata, created_at';
 type MessageRow = {
@@ -131,7 +131,7 @@ export const interrogationRepository = {
   async finalize(input: {
     userId: string; sessionId: string; requestId: string; suspectId: string; question: string;
     questionType: string; response: StructuredInterrogationResponse; presentedEvidenceIds: string[]; responseMetadata: Json;
-  }): Promise<{ duplicate: boolean; message: MessageRow; newClueIds: string[]; remainingQuestions: number }> {
+  }): Promise<{ duplicate: boolean; message: MessageRow; newClueIds: string[]; newEvidenceIds: string[]; remainingQuestions: number }> {
     const { data, error } = await serviceRoleClient.rpc('finalize_interrogation', {
       p_user_id: input.userId,
       p_session_id: input.sessionId,
@@ -150,7 +150,7 @@ export const interrogationRepository = {
       p_response_metadata: input.responseMetadata
     });
     throwIfError(error);
-    return data as unknown as { duplicate: boolean; message: MessageRow; newClueIds: string[]; remainingQuestions: number };
+    return data as unknown as { duplicate: boolean; message: MessageRow; newClueIds: string[]; newEvidenceIds: string[]; remainingQuestions: number };
   },
 
   async findCluesByIds(clueIds: string[]): Promise<UnlockedClueDto[]> {
@@ -159,6 +159,22 @@ export const interrogationRepository = {
       .select('id, code, title, content, record_summary, clue_type, importance').in('id', clueIds);
     throwIfError(error);
     return (data ?? []).map((row) => ({ id: row.id, code: row.code, title: row.title, content: row.content, recordSummary: row.record_summary, clueType: row.clue_type, importance: row.importance }));
+  },
+
+  async findEvidenceByIds(episodeId: string, evidenceIds: string[]): Promise<UnlockedEvidenceDto[]> {
+    if (evidenceIds.length === 0) return [];
+    const { data, error } = await serviceRoleClient.schema('game_content').from('evidence')
+      .select('id, code, title, description, evidence_type')
+      .eq('episode_id', episodeId)
+      .in('id', evidenceIds);
+    throwIfError(error);
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      code: row.code,
+      title: row.title,
+      description: row.description,
+      evidenceType: row.evidence_type
+    }));
   },
 
   async logLlm(input: {
