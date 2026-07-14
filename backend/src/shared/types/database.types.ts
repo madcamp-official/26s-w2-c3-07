@@ -10,6 +10,16 @@ type Table<Row extends Record<string, unknown>> = {
 type Id = { id: string };
 type Audit = { created_at: string; updated_at: string };
 
+export type ClueConditionType =
+  | 'EVIDENCE_VIEWED'
+  | 'EVIDENCE_PRESENTED'
+  | 'QUESTION_TYPE_ASKED'
+  | 'SUSPECT_INTERROGATED'
+  | 'FACT_USED'
+  | 'FACT_REVEALED'
+  | 'CLAIM_RECORDED'
+  | 'CLUE_ACQUIRED';
+
 export type Database = {
   public: {
     Tables: {
@@ -17,7 +27,7 @@ export type Database = {
       user_settings: Table<{ user_id: string; bgm_enabled: boolean; sfx_enabled: boolean; text_speed: number; skip_animation: boolean; locale: string; updated_at: string }>;
       game_sessions: Table<Id & { user_id: string; episode_id: string; difficulty_config_id: string; status: string; remaining_questions: number; started_at: string; expires_at: string; current_suspect_id: string | null; last_activity_at: string; completed_at: string | null; session_version: number } & Audit>;
       session_suspect_states: Table<Id & { session_id: string; suspect_id: string; current_emotion: string; questions_used: number; interrogation_status: string; last_interrogated_at: string | null } & Audit>;
-      interrogation_messages: Table<Id & { session_id: string; suspect_id: string; request_id: string; user_question: string; normalized_question: string | null; question_hash: string | null; question_type: string; npc_response: string; emotion_before: string | null; emotion_after: string | null; evasion_type: string | null; used_fact_refs: Json; question_cost: number; response_metadata: Json; created_at: string }>;
+      interrogation_messages: Table<Id & { session_id: string; suspect_id: string; request_id: string; user_question: string; normalized_question: string | null; question_hash: string | null; question_type: string; npc_response: string; emotion_before: string | null; emotion_after: string | null; evasion_type: string | null; used_fact_refs: string[]; revealed_fact_refs: string[]; claimed_fact_refs: string[]; presented_evidence_refs: string[]; question_cost: number; response_metadata: Json; created_at: string }>;
       session_evidence: Table<Id & { session_id: string; evidence_id: string; source_type: string; viewed_at: string }>;
       session_clues: Table<Id & { session_id: string; clue_id: string; acquired_from_type: string; acquired_from_ref: string | null; acquired_at: string }>;
       session_notes: Table<Id & { session_id: string; note_type: string; content: string; suspect_id: string | null; related_ref: Json } & Audit>;
@@ -32,7 +42,9 @@ export type Database = {
         Args: {
           p_user_id: string; p_session_id: string; p_request_id: string; p_suspect_id: string;
           p_question: string; p_dialect_response: string; p_question_type: string; p_emotion: string;
-          p_used_fact_ids: string[]; p_evasion_type: string; p_consistency_status: string;
+          p_used_fact_ids: string[]; p_revealed_fact_ids: string[]; p_claimed_fact_ids: string[];
+          p_presented_evidence_ids: string[]; p_evasion_type: string; p_consistency_status: string;
+          p_response_metadata: Json;
         };
         Returns: Json;
       };
@@ -56,7 +68,9 @@ export type Database = {
       episode_timelines: Table<Id & { episode_id: string; sequence_no: number; occurred_at_label: string; public_description: string | null; server_description: string; visibility: string; metadata: Json } & Audit>;
       evidence: Table<Id & { episode_id: string; code: string; title: string; description: string; evidence_type: string; disclosure_level: string; role: string | null; initial_visible: boolean; image_url: string | null; metadata: Json; display_order: number } & Audit>;
       clues: Table<Id & { episode_id: string; code: string; title: string; content: string; clue_type: string; importance: string; record_summary: string; supports_culprit_id: string | null; source_refs: Json; excludes_suspect_refs: Json; is_repeatable: boolean; is_required_for_full_resolution: boolean; display_order: number } & Audit>;
-      clue_unlock_conditions: Table<Id & { clue_id: string; group_no: number; condition_order: number; condition_type: string; target_ref: string | null; operator: string; expected_value: Json; created_at: string }>;
+      clue_unlock_conditions: Table<Id & { clue_id: string; group_no: number; condition_order: number; condition_type: ClueConditionType; target_ref: string | null; operator: 'EQ' | 'EXISTS'; expected_value: Json; created_at: string }>;
+      evidence_clue_links: Table<Id & { episode_id: string; evidence_id: string; clue_id: string; link_type: 'SUPPORTS' | 'REVEALS' | 'CONTRADICTS' | 'CORROBORATES' | 'REQUIRED_WITH' | 'EXCLUDES' | 'RED_HERRING'; explanation: string; strength: number; is_required: boolean; created_at: string }>;
+      clue_suspect_impacts: Table<Id & { clue_id: string; suspect_id: string; impact_type: 'SUPPORTS_GUILT' | 'WEAKENS_ALIBI' | 'PROVES_MOTIVE' | 'PROVES_OPPORTUNITY' | 'PROVES_METHOD' | 'EXCLUDES' | 'EXPLAINS_LIE' | 'RED_HERRING'; weight: number; explanation: string; created_at: string }>;
       dialect_expressions: Table<Id & { episode_id: string; code: string; expression: string; standard_meaning: string; usage_context: string | null; importance: string; related_clue_id: string | null; difficulty_rules: Json; is_post_ending_only: boolean; display_order: number } & Audit>;
       suspect_facts: Table<Id & { suspect_id: string; code: string; fact_type: string; content: string; disclosure_level: string; priority: number; metadata: Json } & Audit>;
       suspect_lies: Table<Id & { suspect_id: string; code: string; topic: string; true_content: string; claimed_content: string; reveal_conditions: Json } & Audit>;
