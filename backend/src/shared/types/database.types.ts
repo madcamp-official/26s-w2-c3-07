@@ -43,7 +43,7 @@ export type Database = {
           p_user_id: string; p_session_id: string; p_request_id: string; p_suspect_id: string;
           p_question: string; p_dialect_response: string; p_question_type: string; p_emotion: string;
           p_used_fact_ids: string[]; p_revealed_fact_ids: string[]; p_claimed_fact_ids: string[];
-          p_presented_evidence_ids: string[]; p_evasion_type: string; p_consistency_status: string;
+          p_presented_evidence_ids: string[]; p_evasion_type: string | null; p_consistency_status: string;
           p_response_metadata: Json;
         };
         Returns: Json;
