@@ -298,3 +298,53 @@ grant execute on function game_private.clue_condition_is_met(uuid, uuid, uuid) t
 grant execute on function game_private.evaluate_clue_unlocks(uuid, text, uuid) to service_role;
 grant execute on function public.finalize_interrogation(uuid, uuid, uuid, uuid, text, text, text, text, uuid[], uuid[], uuid[], uuid[], text, text, jsonb) to service_role;
 grant execute on function public.evaluate_session_clues(uuid, uuid, text) to service_role;
+
+create or replace function game_private.score_investigation_result()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_total_core integer := 0;
+  v_acquired_core integer := 0;
+  v_positive_impact integer := 0;
+  v_link_coverage integer := 0;
+begin
+  select count(*)::integer,
+    count(*) filter (where acquired.clue_id is not null)::integer
+  into v_total_core, v_acquired_core
+  from public.game_sessions as session
+  join game_content.clues as clue on clue.episode_id = session.episode_id and clue.importance = 'CORE'
+  left join public.session_clues as acquired on acquired.session_id = session.id and acquired.clue_id = clue.id
+  where session.id = new.session_id;
+
+  select coalesce(sum(greatest(impact.weight, 0)), 0)::integer into v_positive_impact
+  from public.session_clues as acquired
+  join game_content.clue_suspect_impacts as impact on impact.clue_id = acquired.clue_id
+  where acquired.session_id = new.session_id and impact.suspect_id = new.selected_suspect_id
+    and impact.impact_type not in ('RED_HERRING');
+
+  select count(distinct link.evidence_id)::integer into v_link_coverage
+  from public.session_clues as acquired
+  join game_content.evidence_clue_links as link on link.clue_id = acquired.clue_id
+  join public.session_evidence as evidence on evidence.session_id = acquired.session_id and evidence.evidence_id = link.evidence_id
+  where acquired.session_id = new.session_id and evidence.viewed_at is not null;
+
+  new.score := least(100,
+    case when new.is_correct then 40 else 0 end
+    + case when v_total_core = 0 then 0 else floor(v_acquired_core * 30.0 / v_total_core)::integer end
+    + least(v_positive_impact, 20)
+    + least(v_link_coverage * 2, 10)
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists score_investigation_result on public.game_results;
+create trigger score_investigation_result
+before insert on public.game_results
+for each row execute function game_private.score_investigation_result();
+
+revoke all on function game_private.score_investigation_result() from public, anon, authenticated;
+grant execute on function game_private.score_investigation_result() to service_role;
