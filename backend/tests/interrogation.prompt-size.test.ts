@@ -66,7 +66,8 @@ describe('compact interrogation prompt budget', () => {
     const rows = types.map((type) => {
       const knowledge = fixture(type);
       const compact = buildInterrogationPrompt('사건 당시 어디에서 무엇을 했습니까?', type, knowledge, []);
-      const legacyTokens = estimatePromptTokens(legacyPrompt('사건 당시 어디에서 무엇을 했습니까?', knowledge).length);
+      const legacyCharacters = legacyPrompt('사건 당시 어디에서 무엇을 했습니까?', knowledge).length;
+      const legacyTokens = estimatePromptTokens(legacyCharacters);
       const reduction = 1 - compact.metrics.estimatedTokens / legacyTokens;
       expect(compact.metrics.estimatedTokens).toBeLessThanOrEqual(3500);
       expect(compact.metrics.includedHistoryCount).toBeLessThanOrEqual(3);
@@ -74,7 +75,13 @@ describe('compact interrogation prompt budget', () => {
       expect(compact.metrics.includedDialectCount).toBeLessThanOrEqual(7);
       expect(compact.user).toContain('"key":"F1"');
       expect(compact.user).not.toContain(uuid(10));
-      return { type, legacyTokens, compactTokens: compact.metrics.estimatedTokens, reduction: Number((reduction * 100).toFixed(1)) };
+      return {
+        type, legacyCharacters, compactCharacters: compact.metrics.characterCount,
+        legacyTokens, compactTokens: compact.metrics.estimatedTokens,
+        reduction: Number((reduction * 100).toFixed(1)), facts: compact.metrics.includedFactCount,
+        rules: compact.metrics.includedRuleCount, dialect: compact.metrics.includedDialectCount,
+        history: compact.metrics.includedHistoryCount
+      };
     });
     const averageReduction = rows.reduce((sum, row) => sum + row.reduction, 0) / rows.length;
     console.log(`PROMPT_BENCHMARK ${JSON.stringify(rows)}`);
