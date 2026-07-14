@@ -165,6 +165,7 @@ export const interrogationRepository = {
     sessionId: string; userId: string; requestId: string; provider: string; model: string; promptHash: string | null;
     inputTokens: number | null; outputTokens: number | null; latencyMs: number | null; status: string; errorCode: string | null;
     errorMessage: string | null; httpStatus: number | null; providerCode: string | null; attempt: number; stage: string;
+    questionType: string; suspectId: string;
   }): Promise<void> {
     const status = input.status === 'COMPLETED' ? 'SUCCEEDED' : input.status === 'FAILED' ? 'FAILED' : 'STARTED';
     const { error } = await serviceRoleClient.schema('game_private').from('llm_request_logs').insert({
@@ -180,7 +181,8 @@ export const interrogationRepository = {
       metadata: {
         userId: input.userId, requestId: input.requestId, promptHash: input.promptHash,
         provider: input.provider, httpStatus: input.httpStatus, providerCode: input.providerCode,
-        attempt: input.attempt, stage: input.stage
+        retryCount: Math.max(input.attempt - 1, 0), questionType: input.questionType,
+        suspectId: input.suspectId, validationStage: input.stage
       }
     });
     throwIfError(error);
