@@ -37,8 +37,8 @@ export function selectPromptFacts(knowledge: SuspectKnowledge, questionType: Que
 
   return knowledge.facts.filter((fact) => {
     if (fact.disclosureLevel === 'SERVER_ONLY') return false;
-    if (explicitlyAllowed.has(fact.id) || explicitlyAllowed.has(fact.code)) return true;
     if (explicitlyHidden.has(fact.id) || explicitlyHidden.has(fact.code)) return false;
+    if (explicitlyAllowed.has(fact.id) || explicitlyAllowed.has(fact.code)) return true;
     if (previouslyRevealed.has(fact.id)) return true;
     return fact.disclosureLevel === 'LLM_ALLOWED';
   });
