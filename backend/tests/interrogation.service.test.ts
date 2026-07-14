@@ -39,8 +39,9 @@ const validResponse: StructuredInterrogationResponse = {
 function row(response = validResponse, questionType = 'Q-PLACE') {
   return {
     id: 'message-1', session_id: sessionId, suspect_id: suspectId, request_id: requestId,
-    user_question: '사건 당시 어디에 있었습니까?', question_type: questionType,
-    npc_response: response.dialectResponse, emotion_after: response.emotionAfter,
+    user_question: '사건 당시 어디에 있었습니까?', question_type: questionType, question_type_ko: '장소 질문',
+    npc_response: response.dialectResponse, emotion_before_ko: '중립',
+    emotion_after: response.emotionAfter, emotion_after_ko: '불안',
     evasion_type: response.evasionType, used_fact_refs: response.usedFactIds,
     revealed_fact_refs: response.revealedFactIds, claimed_fact_refs: response.claimedFactIds,
     presented_evidence_refs: [], response_metadata: {
@@ -89,7 +90,7 @@ describe('guarded interrogation flow', () => {
     expect(interrogationLlm.generate).toHaveBeenCalledWith(expect.objectContaining({ user: expect.stringContaining('전용 찻잔') }));
   });
 
-  it('forces Q-EVIDENCE when an acquired evidence id is presented', async () => {
+  it('forces Q-EVIDENCE when an acquired evidence id is presented and returns Korean labels', async () => {
     vi.mocked(repository.findPresentedEvidence).mockResolvedValue([{ id: evidenceId, code: 'GS-01-E4', title: '문틀 혈흔', description: '문틀의 혈흔', evidenceType: 'PHYSICAL' }]);
     vi.mocked(interrogationLlm.generate).mockResolvedValue({
       output: { ...validResponse, usedFactIds: [], revealedFactIds: [], claimedFactIds: [] },
@@ -100,7 +101,7 @@ describe('guarded interrogation flow', () => {
     });
     expect(repository.loadKnowledge).toHaveBeenCalledWith(session, suspectId, 'Q-EVIDENCE');
     expect(repository.finalize).toHaveBeenCalledWith(expect.objectContaining({ questionType: 'Q-EVIDENCE' }));
-    expect(result.message).toMatchObject({ emotionAfter: 'NERVOUS' });
+    expect(result.message).toMatchObject({ emotionAfter: 'NERVOUS', emotionAfterLabel: '불안' });
   });
 
   it('rejects evidence that is not acquired for the session', async () => {

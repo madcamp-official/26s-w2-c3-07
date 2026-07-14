@@ -16,6 +16,16 @@ import {
 
 const MAX_GENERATION_ATTEMPTS = 2;
 
+const questionTypeLabels: Record<string, string> = {
+  'Q-TIME': '시간 질문', 'Q-PLACE': '장소 질문', 'Q-RELATION': '관계 질문', 'Q-MOTIVE': '동기 질문',
+  'Q-EVIDENCE': '증거 질문', 'Q-OTHER': '일반 질문', 'Q-CONTRADICTION': '모순 추궁', 'Q-ACCUSATION': '혐의 추궁',
+  'Q-PROMPT': '프롬프트 조작 시도', 'Q-SMALLTALK': '잡담', 'Q-UNKNOWN': '분류 불가 질문'
+};
+const emotionLabels: Record<string, string> = {
+  CALM: '침착', NEUTRAL: '중립', NERVOUS: '불안', DEFENSIVE: '방어적', ANGRY: '분노', FEARFUL: '공포',
+  GUILTY: '죄책감', SAD: '슬픔', BREAKDOWN: '감정 붕괴', MOCKING: '조롱', AGGRESSIVE_DEFENSIVE: '공격적 방어'
+};
+
 
 const stringArray = (value: Json): string[] => Array.isArray(value)
   ? value.filter((item): item is string => typeof item === 'string')
@@ -41,7 +51,10 @@ export function toInterrogationDto(row: MessageRow): InterrogationMessageDto {
     question: row.user_question,
     dialectResponse: row.npc_response,
     questionType,
+    questionTypeLabel: row.question_type_ko ?? questionTypeLabels[questionType] ?? questionType,
+    emotionBeforeLabel: row.emotion_before_ko,
     emotionAfter,
+    emotionAfterLabel: row.emotion_after_ko ?? emotionLabels[emotionAfter] ?? emotionAfter,
     evasionType,
     usedFactIds: stringArray(row.used_fact_refs),
     revealedFactIds: stringArray(row.revealed_fact_refs),
@@ -62,7 +75,10 @@ const toAskResponse = (
 ): InterrogationResponse => {
   const dto = toInterrogationDto(row);
   return {
-    message: { id: dto.id, npcResponse: dto.dialectResponse, emotionAfter: dto.emotionAfter, evasionType: dto.evasionType },
+    message: {
+      id: dto.id, npcResponse: dto.dialectResponse, emotionAfter: dto.emotionAfter,
+      emotionAfterLabel: dto.emotionAfterLabel, evasionType: dto.evasionType
+    },
     newlyUnlockedClues,
     newlyUnlockedEvidence,
     remainingQuestions

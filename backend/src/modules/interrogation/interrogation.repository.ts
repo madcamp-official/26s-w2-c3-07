@@ -4,10 +4,11 @@ import { toAppError } from '../../shared/utils/supabase.js';
 import { selectDialectExpressions } from './interrogation.knowledge.js';
 import type { OwnedSession, PresentedEvidence, PromptMetrics, QuestionType, StructuredInterrogationResponse, SuspectKnowledge, UnlockedClueDto, UnlockedEvidenceDto } from './interrogation.types.js';
 
-const messageColumns = 'id, session_id, suspect_id, request_id, user_question, question_type, npc_response, emotion_after, evasion_type, used_fact_refs, revealed_fact_refs, claimed_fact_refs, presented_evidence_refs, response_metadata, created_at';
+const messageColumns = 'id, session_id, suspect_id, request_id, user_question, question_type, question_type_ko, npc_response, emotion_before_ko, emotion_after, emotion_after_ko, evasion_type, used_fact_refs, revealed_fact_refs, claimed_fact_refs, presented_evidence_refs, response_metadata, created_at';
 type MessageRow = {
   id: string; session_id: string; suspect_id: string; request_id: string; user_question: string;
-  question_type: string; npc_response: string; emotion_after: string | null; evasion_type: string | null;
+  question_type: string; question_type_ko: string | null; npc_response: string;
+  emotion_before_ko: string | null; emotion_after: string | null; emotion_after_ko: string | null; evasion_type: string | null;
   used_fact_refs: Json; revealed_fact_refs: Json; claimed_fact_refs: Json; presented_evidence_refs: Json;
   response_metadata: Json; created_at: string;
 };

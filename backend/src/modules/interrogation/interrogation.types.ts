@@ -43,6 +43,9 @@ export type InterrogationMessageDto = StructuredInterrogationResponse & {
   requestId: string;
   question: string;
   questionType: QuestionType;
+  questionTypeLabel: string;
+  emotionBeforeLabel: string | null;
+  emotionAfterLabel: string;
   presentedEvidenceIds: string[];
   createdAt: string;
 };
@@ -70,6 +73,7 @@ export type InterrogationResponse = {
     id: string;
     npcResponse: string;
     emotionAfter: Emotion;
+    emotionAfterLabel: string;
     evasionType: EvasionType | null;
   };
   newlyUnlockedClues: UnlockedClueDto[];
