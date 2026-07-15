@@ -56,14 +56,14 @@ describe('content seed', () => {
   });
   it('validates the difficulty exception and episode invariants', () => expect(validateContent(fixture())).toEqual({ valid: true, errors: [] }));
   it('validates the four PDF-derived episode specifications', () => expect(validateContent(fourEpisodeContent())).toEqual({ valid: true, errors: [] }));
-  it('provides exactly 3, 2, and 1 initial evidence rows with at most one easy clue', () => {
+  it('provides exactly 3, 2, and 1 initial evidence rows with one starting clue', () => {
     const tables = fourEpisodeContent();
     for (const episode of tables.episodes) {
       const configs = tables.episode_difficulty_configs.filter((row) => row.episode_id === episode.id);
       for (const [difficulty, expected] of [['easy', 3], ['normal', 2], ['hard', 1]] as const) {
         const config = configs.find((row) => row.difficulty === difficulty)!;
         expect(tables.difficulty_initial_evidence.filter((row) => row.difficulty_config_id === config.id)).toHaveLength(expected);
-        expect(tables.difficulty_initial_clues.filter((row) => row.difficulty_config_id === config.id)).toHaveLength(difficulty === 'easy' ? 1 : 0);
+        expect(tables.difficulty_initial_clues.filter((row) => row.difficulty_config_id === config.id)).toHaveLength(1);
       }
     }
   });

@@ -70,8 +70,7 @@ export const validateContent = (tables: SeedTables): ValidationResult => {
           errors.push(`${code}: ${difficulty} must provide ${expectedEvidenceCount} initial evidence rows`);
         }
         const initialClues = tables.difficulty_initial_clues.filter((row) => text(row, 'difficulty_config_id') === configId);
-        if (difficulty === 'easy' && initialClues.length > 1) errors.push(`${code}: easy may provide at most 1 initial clue`);
-        if (difficulty !== 'easy' && initialClues.length > 0) errors.push(`${code}: ${difficulty} must not provide initial clues`);
+        if (initialClues.length > 1) errors.push(`${code}: ${difficulty} may provide at most 1 initial clue`);
       }
     }
 

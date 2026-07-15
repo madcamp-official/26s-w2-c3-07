@@ -42,7 +42,7 @@ export default function InterrogationPage() {
   const [notice, setNotice] = useState('');
   const [clueModalOpen, setClueModalOpen] = useState(false);
   const [newClueIds, setNewClueIds] = useState<string[]>([]);
-  const expiry = useSessionExpiry(session.data, actualSessionId ?? sessionId, true);
+  const expiry = useSessionExpiry(session.data, route.data?.episodeCode ?? sessionId, true);
   const state = session.data?.suspectStates.find((item) => item.suspectId === suspect.data?.id);
   const suspectQuestionsRemaining = state?.questionsRemaining ?? session.data?.questionsPerSuspect ?? 0;
   const disabled = sending || !session.data || expiry.remainingSeconds <= 0 || session.data.remainingQuestions <= 0 || suspectQuestionsRemaining <= 0 || !['READY', 'INVESTIGATING', 'INTERROGATING'].includes(session.data.status);
