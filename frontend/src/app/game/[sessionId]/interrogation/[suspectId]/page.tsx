@@ -71,7 +71,7 @@ export default function InterrogationPage() {
       <header className="text-center">
         <p className="text-xs text-evidence-red">심문</p>
         <h1 className="font-display text-4xl">{suspect.data.name}</h1>
-        <p className="opacity-60">{suspect.data.occupation} · 감정 {emotionLabel(state?.emotion ?? suspect.data.initialEmotion)}</p>
+        <p className="opacity-60">{suspect.data.occupation} · 감정 {emotionLabel(state?.emotion)}</p>
         <p className="mt-2">전체 남은 질문 {session.data.remainingQuestions}회</p>
         <p className="mt-1 text-sm text-brass-400">이 용의자에게 질문 {suspectQuestionsRemaining}회 남음</p>
       </header>
