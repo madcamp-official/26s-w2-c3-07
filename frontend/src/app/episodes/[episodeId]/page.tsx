@@ -14,19 +14,20 @@ import { ApiError } from '@/types/api';
 import { SuspectImage } from '@/features/suspect/components/SuspectImage';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { resolveEpisodeImage } from '@/features/episode/utils/episodeImage';
-import { useBgm } from '@/features/settings/useBgm';
 import { difficultyLabel } from '@/lib/game-labels';
+import { playSfx } from '@/features/settings/audio';
+import { useSfxEnabled } from '@/features/settings/useBgm';
 
 export default function EpisodePage() {
   const { episodeId } = useParams<{ episodeId: string }>();
   const router = useRouter();
-  useBgm('investigation');
+  const sfxEnabled = useSfxEnabled();
   const detail = useApiResource<EpisodeDetail>(`/episodes/${episodeId}`);
   const scene = useApiResource<Scene>(`/episodes/${episodeId}/scene`);
   const suspects = useApiResource<PublicSuspect[]>(`/episodes/${episodeId}/suspects`);
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [starting, setStarting] = useState(false); const [startError, setStartError] = useState<ApiError | null>(null);
-  async function start() { if (starting) return; setStarting(true); setStartError(null); try { const session = await api.post<SessionView>('/sessions', { episodeId, difficulty }); router.push(`/game/${session.sessionId}`); } catch (cause) { setStartError(cause as ApiError); setStarting(false); } }
+  async function start() { if (starting) return; playSfx('select', sfxEnabled); setStarting(true); setStartError(null); try { const session = await api.post<SessionView>('/sessions', { episodeId, difficulty }); router.push(`/game/${session.sessionId}`); } catch (cause) { setStartError(cause as ApiError); setStarting(false); } }
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-3xl space-y-7">
     <AppHeader />
     <Link href="/regions" className="text-sm opacity-70">← 지역 목록</Link>

@@ -13,7 +13,6 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { EvidenceModal } from '@/components/ui/EvidenceModal';
 import { ClueModal } from '@/components/ui/ClueModal';
 import { resolveEvidenceImage } from '@/features/episode/utils/evidenceImage';
-import { useBgm } from '@/features/settings/useBgm';
 import { difficultyLabel, emotionLabel, sessionStatusLabel } from '@/lib/game-labels';
 import type { EpisodeDetail, PublicSuspect } from '@/types/content';
 import type { Clue, Evidence, EvidenceViewResult } from '@/types/clue';
@@ -21,6 +20,8 @@ import type { SessionView } from '@/types/session';
 import { ApiError } from '@/types/api';
 import { useSessionExpiry } from '@/features/session/useSessionExpiry';
 import { ExpiryNotice } from '@/features/session/components/ExpiryNotice';
+import { playSfx } from '@/features/settings/audio';
+import { useSfxEnabled } from '@/features/settings/useBgm';
 
 const terminalMessage: Partial<Record<SessionView['status'], string>> = {
   EXPIRED: '세션 시간이 만료되었습니다.', ABANDONED: '포기한 세션입니다.', COMPLETED: '이미 완료된 세션입니다.'
@@ -30,7 +31,7 @@ const suspectQuestionLabel = (remaining: number) => remaining > 0 ? `질문 ${re
 export default function GamePage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const router = useRouter();
-  useBgm('investigation');
+  const sfxEnabled = useSfxEnabled();
   const session = useApiResource<SessionView>(`/sessions/${sessionId}`);
   const episode = useApiResource<EpisodeDetail>(session.data ? `/episodes/${session.data.episodeId}` : null);
   const suspects = useApiResource<PublicSuspect[]>(session.data ? `/episodes/${session.data.episodeId}/suspects` : null);
@@ -52,6 +53,7 @@ export default function GamePage() {
     if (busy) return;
     setBusy(suspectId); setActionError(null);
     try {
+      playSfx('select', sfxEnabled);
       await api.patch(`/sessions/${sessionId}/current-suspect`, { suspectId });
       const query = presentedEvidenceId ? `?evidenceId=${encodeURIComponent(presentedEvidenceId)}` : '';
       router.push(`/game/${sessionId}/interrogation/${suspectId}${query}`);
@@ -65,6 +67,7 @@ export default function GamePage() {
     if (viewingEvidenceId) return;
     setPreviewEvidence(item); setViewingEvidenceId(item.id); setEvidenceError(null);
     try {
+      playSfx('evidence', sfxEnabled);
       const result = await api.post<EvidenceViewResult>(`/sessions/${sessionId}/evidence/${item.id}/view`);
       const newClues = Array.isArray(result?.newClues) ? result.newClues : [];
       const newEvidence = Array.isArray(result?.newlyUnlockedEvidence) ? result.newlyUnlockedEvidence : [];
@@ -85,6 +88,7 @@ export default function GamePage() {
 
   async function deduction() {
     if (busy) return;
+    playSfx('submit', sfxEnabled);
     router.push(`/game/${sessionId}/deduction`);
   }
 

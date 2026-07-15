@@ -13,10 +13,13 @@ import type { PublicSuspect } from '@/types/content';
 import type { SessionView } from '@/types/session';
 import type { DeductionResult } from '@/types/deduction';
 import { ApiError } from '@/types/api';
+import { playSfx } from '@/features/settings/audio';
+import { useSfxEnabled } from '@/features/settings/useBgm';
 
 export default function DeductionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const router = useRouter();
+  const sfxEnabled = useSfxEnabled();
   const session = useApiResource<SessionView>(`/sessions/${sessionId}`);
   const suspects = useApiResource<PublicSuspect[]>(session.data ? `/episodes/${session.data.episodeId}/suspects` : null);
   const [selected, setSelected] = useState('');
@@ -32,6 +35,7 @@ export default function DeductionPage() {
     if (!selected || busy) return;
     setBusy(true);
     setError(null);
+    playSfx('submit', sfxEnabled);
     try {
       await api.post<DeductionResult>(`/sessions/${sessionId}/deduction`, { suspectId: selected });
       router.replace(`/game/${sessionId}/result`);

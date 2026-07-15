@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AuthGuard } from '@/features/auth/AuthProvider';
 import { useApiResource } from '@/features/api/useApiResource';
 import { api } from '@/lib/api-client';
@@ -11,6 +11,8 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { resolveEndingImage } from '@/features/episode/utils/endingImage';
 import type { DeductionResult, Ending } from '@/types/deduction';
 import { ApiError } from '@/types/api';
+import { playSfx } from '@/features/settings/audio';
+import { useSfxEnabled } from '@/features/settings/useBgm';
 
 export default function ResultPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -18,6 +20,13 @@ export default function ResultPage() {
   const ending = useApiResource<Ending>(`/sessions/${sessionId}/ending`);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
+  const sfxEnabled = useSfxEnabled();
+  const playedEndingSfx = useRef(false);
+  useEffect(() => {
+    if (!result.data || playedEndingSfx.current) return;
+    playedEndingSfx.current = true;
+    playSfx(result.data.isCorrect ? 'success' : 'failure', sfxEnabled);
+  }, [result.data, sfxEnabled]);
   async function report() {
     setGenerating(true); setError(null);
     try { await api.post(`/sessions/${sessionId}/ending/report`); await ending.reload(); }
