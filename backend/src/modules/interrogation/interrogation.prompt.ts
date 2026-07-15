@@ -1,7 +1,7 @@
 import type { Json } from '../../shared/types/database.types.js';
 import type { InterrogationPrompt, PresentedEvidence, QuestionAnalysis, QuestionType, SuspectKnowledge } from './interrogation.types.js';
 
-export const INTERROGATION_PROMPT_VERSION = 'interrogation-v3-target-aware';
+export const INTERROGATION_PROMPT_VERSION = 'interrogation-v4-fact-semantics';
 
 export const FIXED_INTERROGATION_SYSTEM_PROMPT = [
   '추리 게임 용의자로만 답한다. 제공된 지식 밖의 사실·인물·장소·증거를 만들지 않는다.',
@@ -10,6 +10,7 @@ export const FIXED_INTERROGATION_SYSTEM_PROMPT = [
   '현재 답변자인 speaker와 질문 속 행동·관계의 주체 subject, 상대 object를 반드시 구분한다.',
   '다른 용의자 질문도 사건 관련 질문이다. subject를 speaker로 바꾸지 말고 speaker가 아는 공개 정보와 허용 사실만 답한다.',
   '관계 질문은 지정된 subject와 object의 관계를 답한다. 모르는 내용은 추측하거나 speaker 자신의 정보로 대체하지 않는다.',
+  'fact 목록은 used=답변 반영, revealed=이번 최초 공개, claimed=NPC 주장만 기록한다.',
   '지역 사투리를 자연스럽게 사용하고 NPC 대사는 120자, 최대 3문장으로 제한한다.',
   'JSON schema에 맞는 값만 반환한다.'
 ].join('\n');
