@@ -52,7 +52,7 @@ export const clueRepository = {
 
   async findAvailableEvidence(sessionId: string, episodeId: string): Promise<EvidenceDto[]> {
     const { data: available, error: availableError } = await serviceRoleClient.from('session_evidence')
-      .select('evidence_id, source_type, discovered_at, viewed_at').eq('session_id', sessionId).order('discovered_at');
+      .select('evidence_id, source_type, viewed_at').eq('session_id', sessionId);
     throwIfError(availableError);
     if (!available?.length) return [];
     const { data: evidence, error: evidenceError } = await serviceRoleClient.schema('game_content').from('evidence')
@@ -62,7 +62,7 @@ export const clueRepository = {
     const stateById = new Map(available.map((row) => [row.evidence_id, row]));
     return (evidence ?? []).map((item) => {
       const state = stateById.get(item.id)!;
-      return { id: item.id, code: item.code, title: item.title, description: item.description, evidenceType: item.evidence_type, discoveredAt: state.discovered_at, viewedAt: state.viewed_at, source: state.source_type };
+      return { id: item.id, code: item.code, title: item.title, description: item.description, evidenceType: item.evidence_type, discoveredAt: null, viewedAt: state.viewed_at, source: state.source_type };
     });
   },
 
