@@ -31,8 +31,8 @@ export default function RegionsPage() {
       <AppHeader />
       <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs tracking-widest text-evidence-red">사건 기록 보관소</p><h1 className="font-display text-4xl font-bold">지역 및 사건 선택</h1></div><Link href="/profile" className="border border-brass-600/50 px-4 py-2">내 기록</Link></header>
       {active.data && <Link href={`/game/${active.data.sessionId}`} className="block border border-brass-400 bg-brass-600/10 p-4">진행 중인 사건 이어하기 · 남은 질문 {active.data.remainingQuestions}회 →</Link>}
-      {progress.data && <section className="grid grid-cols-2 gap-3 md:grid-cols-5">{[
-        ['플레이 사건', progress.data.playedEpisodeCount], ['완료 사건', progress.data.completedEpisodeCount], ['해결 사건', progress.data.solvedEpisodeCount], ['완전 해결', progress.data.fullResolutionCount], ['사투리', progress.data.unlockedDialectCount]
+      {progress.data && <section className="grid grid-cols-2 gap-3 md:grid-cols-4">{[
+        ['완료 사건', progress.data.completedEpisodeCount], ['해결 사건', progress.data.solvedEpisodeCount], ['미해결 사건', progress.data.unresolvedEpisodeCount], ['현재 연승', progress.data.currentStreak]
       ].map(([label, value]) => <div key={label} className="border border-brass-600/30 bg-noir-900/70 p-3 text-center"><b className="text-xl text-brass-400">{value}</b><p className="text-xs opacity-60">{label}</p></div>)}</section>}
       {regions.loading ? <LoadingState /> : regions.error ? <ErrorState error={regions.error} retry={regions.reload} /> : !regions.data?.length ? <EmptyState label="활성 지역이 없습니다." /> : <div className="grid gap-8 md:grid-cols-[minmax(0,320px)_1fr]">
         <section className="relative mx-auto aspect-[462/550] w-full max-w-xs rounded-lg border border-brass-600/30 bg-noir-900/70 p-4">

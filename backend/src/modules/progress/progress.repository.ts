@@ -151,18 +151,26 @@ export const progressRepository = {
 
   async resultStats(userId: string): Promise<ResultStats> {
     const { data: sessions, error: sessionError } = await serviceRoleClient.from('game_sessions')
-      .select('id, episode_id').eq('user_id', userId).eq('status', 'COMPLETED');
+      .select('id, episode_id, completed_at').eq('user_id', userId).eq('status', 'COMPLETED').order('completed_at', { ascending: false });
     fail(sessionError);
-    if (!sessions?.length) return { correctCount: 0, fullResolutionCount: 0, completedEpisodeIds: [], solvedEpisodeIds: [] };
+    if (!sessions?.length) return { correctCount: 0, fullResolutionCount: 0, completedEpisodeIds: [], solvedEpisodeIds: [], currentStreak: 0 };
     const { data: results, error: resultError } = await serviceRoleClient.from('game_results')
       .select('session_id, is_correct, resolution_type').in('session_id', sessions.map((session) => session.id));
     fail(resultError);
     const episodeBySession = new Map(sessions.map((session) => [session.id, session.episode_id]));
+    const resultBySession = new Map((results ?? []).map((result) => [result.session_id, result]));
+    let currentStreak = 0;
+    for (const session of sessions) {
+      const result = resultBySession.get(session.id);
+      if (!result?.is_correct) break;
+      currentStreak += 1;
+    }
     return {
       correctCount: (results ?? []).filter((result) => result.is_correct).length,
       fullResolutionCount: (results ?? []).filter((result) => result.resolution_type === 'FULL_RESOLUTION').length,
       completedEpisodeIds: [...new Set(sessions.map((session) => session.episode_id))],
-      solvedEpisodeIds: [...new Set((results ?? []).filter((result) => result.is_correct).map((result) => episodeBySession.get(result.session_id)).filter((id): id is string => Boolean(id)))]
+      solvedEpisodeIds: [...new Set((results ?? []).filter((result) => result.is_correct).map((result) => episodeBySession.get(result.session_id)).filter((id): id is string => Boolean(id)))],
+      currentStreak
     };
   },
 
