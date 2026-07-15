@@ -348,3 +348,5 @@ for each row execute function game_private.score_investigation_result();
 
 revoke all on function game_private.score_investigation_result() from public, anon, authenticated;
 grant execute on function game_private.score_investigation_result() to service_role;
+
+

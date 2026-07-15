@@ -87,3 +87,5 @@ revoke all on function game_private.evaluate_clue_unlocks_with_evidence(uuid, te
   from public, anon, authenticated;
 grant execute on function game_private.evaluate_clue_unlocks_with_evidence(uuid, text, uuid)
   to service_role;
+
+

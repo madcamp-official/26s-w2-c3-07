@@ -667,3 +667,5 @@ grant execute on function public.finalize_interrogation(
 ) to service_role;
 grant execute on function public.view_session_evidence(uuid, uuid, uuid)
   to service_role;
+
+
