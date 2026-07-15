@@ -29,7 +29,8 @@ const expectedMigrations = [
   '20260715072143_add_ending_truth_fields.sql',
   '20260715072156_add_initial_clues_for_all_difficulties.sql',
   '20260715072217_neutralize_suspect_public_profiles.sql',
-  '20260715080930_make_clues_indirect.sql'
+  '20260715080930_make_clues_indirect.sql',
+  '20260715123107_fix_clue_unlock_fact_used_conditions.sql'
 ];
 const migrationSql = expectedMigrations
   .map((name) => readFileSync(new URL(name, migrationDirectory), 'utf8'))

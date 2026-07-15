@@ -253,7 +253,7 @@ describe('guarded interrogation flow', () => {
     expect(interrogationLlm.generate).toHaveBeenCalledTimes(2);
     expect(repository.logLlm).toHaveBeenLastCalledWith(expect.objectContaining({
       inputTokens: 40, outputTokens: 15, cachedTokens: 10, attempt: 2,
-      promptMetrics: expect.objectContaining({ promptVersion: 'interrogation-v3-target-aware', includedRuleCount: 0 })
+      promptMetrics: expect.objectContaining({ promptVersion: 'interrogation-v4-fact-semantics', includedRuleCount: 0 })
     }));
   });
 
@@ -262,6 +262,31 @@ describe('guarded interrogation flow', () => {
     vi.mocked(repository.findCluesByIds).mockResolvedValue([{ id: 'clue-new', code: 'JJ-01-C1', title: '방문 시각', content: '시각 모순', recordSummary: '방문 시각이 다르다.', clueType: 'CORE', importance: 'CORE' }]);
     const result = await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '어디에 있었습니까?' });
     expect(result.newlyUnlockedClues.map((clue) => clue.id)).toEqual(['clue-new']);
+  });
+
+  it('returns a clue unlocked by a used fact when no fact was newly revealed', async () => {
+    const usedOnlyResponse = { ...validResponse, usedFactIds: [factId], revealedFactIds: [], claimedFactIds: [] };
+    vi.mocked(interrogationLlm.generate).mockResolvedValue({
+      output: usedOnlyResponse, provider: 'openai', model: 'test-model',
+      inputTokens: 20, outputTokens: 10, cachedTokens: 0, latencyMs: 12
+    });
+    vi.mocked(repository.finalize).mockImplementation(async (input) => ({
+      duplicate: false, message: row(input.response, input.questionType),
+      newClueIds: ['clue-used-fact'], newEvidenceIds: [], remainingQuestions: 3
+    }));
+    vi.mocked(repository.findCluesByIds).mockResolvedValue([{
+      id: 'clue-used-fact', code: 'JJ-01-C1', title: '방문 시각', content: '시각 모순',
+      recordSummary: '방문 시각이 다르다.', clueType: 'CORE', importance: 'CORE'
+    }]);
+
+    const result = await interrogationService.ask(sessionId, userId, {
+      requestId, suspectId, question: '사건 당시 어디에 있었습니까?'
+    });
+
+    expect(repository.finalize).toHaveBeenCalledWith(expect.objectContaining({
+      response: expect.objectContaining({ usedFactIds: [factId], revealedFactIds: [] })
+    }));
+    expect(result.newlyUnlockedClues.map((item) => item.id)).toEqual(['clue-used-fact']);
   });
 
   it('returns only newly unlocked evidence rows from the same episode', async () => {
