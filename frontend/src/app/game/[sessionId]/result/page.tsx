@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -8,6 +8,7 @@ import { useApiResource } from '@/features/api/useApiResource';
 import { api } from '@/lib/api-client';
 import { ErrorState, LoadingState } from '@/components/ui/ApiState';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { resolveEndingImage } from '@/features/episode/utils/endingImage';
 import { resolutionLabel } from '@/lib/game-labels';
 import type { DeductionResult, Ending } from '@/types/deduction';
 import { ApiError } from '@/types/api';
@@ -24,8 +25,12 @@ export default function ResultPage() {
     catch (cause) { console.error('보고서 생성 실패', cause); setError(cause as ApiError); }
     finally { setGenerating(false); }
   }
+  const endingImage = result.data && ending.data
+    ? resolveEndingImage(ending.data.selectedSuspect.code, result.data.isCorrect)
+    : null;
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-12 text-parchment-100"><div className="mx-auto max-w-3xl space-y-6"><AppHeader />
     {result.loading || ending.loading ? <LoadingState label="판정과 엔딩을 불러오는 중..." /> : result.error ? <ErrorState error={result.error} message="추리 결과를 불러오지 못했습니다." /> : ending.error ? <ErrorState error={ending.error} message="사건 결말을 불러오지 못했습니다." /> : result.data && ending.data && <>
+      {endingImage && <div className="relative aspect-[4/3] w-full overflow-hidden border border-brass-600/30"><Image src={endingImage} alt={ending.data.title} fill sizes="(min-width: 768px) 768px, 100vw" className="object-cover" /></div>}
       <header className="text-center"><p className="text-xs text-evidence-red">{resolutionLabel(result.data.resolutionType)}</p><h1 className="font-display text-5xl">{ending.data.title}</h1><p className="mt-2">{result.data.isCorrect ? '정답입니다.' : '잘못된 용의자를 지목했습니다.'}</p></header>
       <section className="border-l-4 border-evidence-red bg-[#e9dfc7] p-6 text-noir-900">{ending.data.fixedContent}</section>
       <section className="border p-5"><h2 className="font-display text-2xl">사건의 진상</h2><p className="mt-3">실제 범인: {ending.data.actualCulprit.name}</p><p>동기: {ending.data.motive ?? '확인되지 않음'}</p><p>범행 방법: {ending.data.crimeMethod ?? '확인되지 않음'}</p></section>
