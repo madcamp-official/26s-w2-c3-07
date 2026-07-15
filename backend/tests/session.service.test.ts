@@ -26,6 +26,7 @@ const mockViewDependencies = () => {
   vi.spyOn(repository, 'evidence').mockResolvedValue(['e1']);
   vi.spyOn(repository, 'clueCount').mockResolvedValue(0);
   vi.spyOn(repository, 'difficulty').mockResolvedValue('hard');
+  vi.spyOn(repository, 'questionsPerSuspect').mockResolvedValue(2);
 };
 
 afterEach(() => vi.restoreAllMocks());
@@ -61,8 +62,9 @@ describe('session lifecycle', () => {
     vi.spyOn(repository, 'findOwned').mockResolvedValue(row());
     const view = await sessionService.create('user-1', { episodeId: 'episode-1', difficulty: 'hard' });
     expect(repository.initialize).toHaveBeenCalledWith('user-1', 'episode-1', 'hard');
-    expect(view).toMatchObject({ status: 'READY', difficulty: 'hard', remainingQuestions: 6 });
+    expect(view).toMatchObject({ status: 'READY', difficulty: 'hard', remainingQuestions: 6, questionsPerSuspect: 2 });
     expect(view.suspectStates).toHaveLength(4);
+    expect(view.suspectStates[0]).toMatchObject({ questionsAsked: 0, questionsRemaining: 2 });
     expect(view.viewedEvidenceIds).toEqual(['e1']);
   });
 

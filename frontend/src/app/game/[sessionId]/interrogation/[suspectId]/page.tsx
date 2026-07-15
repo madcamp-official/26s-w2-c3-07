@@ -32,7 +32,8 @@ export default function InterrogationPage() {
   const [clueModalOpen, setClueModalOpen] = useState(false);
   const [newClueIds, setNewClueIds] = useState<string[]>([]);
   const state = session.data?.suspectStates.find((item) => item.suspectId === suspectId);
-  const disabled = sending || !session.data || session.data.remainingQuestions <= 0 || !['READY', 'INVESTIGATING', 'INTERROGATING'].includes(session.data.status);
+  const suspectQuestionsRemaining = state?.questionsRemaining ?? session.data?.questionsPerSuspect ?? 0;
+  const disabled = sending || !session.data || session.data.remainingQuestions <= 0 || suspectQuestionsRemaining <= 0 || !['READY', 'INVESTIGATING', 'INTERROGATING'].includes(session.data.status);
 
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -72,6 +73,7 @@ export default function InterrogationPage() {
         <h1 className="font-display text-4xl">{suspect.data.name}</h1>
         <p className="opacity-60">{suspect.data.occupation} · 감정 {emotionLabel(state?.emotion ?? suspect.data.initialEmotion)}</p>
         <p className="mt-2">전체 남은 질문 {session.data.remainingQuestions}회</p>
+        <p className="mt-1 text-sm text-brass-400">이 용의자에게 질문 {suspectQuestionsRemaining}회 남음</p>
       </header>
       <button type="button" onClick={() => setClueModalOpen(true)} className="w-full border border-brass-600/30 p-3 text-left">획득한 단서 {clues.data?.length ?? 0}개 <span className="float-right text-xs opacity-60">목록 보기</span></button>
       {notice && <button type="button" role="status" onClick={() => setClueModalOpen(true)} className="w-full border border-brass-400 p-3 text-left">{notice}</button>}
@@ -85,8 +87,9 @@ export default function InterrogationPage() {
         </article>)}
       </section>
       {error && <ErrorState error={error} message="질문을 처리하지 못했습니다. 질문 횟수는 차감되지 않았습니다." retry={() => void send({ preventDefault() {} } as FormEvent)} />}
+      {suspectQuestionsRemaining === 0 && <p role="status" className="border border-evidence-red/40 bg-evidence-red/10 p-3">이 용의자에게 가능한 질문을 모두 사용했습니다.</p>}
       <form onSubmit={send} className="flex gap-2">
-        <input aria-label="질문" value={question} onChange={(event) => setQuestion(event.target.value)} disabled={disabled} maxLength={500} className="flex-1 border border-brass-600/40 bg-noir-900 px-4 py-3" placeholder={session.data.remainingQuestions ? '질문을 입력하세요' : '질문 횟수를 모두 사용했습니다'} />
+        <input aria-label="질문" value={question} onChange={(event) => setQuestion(event.target.value)} disabled={disabled} maxLength={500} className="flex-1 border border-brass-600/40 bg-noir-900 px-4 py-3" placeholder={suspectQuestionsRemaining ? '질문을 입력하세요' : '이 용의자에게 가능한 질문을 모두 사용했습니다'} />
         <button disabled={disabled || question.trim().length < 2} className="bg-evidence-red px-6 font-bold disabled:opacity-40">{sending ? '전송 중...' : '질문'}</button>
       </form>
       {clueModalOpen && <ClueModal clues={Array.isArray(clues.data) ? clues.data : []} highlightedIds={newClueIds} initialSelectedId={newClueIds[0] ?? null} onClose={() => setClueModalOpen(false)} />}

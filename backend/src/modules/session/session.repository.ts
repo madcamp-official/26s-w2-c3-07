@@ -32,6 +32,12 @@ export const sessionRepository = {
     if (error) throw toAppError(error);
     return data?.difficulty ?? 'normal';
   },
+  async questionsPerSuspect(configId: string) {
+    const { data, error } = await serviceRoleClient.schema('game_content').from('episode_difficulty_configs')
+      .select('questions_per_suspect').eq('id', configId).maybeSingle();
+    if (error) throw toAppError(error);
+    return data?.questions_per_suspect ?? 2;
+  },
   async evidence(id: string) {
     const { data, error } = await serviceRoleClient.from('session_evidence').select('evidence_id').eq('session_id', id).not('viewed_at', 'is', null);
     if (error) throw toAppError(error);
