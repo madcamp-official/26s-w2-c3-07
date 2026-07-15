@@ -119,3 +119,5 @@ grant execute on function public.initialize_game_session(uuid, uuid, text)
   to service_role;
 
 notify pgrst, 'reload schema';
+
+

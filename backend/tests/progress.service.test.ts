@@ -94,20 +94,20 @@ describe('history pagination and dialect unlocks', () => {
 });
 
 describe('database progress invariants', () => {
-  const migration = readFileSync(new URL('../supabase/migrations/20260713052002_add_progress_and_history.sql', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../supabase/migrations/20260715024353_allow_expired_session_deduction.sql', import.meta.url), 'utf8');
   const route = readFileSync(new URL('../src/modules/progress/progress.route.ts', import.meta.url), 'utf8');
   const repositorySource = readFileSync(new URL('../src/modules/progress/progress.repository.ts', import.meta.url), 'utf8');
   const seedSource = readFileSync(new URL('../src/seeds/content-seed.ts', import.meta.url), 'utf8');
 
-  it('updates best score only when the new score is higher', () => {
-    expect(migration).toContain('excluded.best_score > public.user_episode_progress.best_score');
-    expect(migration).toContain('else public.user_episode_progress.best_score');
+  it('preserves the highest completed difficulty', () => {
+    expect(migration).toContain("array_position(array['easy','normal','hard'], excluded.best_difficulty)");
+    expect(migration).toContain('then excluded.best_difficulty else public.user_episode_progress.best_difficulty');
   });
 
   it('preserves firstClearedAt and updates lastPlayedAt on every completion', () => {
     expect(migration).toContain('first_cleared_at = coalesce(public.user_episode_progress.first_cleared_at, excluded.first_cleared_at)');
     expect(migration).toContain('last_played_at = excluded.last_played_at');
-    expect(migration).toContain("new.status = 'COMPLETED'");
+    expect(migration).toContain("set status = 'COMPLETED'");
   });
 
   it('provides read-only routes and explicit authenticated-user filters', () => {

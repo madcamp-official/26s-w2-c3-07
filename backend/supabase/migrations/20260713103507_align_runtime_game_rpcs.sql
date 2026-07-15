@@ -576,3 +576,5 @@ grant execute on function public.complete_ending_report_generation(uuid, uuid, t
 grant execute on function public.fail_ending_report_generation(uuid, uuid) to service_role;
 
 notify pgrst, 'reload schema';
+
+

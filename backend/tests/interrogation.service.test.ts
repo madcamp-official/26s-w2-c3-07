@@ -278,7 +278,7 @@ describe('guarded interrogation flow', () => {
   });
 
   it('uses the new locked database transaction for all turn state', () => {
-    const sql = readFileSync(new URL('../supabase/migrations/20260714072622_llm_clue_unlock_integration.sql', import.meta.url), 'utf8');
+    const sql = readFileSync(new URL('../supabase/migrations/20260714074318_llm_clue_unlock_integration.sql', import.meta.url), 'utf8');
     expect(sql).toContain('for update');
     expect(sql).toContain('revealed_fact_refs');
     expect(sql).toContain('claimed_fact_refs');

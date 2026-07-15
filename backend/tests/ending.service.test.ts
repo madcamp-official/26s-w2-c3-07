@@ -142,15 +142,16 @@ describe('investigation report generation', () => {
 });
 
 describe('ending persistence and privacy', () => {
-  const migration = readFileSync(new URL('../supabase/migrations/20260713050748_add_ending_reports.sql', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../supabase/migrations/20260713103507_align_runtime_game_rpcs.sql', import.meta.url), 'utf8');
   const repositorySource = readFileSync(new URL('../src/modules/ending/ending.repository.ts', import.meta.url), 'utf8');
 
-  it('atomically claims one report generation and limits abuse', () => {
+  it('locks report reuse and permits only service-role RPC access', () => {
     expect(migration).toContain('for update');
-    expect(migration).toContain("report_attempt_count >= 3");
-    expect(migration).toContain("interval '30 seconds'");
+    expect(migration).toContain('report_text = coalesce(report_text, btrim(p_report_text))');
+    expect(migration).toContain('aftermath_text = coalesce(aftermath_text, btrim(p_aftermath_text))');
     expect(migration).toContain("set search_path = ''");
-    expect(migration).toContain('from public, anon, authenticated');
+    expect(migration).toContain('revoke all on function public.claim_ending_report_generation(uuid, uuid) from public, anon, authenticated');
+    expect(migration).toContain('grant execute on function public.claim_ending_report_generation(uuid, uuid) to service_role');
   });
 
   it('loads all timelines after completion but never queries response rule text', () => {

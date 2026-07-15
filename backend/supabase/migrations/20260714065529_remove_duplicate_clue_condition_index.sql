@@ -1,0 +1,1 @@
+drop index if exists game_content.clue_unlock_conditions_clue_group_idx;

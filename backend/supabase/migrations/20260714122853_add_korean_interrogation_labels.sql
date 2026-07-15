@@ -63,21 +63,38 @@ as $$
 $$;
 
 alter table game_content.suspects
-  add column if not exists initial_emotion_ko text generated always as (game_content.emotion_label_ko(initial_emotion)) stored;
+  add column if not exists initial_emotion_ko text
+  generated always as (game_content.emotion_label_ko(initial_emotion)) stored;
+
 alter table game_content.suspect_response_rules
-  add column if not exists question_type_ko text generated always as (game_content.question_type_label_ko(question_type)) stored;
+  add column if not exists question_type_ko text
+  generated always as (game_content.question_type_label_ko(question_type)) stored;
+
 alter table game_content.suspect_emotion_rules
-  add column if not exists trigger_type_ko text generated always as (game_content.emotion_trigger_label_ko(trigger_type)) stored,
-  add column if not exists from_emotion_ko text generated always as (game_content.emotion_label_ko(from_emotion)) stored,
-  add column if not exists to_emotion_ko text generated always as (game_content.emotion_label_ko(to_emotion)) stored;
+  add column if not exists trigger_type_ko text
+  generated always as (game_content.emotion_trigger_label_ko(trigger_type)) stored,
+  add column if not exists from_emotion_ko text
+  generated always as (game_content.emotion_label_ko(from_emotion)) stored,
+  add column if not exists to_emotion_ko text
+  generated always as (game_content.emotion_label_ko(to_emotion)) stored;
+
 alter table public.session_suspect_states
-  add column if not exists current_emotion_ko text generated always as (game_content.emotion_label_ko(current_emotion)) stored;
+  add column if not exists current_emotion_ko text
+  generated always as (game_content.emotion_label_ko(current_emotion)) stored;
+
 alter table public.interrogation_messages
-  add column if not exists question_type_ko text generated always as (game_content.question_type_label_ko(question_type)) stored,
-  add column if not exists emotion_before_ko text generated always as (game_content.emotion_label_ko(emotion_before)) stored,
-  add column if not exists emotion_after_ko text generated always as (game_content.emotion_label_ko(emotion_after)) stored;
+  add column if not exists question_type_ko text
+  generated always as (game_content.question_type_label_ko(question_type)) stored,
+  add column if not exists emotion_before_ko text
+  generated always as (game_content.emotion_label_ko(emotion_before)) stored,
+  add column if not exists emotion_after_ko text
+  generated always as (game_content.emotion_label_ko(emotion_after)) stored;
+
 alter table game_private.llm_request_logs
-  add column if not exists question_type_ko text generated always as (game_content.question_type_label_ko(metadata ->> 'questionType')) stored;
+  add column if not exists question_type_ko text
+  generated always as (
+    game_content.question_type_label_ko(metadata ->> 'questionType')
+  ) stored;
 
 comment on function game_content.question_type_label_ko(text)
   is '심문 질문 유형 내부 코드를 한국어 표시명으로 변환한다.';
