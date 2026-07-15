@@ -86,6 +86,16 @@ describe('content seed', () => {
     const types = new Set(tables.clue_unlock_conditions.map((row) => row.condition_type));
     expect(types).toEqual(new Set(['EVIDENCE_VIEWED', 'QUESTION_TYPE_ASKED', 'FACT_USED', 'SUSPECT_INTERROGATED', 'CLUE_ACQUIRED']));
   });
+  it('describes clues as observations or eliminations instead of naming the culprit', () => {
+    const clues = fourEpisodeContent().clues;
+    const visibleText = clues.map((row) => String(row.content)).join('\n');
+    expect(visibleText).not.toMatch(/살해 동기|범인(?:을|은|이|이다)|진범|범행을 입증/);
+    expect(clues.find((row) => row.code === 'GS-01-C2')?.content).toContain('두부 외상은 사인이 아니었다');
+    expect(clues.find((row) => row.code === 'GS-01-C5')?.content).toContain('사랑채에 다시 들어갔음');
+    expect(clues.find((row) => row.code === 'JL-01-C4')?.content).toContain('살인 은폐가 아니라');
+    expect(clues.find((row) => row.code === 'CC-01-C2')?.content).toContain('핵심 시각과 동선이 겹치지 않는다');
+    expect(clues.find((row) => row.code === 'JJ-01-C1')?.content).toContain('독 투입 시간과 다르다');
+  });
   it('marks curated dialect seed rows with compact prompt metadata', () => {
     const rows = fourEpisodeContent().dialect_expressions;
     expect(rows.length).toBeGreaterThan(0);
