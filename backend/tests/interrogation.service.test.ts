@@ -26,7 +26,10 @@ const knowledge: SuspectKnowledge = {
   lies: [{ claim: '일찍 퇴근했다.', truth: '별장에 남아 있었다.' }], responseRules: [], emotionRules: [],
   effectiveRuleType: 'Q-OTHER',
   dialectExpressions: [{ code: 'JJ-01-MVP-1', standardText: '모르겠습니다', dialectText: '모르쿠다', category: 'EVASION', intensity: 1, questionTypes: ['Q-OTHER'], emotionTags: ['DEFENSIVE'], verificationStatus: 'APPROVED_FOR_MVP' }],
-  relationships: [], previousMessages: [], currentEmotion: 'NEUTRAL', difficulty: 'normal', dialectLevel: 2, revealedFactIds: [], claimedFactIds: [],
+  relationships: [], publicRelationships: [],
+  characters: [{ id: suspectId, code: 'JJ-01-S2', name: '강윤호', occupation: '운전기사', victimRelation: '피해자의 운전기사' }],
+  victim: { id: '00000000-0000-4000-8000-000000000009', name: '차영백' },
+  previousMessages: [], currentEmotion: 'NEUTRAL', difficulty: 'normal', dialectLevel: 2, revealedFactIds: [], claimedFactIds: [],
   knownEntities: ['강윤호', '별장', '전용 찻잔']
 };
 
@@ -80,6 +83,47 @@ describe('guarded interrogation flow', () => {
       questionType: 'Q-PLACE', response: expect.objectContaining({ revealedFactIds: [factId] })
     }));
     expect(repository.loadKnowledge).toHaveBeenCalledWith(session, suspectId, 'Q-PLACE');
+  });
+
+  it('provides a separate cross-suspect relationship target without exposing private facts', async () => {
+    const otherId = '00000000-0000-4000-8000-000000000010';
+    vi.mocked(repository.loadKnowledge).mockResolvedValue({
+      ...knowledge,
+      characters: [
+        ...knowledge.characters,
+        { id: otherId, code: 'JJ-01-S3', name: '김도현', occupation: '둘째아들', victimRelation: '피해자의 둘째 아들' }
+      ]
+    });
+    vi.mocked(interrogationLlm.generate).mockResolvedValue({
+      output: { ...validResponse, dialectResponse: '김도현은 피해자의 둘째 아들입니다.', usedFactIds: [], revealedFactIds: [], claimedFactIds: [] },
+      provider: 'openai', model: 'test-model', inputTokens: 20, outputTokens: 10, cachedTokens: 0, latencyMs: 12
+    });
+    await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '김도현은 피해자와 어떤 관계야?' });
+    const prompt = vi.mocked(interrogationLlm.generate).mock.calls[0][0].user;
+    expect(prompt).toContain(`\"subjectId\":\"${otherId}\"`);
+    expect(prompt).toContain('피해자의 둘째 아들');
+    expect(prompt).not.toContain('internalSecret');
+  });
+
+  it('does not substitute the speaker relationship for a cross-suspect relationship', async () => {
+    const otherId = '00000000-0000-4000-8000-000000000010';
+    vi.mocked(repository.loadKnowledge).mockResolvedValue({
+      ...knowledge,
+      characters: [...knowledge.characters, { id: otherId, code: 'JJ-01-S3', name: '김도현', occupation: '둘째아들', victimRelation: '피해자의 둘째 아들' }]
+    });
+    vi.mocked(interrogationLlm.generate).mockResolvedValue({
+      output: { ...validResponse, dialectResponse: '저는 피해자의 운전기사입니다.', usedFactIds: [], revealedFactIds: [], claimedFactIds: [] },
+      provider: 'openai', model: 'test-model', inputTokens: 20, outputTokens: 10, cachedTokens: 0, latencyMs: 12
+    });
+    const result = await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '김도현은 피해자와 어떤 관계야?' });
+    expect(interrogationLlm.generate).toHaveBeenCalledTimes(2);
+    expect(result.message).toMatchObject({ npcResponse: '그 부분은 저도 잘 모릅니다.', evasionType: 'UNKNOWN' });
+  });
+
+  it('clarifies an unresolved pronoun without choosing an arbitrary suspect', async () => {
+    const result = await interrogationService.ask(sessionId, userId, { requestId, suspectId, question: '그 사람은 피해자와 어떤 관계야?' });
+    expect(interrogationLlm.generate).not.toHaveBeenCalled();
+    expect(result.message.npcResponse).toContain('누구를 말씀하시는 건지');
   });
 
   it('passes only session-acquired evidence to the prompt and atomic finalize', async () => {
@@ -209,7 +253,7 @@ describe('guarded interrogation flow', () => {
     expect(interrogationLlm.generate).toHaveBeenCalledTimes(2);
     expect(repository.logLlm).toHaveBeenLastCalledWith(expect.objectContaining({
       inputTokens: 40, outputTokens: 15, cachedTokens: 10, attempt: 2,
-      promptMetrics: expect.objectContaining({ promptVersion: 'interrogation-v2-compact', includedRuleCount: 0 })
+      promptMetrics: expect.objectContaining({ promptVersion: 'interrogation-v3-target-aware', includedRuleCount: 0 })
     }));
   });
 

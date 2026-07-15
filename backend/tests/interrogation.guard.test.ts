@@ -8,7 +8,8 @@ const fact = (id: string, factType: string, disclosureLevel = 'LLM_ALLOWED', con
 
 const knowledge = (facts: PromptFact[]): SuspectKnowledge => ({
   suspect: { id: 's', name: '용의자', age: 40, occupation: '상인', personality: {}, speechStyle: {}, publicProfile: {} },
-  facts, lies: [], emotionRules: [], dialectExpressions: [], relationships: [], previousMessages: [],
+  facts, lies: [], emotionRules: [], dialectExpressions: [], relationships: [], publicRelationships: [],
+  characters: [{ id: 's', code: 'GS-01-S1', name: '용의자', occupation: '상인', victimRelation: '피해자의 지인' }], victim: { id: 'v', name: '피해자' }, previousMessages: [],
   responseRules: [{ ruleType: 'Q-EVIDENCE', trigger: {}, guidance: {}, allowedFactRefs: ['allowed'], hiddenFactRefs: ['hidden'] }],
   effectiveRuleType: 'Q-EVIDENCE',
   currentEmotion: 'NEUTRAL', difficulty: 'normal', dialectLevel: 2,
