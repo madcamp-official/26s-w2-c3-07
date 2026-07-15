@@ -195,7 +195,9 @@ export const fourEpisodeContent = (): SeedTables => {
     initialEvidenceIndexes.forEach((indexes, difficultyIndex) => indexes.forEach((evidenceIndex, displayIndex) => {
       tables.difficulty_initial_evidence.push({ id: id(group, 1100 + difficultyIndex * 10 + displayIndex), difficulty_config_id: difficultyConfigIds[difficultyIndex], evidence_id: evidenceIds[evidenceIndex], display_order: displayIndex + 1 });
     }));
-    tables.difficulty_initial_clues.push({ id: id(group, 1140), difficulty_config_id: difficultyConfigIds[0], clue_id: initialClueId, display_order: 1 });
+    difficultyConfigIds.forEach((difficultyConfigId, difficultyIndex) => {
+      tables.difficulty_initial_clues.push({ id: id(group, 1140 + difficultyIndex), difficulty_config_id: difficultyConfigId, clue_id: initialClueId, display_order: 1 });
+    });
 
     const unlockIndexes: Record<string, [number, number][]> = {
       'GS-01': [[3, 4], [1, 3], [2, 1]],

@@ -35,8 +35,8 @@ export default function GamePage() {
   const session = useApiResource<SessionView>(`/sessions/${sessionId}`);
   const episode = useApiResource<EpisodeDetail>(session.data ? `/episodes/${session.data.episodeId}` : null);
   const suspects = useApiResource<PublicSuspect[]>(session.data ? `/episodes/${session.data.episodeId}/suspects` : null);
-  const evidence = useApiResource<Evidence[]>(`/sessions/${sessionId}/evidence`);
-  const clues = useApiResource<Clue[]>(`/sessions/${sessionId}/clues`);
+  const evidence = useApiResource<Evidence[]>(session.data ? `/sessions/${session.data.sessionId}/evidence` : null);
+  const clues = useApiResource<Clue[]>(session.data ? `/sessions/${session.data.sessionId}/clues` : null);
   const [actionError, setActionError] = useState<ApiError | null>(null);
   const [evidenceError, setEvidenceError] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState('');
@@ -102,7 +102,7 @@ export default function GamePage() {
       {notice && <button type="button" role="status" onClick={() => { if (newClueIds.length) setClueModalOpen(true); }} className="w-full border border-brass-400 bg-brass-600/10 p-3 text-left">{notice}</button>}
       {actionError && <ErrorState error={actionError} />}
       <section><h2 className="mb-3 font-display text-2xl">열람 가능한 증거</h2>
-        {evidence.loading ? <LoadingState label="증거 정보를 불러오는 중..." /> : evidence.error ? <ErrorState error={evidence.error} retry={evidence.reload} message="증거 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." /> : !evidence.data?.length ? <EmptyState label="현재 열람 가능한 증거가 없습니다." /> : <div className="grid gap-3 md:grid-cols-2">
+        {evidence.loading ? <LoadingState label="증거 정보를 불러오는 중..." /> : evidence.error ? <ErrorState error={evidence.error} retry={evidence.reload} message={evidence.error.status === 401 ? '인증이 만료되어 증거를 불러올 수 없습니다.' : evidence.error.status === 404 ? '현재 사건 세션을 찾을 수 없습니다.' : '증거 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.'} /> : !evidence.data?.length ? <EmptyState label="아직 열람 가능한 증거가 없습니다. 조사 조건을 충족하면 잠긴 증거가 공개됩니다." /> : <div className="grid gap-3 md:grid-cols-2">
           {evidence.data.map((item) => { const image = resolveEvidenceImage(item.code); return <button key={item.id} onClick={() => void view(item)} disabled={Boolean(viewingEvidenceId)} className="flex gap-3 border border-brass-600/30 p-4 text-left disabled:opacity-50">
             <span className="relative h-20 w-20 shrink-0 overflow-hidden border border-brass-600/30 bg-noir-950">{image ? <Image src={image} alt="" fill sizes="80px" className="object-cover" /> : <span className="grid h-full place-items-center text-center text-xs opacity-50">이미지 없음</span>}</span>
             <span className="flex-1"><b>{item.title}</b><span className="float-right text-xs">{item.viewedAt ? '열람 완료' : '열람 가능'}</span><span className="mt-2 block text-sm opacity-60">{item.description || '상세 설명이 없습니다.'}</span></span>

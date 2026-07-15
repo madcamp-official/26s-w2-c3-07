@@ -24,6 +24,7 @@ export async function evaluateClueUnlocks(sessionId: string, userId: string, con
 export const clueService = {
   async listClues(sessionId: string, userId: string) {
     const session = await owned(sessionId, userId);
+    await repository.evaluate(session.id, userId, 'SESSION_REFRESH');
     return repository.findAcquiredClues(session.id, session.episode_id);
   },
 
