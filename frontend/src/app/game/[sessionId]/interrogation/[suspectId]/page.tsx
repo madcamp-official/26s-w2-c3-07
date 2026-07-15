@@ -16,6 +16,8 @@ import { ApiError } from '@/types/api';
 import { SuspectPortrait } from '@/features/interrogation/components/SuspectPortrait';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { ClueModal } from '@/components/ui/ClueModal';
+import { useSessionExpiry } from '@/features/session/useSessionExpiry';
+import { ExpiryNotice } from '@/features/session/components/ExpiryNotice';
 
 export default function InterrogationPage() {
   const { sessionId, suspectId } = useParams<{ sessionId: string; suspectId: string }>();
@@ -31,9 +33,10 @@ export default function InterrogationPage() {
   const [notice, setNotice] = useState('');
   const [clueModalOpen, setClueModalOpen] = useState(false);
   const [newClueIds, setNewClueIds] = useState<string[]>([]);
+  const expiry = useSessionExpiry(session.data, sessionId, true);
   const state = session.data?.suspectStates.find((item) => item.suspectId === suspectId);
   const suspectQuestionsRemaining = state?.questionsRemaining ?? session.data?.questionsPerSuspect ?? 0;
-  const disabled = sending || !session.data || session.data.remainingQuestions <= 0 || suspectQuestionsRemaining <= 0 || !['READY', 'INVESTIGATING', 'INTERROGATING'].includes(session.data.status);
+  const disabled = sending || !session.data || expiry.remainingSeconds <= 0 || session.data.remainingQuestions <= 0 || suspectQuestionsRemaining <= 0 || !['READY', 'INVESTIGATING', 'INTERROGATING'].includes(session.data.status);
 
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -74,6 +77,7 @@ export default function InterrogationPage() {
         <p className="opacity-60">{suspect.data.occupation} · 감정 {emotionLabel(state?.emotion)}</p>
         <p className="mt-2">전체 남은 질문 {session.data.remainingQuestions}회</p>
         <p className="mt-1 text-sm text-brass-400">이 용의자에게 질문 {suspectQuestionsRemaining}회 남음</p>
+        <p className="mt-1 text-xs opacity-60">남은 심문 시간 {expiry.remainingSeconds}초</p>
       </header>
       <button type="button" onClick={() => setClueModalOpen(true)} className="w-full border border-brass-600/30 p-3 text-left">획득한 단서 {clues.data?.length ?? 0}개 <span className="float-right text-xs opacity-60">목록 보기</span></button>
       {notice && <button type="button" role="status" onClick={() => setClueModalOpen(true)} className="w-full border border-brass-400 p-3 text-left">{notice}</button>}
@@ -93,6 +97,7 @@ export default function InterrogationPage() {
         <button disabled={disabled || question.trim().length < 2} className="bg-evidence-red px-6 font-bold disabled:opacity-40">{sending ? '전송 중...' : '질문'}</button>
       </form>
       {clueModalOpen && <ClueModal clues={Array.isArray(clues.data) ? clues.data : []} highlightedIds={newClueIds} initialSelectedId={newClueIds[0] ?? null} onClose={() => setClueModalOpen(false)} />}
+      {expiry.showExpiryNotice && <ExpiryNotice />}
     </>}
   </div></main></AuthGuard>;
 }

@@ -76,7 +76,7 @@ export const sessionService = {
   async deduction(id: string, userId: string) {
     const row = await owned(id, userId);
     if (String(row.status) === 'SUBMITTED') throw new AppError(409, 'Deduction is being submitted', 'SESSION_ALREADY_IN_DEDUCTION');
-    if (terminal.has(String(row.status) as DbSessionStatus)) throw new AppError(409, 'Invalid session state', 'SESSION_STATE_INVALID');
+    if (['COMPLETED', 'ABANDONED', 'ERROR'].includes(String(row.status))) throw new AppError(409, 'Invalid session state', 'SESSION_STATE_INVALID');
     return this.get(id, userId);
   },
   async abandon(id: string, userId: string) {

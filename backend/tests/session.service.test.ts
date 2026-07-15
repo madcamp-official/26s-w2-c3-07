@@ -120,6 +120,12 @@ describe('session lifecycle', () => {
     expect(transition).not.toHaveBeenCalled();
   });
 
+  it('allows an expired session to enter final deduction without restoring questions', async () => {
+    mockViewDependencies();
+    vi.spyOn(repository, 'findOwned').mockResolvedValue(row({ status: 'EXPIRED', expires_at: new Date(Date.now() - 1_000).toISOString() }));
+    await expect(sessionService.deduction('session-1', 'user-1')).resolves.toMatchObject({ status: 'EXPIRED', remainingSeconds: 0 });
+  });
+
   it('rejects deduction entry while a submission is in progress', async () => {
     vi.spyOn(repository, 'findOwned').mockResolvedValue(row({ status: 'SUBMITTED' }));
     await expect(sessionService.deduction('session-1', 'user-1')).rejects.toMatchObject({ code: 'SESSION_ALREADY_IN_DEDUCTION' });

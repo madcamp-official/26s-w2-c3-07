@@ -18,6 +18,8 @@ import type { EpisodeDetail, PublicSuspect } from '@/types/content';
 import type { Clue, Evidence, EvidenceViewResult } from '@/types/clue';
 import type { SessionView } from '@/types/session';
 import { ApiError } from '@/types/api';
+import { useSessionExpiry } from '@/features/session/useSessionExpiry';
+import { ExpiryNotice } from '@/features/session/components/ExpiryNotice';
 
 const terminalMessage: Partial<Record<SessionView['status'], string>> = {
   EXPIRED: '세션 시간이 만료되었습니다.', ABANDONED: '포기한 세션입니다.', COMPLETED: '이미 완료된 세션입니다.'
@@ -42,6 +44,7 @@ export default function GamePage() {
   const [clueModalOpen, setClueModalOpen] = useState(false);
   const [selectedClueId, setSelectedClueId] = useState<string | null>(null);
   const [newClueIds, setNewClueIds] = useState<string[]>([]);
+  const expiry = useSessionExpiry(session.data, sessionId, false);
 
   async function choose(suspectId: string) {
     if (busy) return;
@@ -89,7 +92,7 @@ export default function GamePage() {
     {session.error ? <ErrorState error={session.error} retry={session.reload} message="게임 정보를 불러오지 못했습니다." /> : session.data && <>
       <header className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-evidence-red">{sessionStatusLabel(session.data.status)} · {difficultyLabel(session.data.difficulty)}</p><h1 className="font-display text-4xl">{episode.data?.title ?? '사건 수사'}</h1></div><Link href={`/game/${sessionId}/records`} className="border border-brass-600/40 px-4 py-2">사건 기록</Link></header>
       {terminalMessage[session.data.status] && <div className="border border-evidence-red/50 bg-evidence-red/10 p-4">{terminalMessage[session.data.status]} {session.data.status === 'COMPLETED' && <Link className="ml-2 underline" href={`/game/${sessionId}/result`}>결과 보기</Link>}</div>}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4"><div className="border p-3">남은 질문 <b>{session.data.remainingQuestions}</b></div><div className="border p-3">남은 시간 <b>{session.data.remainingSeconds}초</b></div><button onClick={() => { setSelectedClueId(null); setClueModalOpen(true); }} className="border p-3 text-left">단서 <b>{session.data.acquiredClueCount}</b><span className="ml-2 text-xs opacity-60">목록 보기</span></button><div className="border p-3">상태 <b>{sessionStatusLabel(session.data.status)}</b></div></section>
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4"><div className="border p-3">남은 질문 <b>{session.data.remainingQuestions}</b></div><div className="border p-3">남은 시간 <b>{expiry.remainingSeconds}초</b></div><button onClick={() => { setSelectedClueId(null); setClueModalOpen(true); }} className="border p-3 text-left">단서 <b>{session.data.acquiredClueCount}</b><span className="ml-2 text-xs opacity-60">목록 보기</span></button><div className="border p-3">상태 <b>{expiry.remainingSeconds === 0 ? '시간 만료' : sessionStatusLabel(session.data.status)}</b></div></section>
       {notice && <button type="button" role="status" onClick={() => { if (newClueIds.length) setClueModalOpen(true); }} className="w-full border border-brass-400 bg-brass-600/10 p-3 text-left">{notice}</button>}
       {actionError && <ErrorState error={actionError} />}
       <section><h2 className="mb-3 font-display text-2xl">열람 가능한 증거</h2>
@@ -106,7 +109,8 @@ export default function GamePage() {
       <section><h2 className="mb-3 font-display text-2xl">심문할 용의자</h2>
         {suspects.loading ? <LoadingState /> : !suspects.data?.length ? <EmptyState label="용의자 정보가 없습니다." /> : <div className="grid gap-4 md:grid-cols-2">{suspects.data.map((suspect) => { const state = session.data!.suspectStates.find((item) => item.suspectId === suspect.id); const remaining = state?.questionsRemaining ?? session.data!.questionsPerSuspect; return <button key={suspect.id} onClick={() => void choose(suspect.id)} disabled={Boolean(busy) || Boolean(terminalMessage[session.data!.status]) || session.data!.remainingQuestions === 0 || remaining === 0} className="overflow-hidden border border-brass-600/30 bg-noir-900/70 text-left disabled:opacity-40"><SuspectImage imageUrl={suspect.imageUrl} name={suspect.name} sizes="(min-width: 768px) 50vw, 100vw" className="aspect-[16/10] w-full" /><div className="p-5"><h3 className="font-display text-xl">{suspect.name}</h3><p className="text-sm opacity-60">{suspect.occupation}</p><p className="mt-2 text-xs">감정 {emotionLabel(state?.emotion)} · {suspectQuestionLabel(remaining)}</p>{remaining === 0 && <p className="mt-1 text-xs text-evidence-red">더 이상 질문할 수 없음</p>}</div></button>; })}</div>}
       </section>
-      <button onClick={() => void deduction()} disabled={Boolean(busy) || Boolean(terminalMessage[session.data.status])} className="w-full bg-evidence-red py-4 font-display text-lg font-bold disabled:opacity-40">최종 추리로 이동</button>
+      <button onClick={() => void deduction()} disabled={Boolean(busy) || ['COMPLETED', 'ABANDONED'].includes(session.data.status)} className="w-full bg-evidence-red py-4 font-display text-lg font-bold disabled:opacity-40">최종 추리로 이동</button>
+      {expiry.showExpiryNotice && <ExpiryNotice />}
     </>}
   </div></main></AuthGuard>;
 }
