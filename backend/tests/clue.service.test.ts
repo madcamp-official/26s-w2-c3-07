@@ -12,8 +12,8 @@ const clueId = '00000000-0000-4000-8000-000000000005';
 const unlockedEvidenceId = '00000000-0000-4000-8000-000000000006';
 
 const clue = { id: clueId, code: 'GS-01-C1', title: '독성 물질', content: '차에서 독이 검출됐다.', description: '차에서 독이 검출됐다.', recordSummary: '찻잔에서 독 검출', clueType: 'CORE', importance: 'CORE', unlockedAt: new Date().toISOString(), source: 'EVIDENCE_VIEWED' };
-const evidence = { id: evidenceId, code: 'GS-01-E1', title: '찻잔', description: '사건 현장의 찻잔', evidenceType: 'physical', discoveredAt: new Date().toISOString(), viewedAt: new Date().toISOString() };
-const unlockedEvidence = { id: unlockedEvidenceId, code: 'GS-01-E2', title: '약봉지', description: '단서로 새로 확보됐다.', evidenceType: 'physical', discoveredAt: new Date().toISOString(), viewedAt: null };
+const evidence = { id: evidenceId, code: 'GS-01-E1', title: '찻잔', description: '사건 현장의 찻잔', evidenceType: 'physical', discoveredAt: new Date().toISOString(), viewedAt: new Date().toISOString(), source: 'INITIAL' };
+const unlockedEvidence = { id: unlockedEvidenceId, code: 'GS-01-E2', title: '약봉지', description: '단서로 새로 확보됐다.', evidenceType: 'physical', discoveredAt: new Date().toISOString(), viewedAt: null, source: 'CLUE_UNLOCK' };
 
 beforeEach(() => {
   vi.spyOn(repository, 'findOwnedSession').mockResolvedValue({ id: sessionId, user_id: userId, episode_id: episodeId });

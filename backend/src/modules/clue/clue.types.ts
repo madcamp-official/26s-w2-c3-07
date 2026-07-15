@@ -19,6 +19,7 @@ export type EvidenceDto = {
   evidenceType: string;
   discoveredAt: string | null;
   viewedAt: string | null;
+  source: string | null;
 };
 
 export type ClueEvaluationSource = 'EVIDENCE_VIEWED' | 'INTERROGATION' | 'SESSION_REFRESH';

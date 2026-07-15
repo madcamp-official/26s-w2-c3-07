@@ -41,7 +41,7 @@ export const clueService = {
         repository.findAcquiredClues(session.id, session.episode_id)
       ]);
       return {
-        evidence: evidence.find((item) => item.id === evidenceId)!,
+        evidence: evidence.find((item) => item.id === evidenceId) ?? null,
         newClues: clues.filter((clue) => viewed.newClueIds.includes(clue.id)),
         newlyUnlockedEvidence: evidence.filter((item) => viewed.newEvidenceIds.includes(item.id))
       };

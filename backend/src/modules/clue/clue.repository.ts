@@ -36,7 +36,7 @@ export const clueRepository = {
 
   async findAvailableEvidence(sessionId: string, episodeId: string): Promise<EvidenceDto[]> {
     const { data: available, error: availableError } = await serviceRoleClient.from('session_evidence')
-      .select('evidence_id, source_type, viewed_at').eq('session_id', sessionId).order('viewed_at');
+      .select('evidence_id, source_type, discovered_at, viewed_at').eq('session_id', sessionId).order('discovered_at');
     throwIfError(availableError);
     if (!available?.length) return [];
     const { data: evidence, error: evidenceError } = await serviceRoleClient.schema('game_content').from('evidence')
@@ -46,7 +46,7 @@ export const clueRepository = {
     const stateById = new Map(available.map((row) => [row.evidence_id, row]));
     return (evidence ?? []).map((item) => {
       const state = stateById.get(item.id)!;
-      return { id: item.id, code: item.code, title: item.title, description: item.description, evidenceType: item.evidence_type, discoveredAt: state.viewed_at, viewedAt: state.viewed_at };
+      return { id: item.id, code: item.code, title: item.title, description: item.description, evidenceType: item.evidence_type, discoveredAt: state.discovered_at, viewedAt: state.viewed_at, source: state.source_type };
     });
   },
 
@@ -59,6 +59,12 @@ export const clueRepository = {
   async viewEvidence(sessionId: string, userId: string, evidenceId: string): Promise<EvidenceViewRpcResult> {
     const { data, error } = await serviceRoleClient.rpc('view_session_evidence', { p_user_id: userId, p_session_id: sessionId, p_evidence_id: evidenceId });
     if (error) throw new Error(error.message);
-    return data as unknown as EvidenceViewRpcResult;
+    const value = data && typeof data === 'object' && !Array.isArray(data) ? data as Record<string, unknown> : {};
+    return {
+      evidenceId: typeof value.evidenceId === 'string' ? value.evidenceId : evidenceId,
+      viewedAt: typeof value.viewedAt === 'string' ? value.viewedAt : new Date().toISOString(),
+      newClueIds: Array.isArray(value.newClueIds) ? value.newClueIds.filter((id): id is string => typeof id === 'string') : [],
+      newEvidenceIds: Array.isArray(value.newEvidenceIds) ? value.newEvidenceIds.filter((id): id is string => typeof id === 'string') : []
+    };
   }
 };
