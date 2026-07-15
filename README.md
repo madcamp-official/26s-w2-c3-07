@@ -150,4 +150,4 @@ CI는 `main`, `dev` 대상 push/PR에서 install, lint, test, build를 실행합
 - `SUPABASE_SERVICE_ROLE_KEY`와 `OPENAI_API_KEY`는 백엔드 비밀값이며 프론트 환경변수나 저장소에 넣지 않습니다.
 - RLS와 service-role 전용 RPC 권한이 적용되어 있지만, 키 교체·비밀 스캔·의존성 취약점 대응은 운영 절차에서 지속적으로 수행해야 합니다.
 - 자동 운영 migration, 운영 데이터 reset, OAuth 제공자 설정은 이 저장소의 CI 범위 밖이며 별도 승인과 백업 후 진행합니다.
-- 라이선스는 저장소의 `LICENSE` 파일을 따릅니다.
+- 현재 `LICENSE` 파일이 비어 있으므로 배포 전 프로젝트 라이선스 정책 결정이 필요합니다. 이번 작업에서는 임의의 라이선스를 선택하지 않았습니다.
