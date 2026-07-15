@@ -65,7 +65,8 @@ describe('investigation records',()=>{
 
 describe('record visibility boundaries',()=>{
   const source=readFileSync(new URL('../src/modules/record/record.repository.ts',import.meta.url),'utf8');
-  const migration=readFileSync(new URL('../supabase/migrations/20260713044823_add_investigation_records_and_notes.sql',import.meta.url),'utf8');
+  const serviceSource=readFileSync(new URL('../src/modules/record/record.service.ts',import.meta.url),'utf8');
+  const migration=readFileSync(new URL('../supabase/migrations/20260712185417_add_runtime_rls_and_grants.sql',import.meta.url),'utf8');
   it('loads only public or clue-unlocked timelines',()=>{
     expect(source).toContain(".in('visibility', ['PUBLIC_INITIAL', 'SESSION_UNLOCKED'])");
     expect(source).not.toContain(".eq('visibility','PRIVATE')");
@@ -74,10 +75,12 @@ describe('record visibility boundaries',()=>{
     expect(source).toContain(".eq('disclosure_level', 'PUBLIC')");
     expect(source).not.toContain(".eq('visibility','HIDDEN')");
   });
-  it('does not select actual routes and validates note scope in the database',()=>{
+  it('does not select actual routes and enforces note ownership at the service and RLS boundaries',()=>{
     expect(source).not.toContain('actual_route'); expect(source).not.toContain('claimed_route');
-    expect(migration).toContain('NOTE_SESSION_NOT_OWNED'); expect(migration).toContain('NOTE_SUSPECT_NOT_IN_EPISODE');
-    expect(migration).toContain("set search_path = ''");
+    expect(serviceSource).toContain('repository.findOwnedSession(sessionId, userId)');
+    expect(serviceSource).toContain('repository.suspectBelongs(episodeId, suspectId)');
+    expect(migration).toContain('create policy session_notes_insert_own');
+    expect(migration).toContain('gs.user_id = (select auth.uid())');
   });
 });
 
