@@ -4,7 +4,7 @@ export function TipBar() {
       <span aria-hidden className="text-brass-400">
         🔍
       </span>
-      <span className="font-bold text-brass-400">TIP</span>
+      <span className="font-bold text-brass-400">도움말</span>
       <span className="text-parchment-300/80">사건을 해결하면 새로운 단서와 심문 기술을 얻을 수 있습니다.</span>
     </div>
   );

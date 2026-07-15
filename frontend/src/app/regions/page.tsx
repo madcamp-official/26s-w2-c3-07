@@ -29,7 +29,7 @@ export default function RegionsPage() {
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100">
     <div className="mx-auto max-w-5xl space-y-8">
       <AppHeader />
-      <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs tracking-widest text-evidence-red">CASE ARCHIVE</p><h1 className="font-display text-4xl font-bold">지역 및 사건 선택</h1></div><Link href="/profile" className="border border-brass-600/50 px-4 py-2">내 기록</Link></header>
+      <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs tracking-widest text-evidence-red">사건 기록 보관소</p><h1 className="font-display text-4xl font-bold">지역 및 사건 선택</h1></div><Link href="/profile" className="border border-brass-600/50 px-4 py-2">내 기록</Link></header>
       {active.data && <Link href={`/game/${active.data.sessionId}`} className="block border border-brass-400 bg-brass-600/10 p-4">진행 중인 사건 이어하기 · 남은 질문 {active.data.remainingQuestions}회 →</Link>}
       {progress.data && <section className="grid grid-cols-2 gap-3 md:grid-cols-5">{[
         ['플레이 사건', progress.data.playedEpisodeCount], ['완료 사건', progress.data.completedEpisodeCount], ['해결 사건', progress.data.solvedEpisodeCount], ['완전 해결', progress.data.fullResolutionCount], ['사투리', progress.data.unlockedDialectCount]
