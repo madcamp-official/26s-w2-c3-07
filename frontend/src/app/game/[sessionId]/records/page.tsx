@@ -11,10 +11,11 @@ import { ApiError } from '@/types/api';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { EvidenceModal } from '@/components/ui/EvidenceModal';
 import { resolveEvidenceImage } from '@/features/episode/utils/evidenceImage';
+import { useBgm } from '@/features/settings/useBgm';
 
 type Tab = 'overview' | 'testimonies' | 'timeline' | 'notes';
 export default function RecordsPage() {
-  const { sessionId } = useParams<{ sessionId: string }>(); const record = useApiResource<InvestigationRecord>(`/sessions/${sessionId}/records`);
+  const { sessionId } = useParams<{ sessionId: string }>(); useBgm('mysteryCellar'); const record = useApiResource<InvestigationRecord>(`/sessions/${sessionId}/records`);
   const [tab, setTab] = useState<Tab>('overview'); const [error, setError] = useState<ApiError | null>(null); const [saving, setSaving] = useState(false);
   const [previewEvidence, setPreviewEvidence] = useState<InvestigationRecord['evidence'][number] | null>(null);
   async function createNote(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (saving) return; const data = new FormData(event.currentTarget); setSaving(true); setError(null); try { await api.post<Note>(`/sessions/${sessionId}/notes`, { noteType: data.get('noteType'), content: data.get('content'), suspectId: null, relatedRef: {} }); event.currentTarget.reset(); await record.reload(); } catch (cause) { setError(cause as ApiError); } finally { setSaving(false); } }

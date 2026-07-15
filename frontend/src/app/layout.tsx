@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from '@/features/auth/AuthProvider';
+import { GlobalClickSound } from '@/features/settings/GlobalClickSound';
 
 export const metadata: Metadata = {
   title: "그 뜻이 아니예라 | 사투리 심문",
@@ -14,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className="font-body antialiased"><AuthProvider>{children}</AuthProvider></body>
+      <body className="font-body antialiased"><AuthProvider><GlobalClickSound />{children}</AuthProvider></body>
     </html>
   );
 }

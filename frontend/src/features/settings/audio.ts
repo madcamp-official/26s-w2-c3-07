@@ -2,12 +2,15 @@ export const BGM_TRACKS = {
   home: '/sounds/bgm/home-theme.mp3',
   investigation: '/sounds/bgm/investigation-theme.mp3',
   interrogation: '/sounds/bgm/interrogation-theme.mp3',
+  mysteryCellar: '/sounds/bgm/mystery-cellar-theme.mp3',
+  madohi: '/sounds/bgm/madohi-theme.mp3',
 } as const;
 
 export type BgmTrack = keyof typeof BGM_TRACKS;
 
 export const SFX = {
   keyboard: '/sounds/effects/keyboard-type.mp3',
+  click: '/sounds/effects/click.mp3',
 } as const;
 
 export type SfxName = keyof typeof SFX;

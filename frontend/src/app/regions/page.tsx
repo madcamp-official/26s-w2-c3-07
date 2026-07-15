@@ -8,6 +8,7 @@ import { useApiResource } from '@/features/api/useApiResource';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/ApiState';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { resolveEpisodeImage } from '@/features/episode/utils/episodeImage';
+import { useBgm } from '@/features/settings/useBgm';
 import type { Region, EpisodeSummary } from '@/types/content';
 import type { ProgressSummary } from '@/types/progress';
 import type { SessionView } from '@/types/session';
@@ -20,6 +21,7 @@ const MAP_HOTSPOTS: Record<string, { top: string; left: string }> = {
 };
 
 export default function RegionsPage() {
+  useBgm('home');
   const regions = useApiResource<Region[]>('/regions');
   const progress = useApiResource<ProgressSummary>('/progress');
   const active = useApiResource<SessionView | null>('/sessions/active');

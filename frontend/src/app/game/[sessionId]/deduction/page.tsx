@@ -8,11 +8,12 @@ import { api } from '@/lib/api-client';
 import { ErrorState, LoadingState } from '@/components/ui/ApiState';
 import { SuspectImage } from '@/features/suspect/components/SuspectImage';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { useBgm } from '@/features/settings/useBgm';
 import type { PublicSuspect } from '@/types/content';
 import type { SessionView } from '@/types/session';
 import type { DeductionResult } from '@/types/deduction';
 import { ApiError } from '@/types/api';
-export default function DeductionPage() { const { sessionId } = useParams<{sessionId:string}>(); const router=useRouter(); const session=useApiResource<SessionView>(`/sessions/${sessionId}`); const suspects=useApiResource<PublicSuspect[]>(session.data ? `/episodes/${session.data.episodeId}/suspects` : null); const [selected,setSelected]=useState(''); const [confirm,setConfirm]=useState(false); const [busy,setBusy]=useState(false); const [error,setError]=useState<ApiError|null>(null);
+export default function DeductionPage() { const { sessionId } = useParams<{sessionId:string}>(); useBgm('mysteryCellar'); const router=useRouter(); const session=useApiResource<SessionView>(`/sessions/${sessionId}`); const suspects=useApiResource<PublicSuspect[]>(session.data ? `/episodes/${session.data.episodeId}/suspects` : null); const [selected,setSelected]=useState(''); const [confirm,setConfirm]=useState(false); const [busy,setBusy]=useState(false); const [error,setError]=useState<ApiError|null>(null);
   const sessionStatus = session.data?.status; const reloadSession = session.reload;
   useEffect(()=>{ if(sessionStatus && !['DEDUCTION','COMPLETED'].includes(sessionStatus)) void api.post(`/sessions/${sessionId}/enter-deduction`).then(()=>reloadSession()).catch((e)=>setError(e)); },[reloadSession,sessionId,sessionStatus]);
   async function submit(){if(!selected||busy)return;if(!confirm){setConfirm(true);return;}setBusy(true);setError(null);try{await api.post<DeductionResult>(`/sessions/${sessionId}/deduction`,{suspectId:selected});router.replace(`/game/${sessionId}/result`);}catch(e){setError(e as ApiError);setBusy(false)}}
