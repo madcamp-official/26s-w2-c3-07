@@ -21,6 +21,20 @@ export const sessionRepository = {
     if (error) throw toAppError(error);
     return data;
   },
+  async findLatestByEpisode(userId: string, episodeId: string, scope: 'active' | 'completed') {
+    let query = serviceRoleClient.from('game_sessions').select(cols).eq('user_id', userId).eq('episode_id', episodeId);
+    query = scope === 'completed'
+      ? query.eq('status', 'COMPLETED')
+      : query.in('status', ['CREATED', 'INTRO_VIEWING', 'INTERROGATING', 'READY_TO_DEDUCE', 'SUBMITTED']);
+    const { data, error } = await query.order('started_at', { ascending: false }).limit(1).maybeSingle();
+    if (error) throw toAppError(error);
+    return data;
+  },
+  async episodeCode(episodeId: string) {
+    const { data, error } = await serviceRoleClient.schema('game_content').from('episodes').select('code').eq('id', episodeId).maybeSingle();
+    if (error) throw toAppError(error);
+    return data?.code ?? null;
+  },
   async states(id: string) {
     const { data, error } = await serviceRoleClient.from('session_suspect_states').select('suspect_id, current_emotion, questions_used').eq('session_id', id);
     if (error) throw toAppError(error);
