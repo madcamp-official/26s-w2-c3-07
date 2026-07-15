@@ -25,6 +25,7 @@ type EpisodeSpec = {
   evidence: [string, string][];
   clues: [string, string][];
   dialect: [string, string, string][];
+  truth: { motive: string; crimeMethod: string };
   endings: { correct: string; wrongA: string; wrongB: string };
 };
 
@@ -64,6 +65,7 @@ const specs: EpisodeSpec[] = [
     evidence: [['마시다 만 안동식혜 그릇', '남은 식혜에서 초오 성분이 검출된다.'], ['사랑채 문 앞 옥비녀', '이순임 소유의 옥비녀다.'], ['유언장 초안', '이순임의 몫이 삭제되어 있다.'], ['문틀의 혈흔과 긁힌 자국', '김도현과 피해자의 몸싸움 흔적이다.'], ['부검 소견서', '두부 외상은 경미하며 사인은 초오 중독이다.']],
     clues: [['유언장 초안', '이순임의 살해 동기를 보여준다.'], ['부검 소견서', '김도현이 만든 두부 외상이 사인이 아님을 보여준다.'], ['문틀 흔적과 김도현의 진술', '몸싸움은 있었지만 치명상은 아니었다.'], ['박말순의 신음 소리 증언', '피해자가 21시경 살아 있었음을 보여준다.'], ['옥비녀', '이순임이 사랑채에 다시 들어갔음을 뒷받침한다.']],
     dialect: [['됐다 고마', '됐어요, 그만해요', '대화를 중단하려는 표현'], ['억수로', '매우, 엄청', '강조 표현'], ['정지', '부엌', '장소 표현'], ['속이 다 시커멓다', '오랜 세월 마음이 썩어들었다', '이순임의 반복 표현']],
+    truth: { motive: '37년간 종부로 희생했지만 유언장에서 자신의 몫마저 삭제된 데 대한 배신감과 울분', crimeMethod: '초오를 탄 안동식혜를 피해자에게 건넨 뒤 중독 증상이 나타난 피해자를 방치했다.' },
     endings: { correct: '37년의 시집살이와 유언장의 마지막 배신감이 이순임의 살인으로 이어졌음이 밝혀진다.', wrongA: '김도현은 자신이 아버지를 죽이지 않았다고 절규하고 진범 이순임은 의심을 피한다.', wrongB: '박말순은 자신의 신분과 침묵의 이유를 밝히지만 진범 이순임은 안도한다.' }
   },
   {
@@ -80,6 +82,7 @@ const specs: EpisodeSpec[] = [
     evidence: [['조작 흔적이 있는 회계장부', '회사 자금 횡령 정황이 남아 있다.'], ['창고 잠금장치', '강제로 열린 흔적이 없어 내부인 소행을 암시한다.'], ['휴대전화 통화기록', '회계사, 딸, 정춘삼 순의 마지막 발신 내역이다.'], ['발효통 주변 흔적', '미끄러진 흔적과 몸싸움 흔적이 남아 있다.'], ['병원 진단서', '서병만의 위암 말기 진단서다.'], ['창고 주변 CCTV', '정춘삼이 주장한 시각에 사무실이 아닌 창고 주변으로 이동한 모습이 남아 있다.']],
     clues: [['조작된 장부 숫자', '정춘삼의 횡령 정황을 보여준다.'], ['회계사 통화', '정춘삼에게 장부 검사를 막아야 할 긴급한 동기가 있었다.'], ['CCTV와 진술의 모순', '정춘삼의 사무실 알리바이를 무너뜨린다.'], ['최말자가 본 진단서', '최말자의 침묵이 살인 은폐가 아니었음을 보여준다.'], ['서지영의 마지막 통화', '유언장 이야기가 상속이 아니라 화해 시도였음을 보여준다.']],
     dialect: [['거시기', '애매하게 지칭하거나 얼버무리는 말', '정춘삼의 습관어'], ['몰것는디', '모르겠습니다', '회피 표현'], ['참말이여', '정말이에요', '확인 표현'], ['겁나', '매우, 엄청', '강조 표현']],
+    truth: { motive: '3년간 저지른 회사 자금 횡령이 외부 장부 검토로 드러나는 것을 막기 위해', crimeMethod: '발효창고에서 저울추로 피해자의 뒤통수를 가격한 뒤 실족 사고처럼 현장을 위장했다.' },
     endings: { correct: '3년간의 횡령이 발각될 위기에서 정춘삼이 벌인 계획적 살인임이 드러난다.', wrongA: '서지영은 아버지의 마지막 화해 시도를 놓친 채 무고하게 체포되고 정춘삼은 비웃는다.', wrongB: '최말자는 진단서 비밀을 털어놓지만 정춘삼은 안도한다.' }
   },
   {
@@ -96,6 +99,7 @@ const specs: EpisodeSpec[] = [
     evidence: [['깨진 손목시계', '밤 11시 10분에 멈춰 범행 시각을 보여준다.'], ['수정된 당구장 장부', '입장 시각 23시 38분을 22시로 덧씌웠다.'], ['녹색 테이프 라이터', '맹용식이 소지품에 감는 것과 같은 테이프가 감겨 있다.'], ['표성두의 통화기록', '23시 43분 맹용식과 통화한 기록이다.'], ['돈궤와 둔기', '돈은 사라졌고 둔기에서 피해자의 혈흔이 확인된다.']],
     clues: [['손목시계', '범행 시각이 밤 11시 10분임을 보여준다.'], ['노방석의 시간 표현', '노방석은 초저녁에 현장을 떠났음을 보여준다.'], ['목성구의 그을음 증언', '맹용식이 화재 현장에 있었음을 암시한다.'], ['조작된 당구장 장부', '맹용식의 알리바이를 무너뜨린다.'], ['표성두의 통화기록', '공동 알리바이가 조작됐음을 보여준다.'], ['녹색 테이프 라이터', '맹용식과 방화 현장을 연결한다.']],
     dialect: [['해 어스름할 적', '해가 질 무렵, 초저녁', '시간 표현'], ['정지', '부엌', '장소 표현'], ['끄을뎅이', '검게 묻은 그을음', '목성구의 증언'], ['몰러유', '몰라요', '회피 표현'], ['강냉이 털리다', '얻어맞다', '협박 표현']],
+    truth: { motive: '도박 빚을 갚기 위해 피해자의 돈궤를 훔치려다 발각되자 범행을 감추기 위해', crimeMethod: '피해자를 둔기로 살해하고 돈을 훔친 뒤 주방에 불을 질러 화재 사고로 위장했다.' },
     endings: { correct: '조작된 장부와 그을음 증언, 통화기록, 라이터가 맹용식의 살인·절도·방화를 입증한다.', wrongA: '노방석은 초저녁에 담배만 피웠다고 결백을 호소하고 맹용식은 조용히 웃는다.', wrongB: '협박받은 목성구 또는 표성두가 체포되고 맹용식은 마을을 떠난다.' }
   },
   {
@@ -112,6 +116,7 @@ const specs: EpisodeSpec[] = [
     evidence: [['차영백의 전용 찻잔', '남은 차에서 백색 분말형 독성 약물이 검출된다.'], ['사라진 비밀 장부', '현금과 귀중품은 그대로이고 장부만 사라졌다.'], ['비밀 장부 복사본', '강윤호가 차량 수리비와 유류비를 부풀린 기록이다.'], ['별장 정문 출입기록', '23시 18분 강윤호가 사용하던 차량이 나갔다.'], ['오민석의 통화기록', '23시 27분 강윤호에게서 걸려 온 통화다.'], ['빈 약품 포장지', '찻잔에서 검출된 것과 같은 계열의 약품 포장지다.']],
     clues: [['문태오의 방문 시각', '탕비실 방문은 해가 지기 전이어서 독 투입 시간과 다르다.'], ['양재우의 흰 고루 증언', '강윤호의 소매에 흰 가루가 많이 묻어 있었다.'], ['정문 출입기록', '강윤호의 탑동 알리바이와 충돌한다.'], ['오민석의 통화기록', '공동 알리바이가 강요됐음을 보여준다.'], ['장부 복사본', '강윤호가 장부를 훔쳐야 했던 횡령 동기를 보여준다.'], ['찻잔과 빈 약품 포장지', '탕비실과 독살 수법을 연결한다.']],
     dialect: [['하영', '많이', '수량 표현'], ['게메', '글쎄', '답하기 어려울 때 쓰는 표현'], ['고루', '가루', '물질 표현'], ['안트레', '안으로', '방향 표현'], ['모르쿠다', '모르겠습니다', '회피 표현']],
+    truth: { motive: '차량 수리비와 유류비 횡령이 비밀 장부를 통해 발각되는 것을 막기 위해', crimeMethod: '피해자의 차에 독성 약물을 넣어 전달하고, 범행을 입증할 비밀 장부를 훔친 뒤 거짓 알리바이를 강요했다.' },
     endings: { correct: '흰 가루, 차량 출입기록, 협박 전화, 횡령 장부와 독성 약물이 강윤호의 범행을 입증한다.', wrongA: '문태오는 해 지기 전에 찻잎만 가져갔다고 결백을 호소하고 강윤호는 장부를 챙겨 떠난다.', wrongB: '협박받은 양재우 또는 오민석이 체포되고 강윤호의 거짓 알리바이는 진실로 기록된다.' }
   }
 ];
@@ -236,7 +241,7 @@ export const fourEpisodeContent = (): SeedTables => {
       });
     });
 
-    [spec.endings.correct, spec.endings.wrongA, spec.endings.wrongB].forEach((fixedContent, index) => tables.endings.push({ id: id(group, 700 + index), episode_id: episodeId, code: `${spec.code}-${index === 0 ? 'TRUE' : `FALSE-${index}`}`, ending_type: index === 0 ? 'TRUE' : 'WRONG_SPECIFIC', target_suspect_id: index === 0 ? culpritId : suspectIds[index], title: index === 0 ? '정답 엔딩' : `오답 엔딩 ${index}`, fixed_content: { narrative: fixedContent }, llm_prompt_context: {}, asset_url: null, display_order: index + 1, _target_suspect_id: index === 0 ? culpritId : suspectIds[index] }));
+    [spec.endings.correct, spec.endings.wrongA, spec.endings.wrongB].forEach((fixedContent, index) => tables.endings.push({ id: id(group, 700 + index), episode_id: episodeId, code: `${spec.code}-${index === 0 ? 'TRUE' : `FALSE-${index}`}`, ending_type: index === 0 ? 'TRUE' : 'WRONG_SPECIFIC', target_suspect_id: index === 0 ? culpritId : suspectIds[index], title: index === 0 ? '정답 엔딩' : `오답 엔딩 ${index}`, fixed_content: { narrative: fixedContent, ...(index === 0 ? spec.truth : {}) }, llm_prompt_context: {}, asset_url: null, display_order: index + 1, _target_suspect_id: index === 0 ? culpritId : suspectIds[index] }));
 
     spec.suspects.slice(1).forEach((suspect, index) => tables.suspect_relationships.push({ id: id(group, 800 + index), episode_id: episodeId, source_suspect_id: culpritId, target_suspect_id: suspectIds[index + 1], target_victim_id: null, relation_type: 'CO_SUSPECT', public_description: `${spec.suspects.find((item) => item.culprit)?.name}와 ${suspect.name}은 같은 사건의 용의자다.`, hidden_description: null, disclosure_level: 'PUBLIC_PROFILE' }));
   });

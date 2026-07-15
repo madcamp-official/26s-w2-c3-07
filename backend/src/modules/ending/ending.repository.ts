@@ -93,7 +93,7 @@ export const endingRepository = {
         .filter((item): item is { clue: NonNullable<typeof item.clue>; impact: typeof item.impact } => Boolean(item.clue))
         .map(({ clue, impact }) => ({ clueId: clue.id, clueCode: clue.code, clueTitle: clue.title, impactType: impact.impact_type, explanation: impact.explanation }))
     }));
-    const profile = object(culprit.public_profile);
+    const fixedContent = object(ending.fixed_content);
     const missedCoreClues: EndingClue[] = clues.filter((clue) => clue.clue_type === 'CORE' && !acquiredIds.has(clue.id))
       .map((clue) => ({ id: clue.id, code: clue.code, title: clue.title, description: clue.content }));
     const dialectExplanations: DialectExplanation[] = (dialectResult.data ?? []).map((dialect) => ({
@@ -104,13 +104,13 @@ export const endingRepository = {
     return {
       endingType: result.is_correct ? 'TRUE' : ending.code.endsWith('-WRONG_FALLBACK') ? 'WRONG_FALLBACK' : 'FALSE',
       title: ending.title,
-      fixedContent: stringValue(object(ending.fixed_content).narrative) ?? JSON.stringify(ending.fixed_content),
+      fixedContent: stringValue(fixedContent.narrative) ?? JSON.stringify(ending.fixed_content),
       assetUrl: ending.asset_url,
       selectedSuspect: person(selected),
       actualCulprit: person(culprit),
       fullTimeline: (timelineResult.data ?? []).map((item) => ({ occurredAt: item.occurred_at_label, title: item.occurred_at_label, description: item.server_description ?? item.public_description ?? '' })),
-      motive: stringValue(profile.motive),
-      crimeMethod: stringValue(profile.crimeMethod) ?? stringValue(profile.crime_method),
+      motive: stringValue(fixedContent.motive),
+      crimeMethod: stringValue(fixedContent.crimeMethod) ?? stringValue(fixedContent.crime_method),
       evidenceConnections,
       suspectSecrets,
       missedCoreClues,
