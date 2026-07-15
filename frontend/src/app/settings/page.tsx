@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useApiResource } from '@/features/api/useApiResource';
 import { useLocalSettings } from '@/features/settings/useLocalSettings';
@@ -19,6 +19,16 @@ export default function SettingsPage() {
   const [error, setError] = useState<ApiError | null>(null);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    if (!serverSettings.data) return;
+    local.update({
+      soundEnabled: serverSettings.data.soundEnabled,
+      musicEnabled: serverSettings.data.musicEnabled,
+      textSpeed: serverSettings.data.textSpeed,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverSettings.data]);
+
   async function saveServerSettings(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving) return;
@@ -27,12 +37,12 @@ export default function SettingsPage() {
     setError(null);
     setSaved(false);
     try {
+      const soundEnabled = data.get('soundEnabled') === 'on';
+      const musicEnabled = data.get('musicEnabled') === 'on';
+      const textSpeed = data.get('textSpeed') as 'slow' | 'normal' | 'fast';
       await api.patch('/auth/me', { displayName: data.get('displayName') });
-      await api.patch('/auth/settings', {
-        soundEnabled: data.get('soundEnabled') === 'on',
-        musicEnabled: data.get('musicEnabled') === 'on',
-        textSpeed: data.get('textSpeed'),
-      });
+      await api.patch('/auth/settings', { soundEnabled, musicEnabled, textSpeed });
+      local.update({ soundEnabled, musicEnabled, textSpeed });
       await Promise.all([refreshProfile(), serverSettings.reload()]);
       setSaved(true);
     } catch (cause) {

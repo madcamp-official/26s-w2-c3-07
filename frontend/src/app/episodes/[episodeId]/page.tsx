@@ -14,11 +14,13 @@ import { ApiError } from '@/types/api';
 import { SuspectImage } from '@/features/suspect/components/SuspectImage';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { resolveEpisodeImage } from '@/features/episode/utils/episodeImage';
+import { useBgm } from '@/features/settings/useBgm';
 import { difficultyLabel } from '@/lib/game-labels';
 
 export default function EpisodePage() {
   const { episodeId } = useParams<{ episodeId: string }>();
   const router = useRouter();
+  useBgm('investigation');
   const detail = useApiResource<EpisodeDetail>(`/episodes/${episodeId}`);
   const scene = useApiResource<Scene>(`/episodes/${episodeId}/scene`);
   const suspects = useApiResource<PublicSuspect[]>(`/episodes/${episodeId}/suspects`);
