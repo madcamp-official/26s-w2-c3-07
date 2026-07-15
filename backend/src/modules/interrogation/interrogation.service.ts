@@ -13,6 +13,7 @@ import {
   type Emotion, type InterrogationInput, type InterrogationMessageDto,
   type InterrogationResponse, type StructuredInterrogationResponse
 } from './interrogation.types.js';
+import { analyzeQuestion, clarificationResponse, unknownKnowledgeResponse, validateQuestionTarget } from './interrogation.question.js';
 
 const MAX_GENERATION_ATTEMPTS = 2;
 
@@ -141,6 +142,7 @@ export const interrogationService = {
     if (perSuspectLimit === null) throw new AppError(409, 'Difficulty configuration missing', 'INTERROGATION_STATE_INVALID');
     if (questionsUsed >= perSuspectLimit) throw new AppError(409, 'Suspect question limit reached', 'INTERROGATION_SUSPECT_LIMIT_REACHED');
 
+    const questionAnalysis = analyzeQuestion(input.question, questionType, knowledge);
     const guardedKnowledge = { ...knowledge, facts: selectPromptFacts(knowledge, questionType, presentedEvidence) };
     let response: StructuredInterrogationResponse;
     let provider = 'local';
@@ -154,11 +156,14 @@ export const interrogationService = {
     let usedAttempts = 0;
     let localResponse = false;
     const attempts: Array<{ attempt: number; promptTokens: number | null; completionTokens: number | null; cachedTokens: number | null; errorCode: string | null }> = [];
-    const prompt = ['Q-PROMPT', 'Q-SMALLTALK', 'Q-UNKNOWN'].includes(questionType)
+    const prompt = questionAnalysis.needsClarification || ['Q-PROMPT', 'Q-SMALLTALK', 'Q-UNKNOWN'].includes(questionType)
       ? null
-      : buildInterrogationPrompt(input.question, questionType, guardedKnowledge, presentedEvidence);
+      : buildInterrogationPrompt(input.question, questionType, guardedKnowledge, presentedEvidence, questionAnalysis);
 
-    if (questionType === 'Q-PROMPT') {
+    if (questionAnalysis.needsClarification) {
+      response = clarificationResponse(knowledge);
+      localResponse = true;
+    } else if (questionType === 'Q-PROMPT') {
       response = promptRejectionResponse(knowledge.currentEmotion);
       localResponse = true;
     } else if (questionType === 'Q-SMALLTALK' || questionType === 'Q-UNKNOWN') {
@@ -184,7 +189,10 @@ export const interrogationService = {
           cachedTokens += generated.cachedTokens ?? 0;
           latencyMs += generated.latencyMs;
           const normalized = normalizeGuardedResponse(generated.output);
-          const validationErrors = validateGuardedResponse(normalized, guardedKnowledge);
+          const validationErrors = [
+            ...validateGuardedResponse(normalized, guardedKnowledge),
+            ...validateQuestionTarget(normalized, questionAnalysis, guardedKnowledge)
+          ];
           attempts.push({ attempt, promptTokens: generated.inputTokens, completionTokens: generated.outputTokens, cachedTokens: generated.cachedTokens, errorCode: validationErrors[0] ?? null });
           if (validationErrors.length === 0) {
             accepted = normalized;
@@ -192,6 +200,11 @@ export const interrogationService = {
           }
           lastErrorCode = validationErrors[0];
           lastErrorMessage = `Guard validation failed: ${validationErrors.join(', ')}`;
+          if (validationErrors.includes('QUESTION_TARGET_MISMATCH') && attempt < MAX_GENERATION_ATTEMPTS) continue;
+          if (validationErrors.includes('QUESTION_TARGET_MISMATCH')) {
+            accepted = unknownKnowledgeResponse(guardedKnowledge);
+            break;
+          }
           if (['UNKNOWN_ENTITY', 'CULPRIT_DISCLOSURE', 'PROMPT_DISCLOSURE', 'CONSISTENCY_INVALID', 'RESPONSE_LENGTH_INVALID'].includes(lastErrorCode)) {
             accepted = safeValidationFallback(guardedKnowledge);
           }

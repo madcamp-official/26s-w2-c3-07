@@ -108,6 +108,25 @@ export type PresentedEvidence = {
   evidenceType: string;
 };
 
+export type CaseCharacter = {
+  id: string;
+  code: string;
+  name: string;
+  occupation: string | null;
+  victimRelation: string | null;
+};
+
+export type QuestionAnalysis = {
+  intent: 'ASK_SELF' | 'ASK_ALIBI' | 'ASK_RELATIONSHIP' | 'ASK_ACTION' | 'ASK_MOTIVE' | 'ASK_EVIDENCE' | 'ASK_OTHER_SUSPECT' | 'ASK_VICTIM' | 'OFF_TOPIC' | 'AMBIGUOUS';
+  speakerId: string;
+  subjectId: string | null;
+  objectType: 'VICTIM' | 'SUSPECT' | null;
+  objectId: string | null;
+  mentionedCharacterIds: string[];
+  isCaseRelated: boolean;
+  needsClarification: boolean;
+};
+
 export type SuspectKnowledge = {
   suspect: {
     id: string;
@@ -140,6 +159,9 @@ export type SuspectKnowledge = {
     verificationStatus: string;
   }>;
   relationships: Array<{ targetSuspectId: string; relationshipType: string; publicDescription: string | null }>;
+  publicRelationships: Array<{ sourceSuspectId: string; targetSuspectId: string | null; targetVictimId: string | null; relationshipType: string; publicDescription: string | null }>;
+  characters: CaseCharacter[];
+  victim: { id: string; name: string } | null;
   previousMessages: Array<{ question: string; response: string }>;
   currentEmotion: string;
   difficulty: string;
