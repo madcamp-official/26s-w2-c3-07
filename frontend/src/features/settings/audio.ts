@@ -2,15 +2,18 @@ export const BGM_TRACKS = {
   home: '/sounds/bgm/home-theme.mp3',
   investigation: '/sounds/bgm/investigation-theme.mp3',
   interrogation: '/sounds/bgm/interrogation-theme.mp3',
+  mysteryCellar: '/sounds/bgm/mystery-cellar-theme.mp3',
+  madohi: '/sounds/bgm/madohi-theme.mp3',
 } as const;
 
 export type BgmTrack = keyof typeof BGM_TRACKS;
 
 export const SFX = {
   keyboard: '/sounds/effects/keyboard-type.mp3',
+  click: '/sounds/effects/click.mp3',
 } as const;
 
-export type SfxName = keyof typeof SFX | 'click' | 'select' | 'evidence' | 'submit' | 'success' | 'failure';
+export type SfxName = keyof typeof SFX | 'select' | 'evidence' | 'submit' | 'success' | 'failure';
 
 let bgmAudio: HTMLAudioElement | null = null;
 let currentTrack: BgmTrack | null = null;
@@ -51,16 +54,16 @@ export function stopBgm() {
 
 export function playSfx(name: SfxName, enabled: boolean) {
   if (!enabled || typeof window === 'undefined') return;
-  if (name === 'keyboard') {
-    const audio = new Audio(SFX.keyboard);
-    audio.volume = 0.7;
+  if (name === 'keyboard' || name === 'click') {
+    const audio = new Audio(SFX[name]);
+    audio.volume = name === 'click' ? 0.45 : 0.7;
     void audio.play().catch(() => undefined);
     return;
   }
   effectsContext ??= new AudioContext();
   const context = effectsContext;
-  const patterns: Record<Exclude<SfxName, 'keyboard'>, number[]> = {
-    click: [260], select: [330, 440], evidence: [520, 660], submit: [220, 330, 440],
+  const patterns: Record<Exclude<SfxName, 'keyboard' | 'click'>, number[]> = {
+    select: [330, 440], evidence: [520, 660], submit: [220, 330, 440],
     success: [392, 523, 659], failure: [330, 247, 196],
   };
   void context.resume().then(() => {
