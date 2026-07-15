@@ -26,6 +26,7 @@ const mockViewDependencies = () => {
   vi.spyOn(repository, 'evidence').mockResolvedValue(['e1']);
   vi.spyOn(repository, 'clueCount').mockResolvedValue(0);
   vi.spyOn(repository, 'difficulty').mockResolvedValue('hard');
+  vi.spyOn(repository, 'questionsPerSuspect').mockResolvedValue(2);
 };
 
 afterEach(() => vi.restoreAllMocks());
@@ -61,8 +62,9 @@ describe('session lifecycle', () => {
     vi.spyOn(repository, 'findOwned').mockResolvedValue(row());
     const view = await sessionService.create('user-1', { episodeId: 'episode-1', difficulty: 'hard' });
     expect(repository.initialize).toHaveBeenCalledWith('user-1', 'episode-1', 'hard');
-    expect(view).toMatchObject({ status: 'READY', difficulty: 'hard', remainingQuestions: 6 });
+    expect(view).toMatchObject({ status: 'READY', difficulty: 'hard', remainingQuestions: 6, questionsPerSuspect: 2 });
     expect(view.suspectStates).toHaveLength(4);
+    expect(view.suspectStates[0]).toMatchObject({ questionsAsked: 0, questionsRemaining: 2 });
     expect(view.viewedEvidenceIds).toEqual(['e1']);
   });
 
@@ -91,7 +93,17 @@ describe('session lifecycle', () => {
     const transition = vi.spyOn(repository, 'transition').mockResolvedValue(row({ status: 'INTERROGATING' }));
     await sessionService.selectSuspect('session-1', 'user-1', 's1');
     expect(transition).toHaveBeenCalledWith('session-1', 'user-1', 'INTERROGATING', 's1',
-      ['CREATED', 'INTRO_VIEWING', 'INTERROGATING']);
+      ['CREATED', 'INTRO_VIEWING', 'INTERROGATING', 'READY_TO_DEDUCE']);
+  });
+
+  it('restores interrogation after viewing deduction without submitting', async () => {
+    mockViewDependencies();
+    vi.spyOn(repository, 'findOwned').mockResolvedValue(row({ status: 'READY_TO_DEDUCE' }));
+    vi.spyOn(repository, 'suspectBelongs').mockResolvedValue(true);
+    const transition = vi.spyOn(repository, 'transition').mockResolvedValue(row({ status: 'INTERROGATING', current_suspect_id: 's1' }));
+    await sessionService.selectSuspect('session-1', 'user-1', 's1');
+    expect(transition).toHaveBeenCalledWith('session-1', 'user-1', 'INTERROGATING', 's1',
+      ['CREATED', 'INTRO_VIEWING', 'INTERROGATING', 'READY_TO_DEDUCE']);
   });
 
   it.each(['COMPLETED', 'ABANDONED', 'EXPIRED'] as const)('rejects suspect selection for %s sessions', async (status) => {
@@ -100,10 +112,23 @@ describe('session lifecycle', () => {
       .rejects.toMatchObject({ code: 'SESSION_ALREADY_TERMINATED' });
   });
 
-  it.each(['READY_TO_DEDUCE', 'SUBMITTED'] as const)('rejects duplicate deduction for %s', async (status) => {
-    vi.spyOn(repository, 'findOwned').mockResolvedValue(row({ status }));
-    await expect(sessionService.deduction('session-1', 'user-1'))
-      .rejects.toMatchObject({ code: 'SESSION_ALREADY_IN_DEDUCTION' });
+  it('treats deduction entry as a read-only view state', async () => {
+    mockViewDependencies();
+    vi.spyOn(repository, 'findOwned').mockResolvedValue(row({ status: 'READY_TO_DEDUCE' }));
+    const transition = vi.spyOn(repository, 'transition');
+    await expect(sessionService.deduction('session-1', 'user-1')).resolves.toMatchObject({ status: 'DEDUCTION' });
+    expect(transition).not.toHaveBeenCalled();
+  });
+
+  it('allows an expired session to enter final deduction without restoring questions', async () => {
+    mockViewDependencies();
+    vi.spyOn(repository, 'findOwned').mockResolvedValue(row({ status: 'EXPIRED', expires_at: new Date(Date.now() - 1_000).toISOString() }));
+    await expect(sessionService.deduction('session-1', 'user-1')).resolves.toMatchObject({ status: 'EXPIRED', remainingSeconds: 0 });
+  });
+
+  it('rejects deduction entry while a submission is in progress', async () => {
+    vi.spyOn(repository, 'findOwned').mockResolvedValue(row({ status: 'SUBMITTED' }));
+    await expect(sessionService.deduction('session-1', 'user-1')).rejects.toMatchObject({ code: 'SESSION_ALREADY_IN_DEDUCTION' });
   });
 
   it('abandons an active session using the DB status set', async () => {

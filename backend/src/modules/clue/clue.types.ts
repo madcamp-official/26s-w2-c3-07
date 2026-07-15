@@ -9,6 +9,9 @@ export type ClueDto = {
   importance: string;
   unlockedAt: string;
   source: string | null;
+  sourceSuspect: string | null;
+  sourceQuestion: string | null;
+  sourceAnswer: string | null;
 };
 
 export type EvidenceDto = {
@@ -19,6 +22,7 @@ export type EvidenceDto = {
   evidenceType: string;
   discoveredAt: string | null;
   viewedAt: string | null;
+  source: string | null;
 };
 
 export type ClueEvaluationSource = 'EVIDENCE_VIEWED' | 'INTERROGATION' | 'SESSION_REFRESH';

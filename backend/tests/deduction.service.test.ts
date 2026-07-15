@@ -85,6 +85,7 @@ describe('final culprit judgment', () => {
 
 describe('atomic deduction SQL', () => {
   const sql = readFileSync(new URL('../supabase/migrations/20260713102716_align_runtime_game_rpcs.sql', import.meta.url), 'utf8');
+  const expiredSql = readFileSync(new URL('../supabase/migrations/20260715024353_allow_expired_session_deduction.sql', import.meta.url), 'utf8');
 
   it('uses stored culprit and CORE clues without LLM or score-based judgment', () => {
     expect(sql).toContain('episode.culprit_suspect_id');
@@ -112,5 +113,11 @@ describe('atomic deduction SQL', () => {
   it('raises before completion when result creation cannot select an ending, enabling rollback', () => {
     expect(sql.indexOf("raise exception 'DEDUCTION_ENDING_NOT_FOUND'")).toBeLessThan(sql.indexOf('insert into public.game_results'));
     expect(sql).not.toContain('exception when');
+  });
+
+  it('allows final submission after interrogation time expires', () => {
+    expect(expiredSql).toContain("v_session.status in ('COMPLETED', 'ABANDONED', 'ERROR')");
+    expect(expiredSql).not.toContain("'ABANDONED', 'EXPIRED'");
+    expect(expiredSql).toContain("set status = 'COMPLETED'");
   });
 });

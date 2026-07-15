@@ -4,7 +4,7 @@ import type { DbSessionStatus, SessionStatus, SessionView } from './session.type
 
 const terminal = new Set<DbSessionStatus>(['COMPLETED', 'ABANDONED', 'EXPIRED', 'ERROR']);
 const active = ['CREATED', 'INTRO_VIEWING', 'INTERROGATING', 'READY_TO_DEDUCE', 'SUBMITTED'] satisfies DbSessionStatus[];
-const selectable = ['CREATED', 'INTRO_VIEWING', 'INTERROGATING'] satisfies DbSessionStatus[];
+const selectable = ['CREATED', 'INTRO_VIEWING', 'INTERROGATING', 'READY_TO_DEDUCE'] satisfies DbSessionStatus[];
 
 export function toApiSessionStatus(status: DbSessionStatus): SessionStatus {
   switch (status) {
@@ -33,15 +33,16 @@ async function view(row: Record<string, unknown>, userId: string): Promise<Sessi
   const difficultyRequest = typeof row.difficulty === 'string'
     ? Promise.resolve(row.difficulty)
     : repo.difficulty(String(row.difficulty_config_id));
-  const [states, evidence, count, difficulty] = await Promise.all([
+  const [states, evidence, count, difficulty, questionsPerSuspect] = await Promise.all([
     repo.states(String(row.id)), repo.evidence(String(row.id)), repo.clueCount(String(row.id)),
-    difficultyRequest
+    difficultyRequest, repo.questionsPerSuspect(String(row.difficulty_config_id))
   ]);
   return {
     sessionId: String(row.id), episodeId: String(row.episode_id), difficulty, status: toApiSessionStatus(databaseStatus),
     startedAt: String(row.started_at), expiresAt: String(row.expires_at), remainingSeconds: seconds,
     remainingQuestions: Number(row.remaining_questions), currentSuspectId: row.current_suspect_id as string | null,
-    suspectStates: states.map((state) => ({ suspectId: state.suspect_id, emotion: state.current_emotion, questionsAsked: state.questions_used })),
+    questionsPerSuspect,
+    suspectStates: states.map((state) => ({ suspectId: state.suspect_id, emotion: state.current_emotion, questionsAsked: state.questions_used, questionsRemaining: Math.max(0, questionsPerSuspect - state.questions_used) })),
     viewedEvidenceIds: evidence, acquiredClueCount: count
   };
 }
@@ -74,9 +75,8 @@ export const sessionService = {
   },
   async deduction(id: string, userId: string) {
     const row = await owned(id, userId);
-    if (['READY_TO_DEDUCE', 'SUBMITTED'].includes(String(row.status))) throw new AppError(409, 'Already in deduction', 'SESSION_ALREADY_IN_DEDUCTION');
-    if (terminal.has(String(row.status) as DbSessionStatus)) throw new AppError(409, 'Invalid session state', 'SESSION_STATE_INVALID');
-    await repo.transition(id, userId, 'READY_TO_DEDUCE', undefined, selectable);
+    if (String(row.status) === 'SUBMITTED') throw new AppError(409, 'Deduction is being submitted', 'SESSION_ALREADY_IN_DEDUCTION');
+    if (['COMPLETED', 'ABANDONED', 'ERROR'].includes(String(row.status))) throw new AppError(409, 'Invalid session state', 'SESSION_STATE_INVALID');
     return this.get(id, userId);
   },
   async abandon(id: string, userId: string) {

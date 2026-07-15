@@ -103,7 +103,9 @@ export const recordRepository = {
 
   async createNote(sessionId: string, userId: string, input: NoteInput): Promise<NoteDto> {
     const { data, error } = await serviceRoleClient.from('session_notes').insert({ session_id:sessionId, note_type:dbNoteType(input.noteType), content:input.content, suspect_id:input.suspectId, related_ref:input.relatedRef }).select('id, session_id, note_type, content, suspect_id, related_ref, created_at, updated_at').single();
-    fail(error); return noteDto(data!);
+    fail(error);
+    if (!data) throw toAppError({ code: 'DATABASE_ERROR', message: 'Inserted note row was not returned' });
+    return noteDto(data);
   },
 
   async updateNote(sessionId: string, userId: string, noteId: string, patch: NotePatch): Promise<NoteDto | null> {
