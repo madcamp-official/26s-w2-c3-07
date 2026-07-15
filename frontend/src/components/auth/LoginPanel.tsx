@@ -35,10 +35,10 @@ export function LoginPanel() {
     <form className="space-y-5" onSubmit={submit}>
       <AuthTextField id="email" name="email" type="email" label="이메일" autoComplete="email" required placeholder="detective@example.com" />
       <PasswordField name="password" required minLength={6} />
-      {error && <p role="alert" className="border border-evidence-red/50 bg-evidence-red/10 p-3 text-sm text-noir-900">{error}</p>}
+      {error && <p role="alert" className="border border-evidence-red/50 bg-evidence-red/10 p-3 text-sm font-medium text-noir-900">{error}</p>}
       <button disabled={submitting} type="submit" className="w-full bg-evidence-red py-3.5 font-display font-bold text-parchment-100 disabled:opacity-50">{submitting ? '확인 중...' : '신원 확인'}</button>
     </form>
-    <p className="mt-6 text-center text-sm text-noir-900/70">아직 등록하지 않으셨나요? <Link href="/signup" className="font-bold text-evidence-red hover:underline">수사관 등록하기</Link></p>
-    <p className="mt-4 text-center text-xs text-noir-900/40">Google 로그인은 준비 중입니다.</p>
+    <p className="mt-6 text-center text-sm font-medium text-noir-900/80">아직 등록하지 않으셨나요? <Link href="/signup" className="font-bold text-evidence-red hover:underline">수사관 등록하기</Link></p>
+    <p className="mt-4 text-center text-xs font-medium text-noir-900/50">Google 로그인은 준비 중입니다.</p>
   </div>;
 }

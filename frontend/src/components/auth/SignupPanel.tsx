@@ -42,9 +42,9 @@ export function SignupPanel() {
       <AuthTextField id="email" name="email" type="email" label="이메일" required autoComplete="email" />
       <PasswordField id="password" name="password" required minLength={6} />
       <PasswordField id="passwordConfirm" name="passwordConfirm" required minLength={6} label="비밀번호 확인" />
-      {error && <p role="alert" className="border border-evidence-red/50 bg-evidence-red/10 p-3 text-sm text-noir-900">{error}</p>}
+      {error && <p role="alert" className="border border-evidence-red/50 bg-evidence-red/10 p-3 text-sm font-medium text-noir-900">{error}</p>}
       <button disabled={submitting} type="submit" className="w-full bg-evidence-red py-3.5 font-display font-bold text-parchment-100 disabled:opacity-50">{submitting ? '등록 중...' : '수사관 등록하기'}</button>
     </form>
-    <p className="mt-6 text-center text-sm text-noir-900/70">이미 등록하셨나요? <Link href="/login" className="font-bold text-evidence-red hover:underline">신원 확인하기</Link></p>
+    <p className="mt-6 text-center text-sm font-medium text-noir-900/80">이미 등록하셨나요? <Link href="/login" className="font-bold text-evidence-red hover:underline">신원 확인하기</Link></p>
   </div>;
 }
