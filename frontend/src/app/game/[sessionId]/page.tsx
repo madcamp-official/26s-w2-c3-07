@@ -11,6 +11,7 @@ import { SuspectImage } from '@/features/suspect/components/SuspectImage';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { EvidenceModal } from '@/components/ui/EvidenceModal';
 import { resolveEvidenceImage } from '@/features/episode/utils/evidenceImage';
+import { useBgm } from '@/features/settings/useBgm';
 import type { EpisodeDetail, PublicSuspect } from '@/types/content';
 import type { Clue, Evidence, EvidenceViewResult } from '@/types/clue';
 import type { SessionView } from '@/types/session';
@@ -19,6 +20,7 @@ import { ApiError } from '@/types/api';
 const terminalMessage: Partial<Record<SessionView['status'], string>> = { EXPIRED: '세션 시간이 만료되었습니다.', ABANDONED: '포기한 세션입니다.', COMPLETED: '이미 완료된 세션입니다.' };
 export default function GamePage() {
   const { sessionId } = useParams<{ sessionId: string }>(); const router = useRouter();
+  useBgm('investigation');
   const session = useApiResource<SessionView>(`/sessions/${sessionId}`);
   const episode = useApiResource<EpisodeDetail>(session.data ? `/episodes/${session.data.episodeId}` : null);
   const suspects = useApiResource<PublicSuspect[]>(session.data ? `/episodes/${session.data.episodeId}/suspects` : null);
