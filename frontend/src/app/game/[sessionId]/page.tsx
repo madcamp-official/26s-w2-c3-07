@@ -13,6 +13,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { EvidenceModal } from '@/components/ui/EvidenceModal';
 import { ClueModal } from '@/components/ui/ClueModal';
 import { resolveEvidenceImage } from '@/features/episode/utils/evidenceImage';
+import { useBgm } from '@/features/settings/useBgm';
 import { difficultyLabel, emotionLabel, sessionStatusLabel } from '@/lib/game-labels';
 import type { EpisodeDetail, PublicSuspect } from '@/types/content';
 import type { Clue, Evidence, EvidenceViewResult } from '@/types/clue';
@@ -29,6 +30,7 @@ const suspectQuestionLabel = (remaining: number) => remaining > 0 ? `질문 ${re
 export default function GamePage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const router = useRouter();
+  useBgm('investigation');
   const session = useApiResource<SessionView>(`/sessions/${sessionId}`);
   const episode = useApiResource<EpisodeDetail>(session.data ? `/episodes/${session.data.episodeId}` : null);
   const suspects = useApiResource<PublicSuspect[]>(session.data ? `/episodes/${session.data.episodeId}/suspects` : null);

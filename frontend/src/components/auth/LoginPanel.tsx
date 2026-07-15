@@ -30,15 +30,15 @@ export function LoginPanel() {
     }
   }
 
-  return <div className="relative w-full max-w-md border border-brass-600/50 bg-noir-800/90 p-8 shadow-2xl">
-    <h1 className="mb-8 text-center font-display text-2xl text-parchment-100">수사관 신원 확인</h1>
+  return <div className="relative w-full max-w-sm p-8">
+    <h1 className="mb-8 text-center font-display text-2xl text-noir-900">수사관 신원 확인</h1>
     <form className="space-y-5" onSubmit={submit}>
       <AuthTextField id="email" name="email" type="email" label="이메일" autoComplete="email" required placeholder="detective@example.com" />
       <PasswordField name="password" required minLength={6} />
-      {error && <p role="alert" className="border border-evidence-red/50 bg-evidence-red/10 p-3 text-sm text-parchment-100">{error}</p>}
+      {error && <p role="alert" className="border border-evidence-red/50 bg-evidence-red/10 p-3 text-sm font-medium text-noir-900">{error}</p>}
       <button disabled={submitting} type="submit" className="w-full bg-evidence-red py-3.5 font-display font-bold text-parchment-100 disabled:opacity-50">{submitting ? '확인 중...' : '신원 확인'}</button>
     </form>
-    <p className="mt-6 text-center text-sm text-parchment-300/70">아직 등록하지 않으셨나요? <Link href="/signup" className="text-brass-400 hover:underline">수사관 등록하기</Link></p>
-    <p className="mt-4 text-center text-xs text-parchment-300/40">Google 로그인은 준비 중입니다.</p>
+    <p className="mt-6 text-center text-sm font-medium text-noir-900/80">아직 등록하지 않으셨나요? <Link href="/signup" className="font-bold text-evidence-red hover:underline">수사관 등록하기</Link></p>
+    <p className="mt-4 text-center text-xs font-medium text-noir-900/50">Google 로그인은 준비 중입니다.</p>
   </div>;
 }

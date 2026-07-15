@@ -18,10 +18,14 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { ClueModal } from '@/components/ui/ClueModal';
 import { useSessionExpiry } from '@/features/session/useSessionExpiry';
 import { ExpiryNotice } from '@/features/session/components/ExpiryNotice';
+import { playSfx } from '@/features/settings/audio';
+import { useBgm, useSfxEnabled } from '@/features/settings/useBgm';
 
 export default function InterrogationPage() {
   const { sessionId, suspectId } = useParams<{ sessionId: string; suspectId: string }>();
   const evidenceId = useSearchParams().get('evidenceId');
+  useBgm('interrogation');
+  const sfxEnabled = useSfxEnabled();
   const session = useApiResource<SessionView>(`/sessions/${sessionId}`);
   const suspect = useApiResource<PublicSuspect>(session.data ? `/episodes/${session.data.episodeId}/suspects/${suspectId}` : null);
   const messages = useApiResource<InterrogationMessage[]>(`/sessions/${sessionId}/suspects/${suspectId}/interrogations`);
@@ -41,6 +45,7 @@ export default function InterrogationPage() {
   async function send(event: FormEvent) {
     event.preventDefault();
     if (disabled || question.trim().length < 2) return;
+    playSfx('keyboard', sfxEnabled);
     const id = requestId ?? crypto.randomUUID();
     setRequestId(id);
     setSending(true);
