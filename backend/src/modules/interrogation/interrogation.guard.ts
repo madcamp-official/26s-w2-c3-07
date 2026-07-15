@@ -15,7 +15,7 @@ export function classifyQuestion(question: string): QuestionType {
   if (evidencePatterns.some((pattern) => pattern.test(value))) return 'Q-EVIDENCE';
   if (includesAny(value, ['어디', '장소', '있었', '갔'])) return 'Q-PLACE';
   if (includesAny(value, ['언제', '몇 시', '시간', '당시'])) return 'Q-TIME';
-  if (includesAny(value, ['관계', '사이', '알고', '가족', '피해자'])) return 'Q-RELATION';
+  if (includesAny(value, ['관계', '사이', '가족', '피해자'])) return 'Q-RELATION';
   if (includesAny(value, ['왜', '이유', '동기', '원한', '돈'])) return 'Q-MOTIVE';
   if (includesAny(value, ['안녕', '고맙', '날씨', '기분'])) return 'Q-SMALLTALK';
   if (value.replace(/\s/g, '').length < 3) return 'Q-UNKNOWN';

@@ -41,6 +41,14 @@ describe('session lifecycle', () => {
     }).success).toBe(false);
   });
 
+  it('keeps the session creation contract UUID-only', () => {
+    expect(createSessionSchema.safeParse({ episodeId: 'GS-01', difficulty: 'normal' }).success).toBe(false);
+    expect(createSessionSchema.safeParse({
+      episodeId: '00000000-0000-4000-8000-000000000001',
+      difficulty: 'normal'
+    }).success).toBe(true);
+  });
+
   it.each([
     ['CREATED', 'READY'],
     ['INTRO_VIEWING', 'INVESTIGATING'],

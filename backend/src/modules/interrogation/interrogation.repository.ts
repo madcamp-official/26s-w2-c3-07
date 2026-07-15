@@ -48,21 +48,22 @@ export const interrogationRepository = {
     const content = serviceRoleClient.schema('game_content');
     const needsLies = ['Q-CONTRADICTION', 'Q-ACCUSATION', 'Q-EVIDENCE'].includes(questionType);
     const needsRelationships = questionType === 'Q-RELATION';
-    const [suspectResult, factsResult, responseRuleResult, emotionRulesResult, relationshipsResult, stateResult, episodeResult, configResult, previousResult, victimResult] = await Promise.all([
-      content.from('suspects').select('id, episode_id, name, age, occupation, personality, speech_style, public_profile').eq('id', suspectId).eq('episode_id', session.episode_id).maybeSingle(),
+    const [suspectResult, factsResult, responseRuleResult, emotionRulesResult, relationshipsResult, stateResult, episodeResult, configResult, previousResult, victimResult, charactersResult] = await Promise.all([
+      content.from('suspects').select('id, episode_id, code, name, age, occupation, victim_relation, personality, speech_style, public_profile').eq('id', suspectId).eq('episode_id', session.episode_id).maybeSingle(),
       content.from('suspect_facts').select('id, code, fact_type, content, disclosure_level').eq('suspect_id', suspectId).order('priority', { ascending: false }),
       content.from('suspect_response_rules').select('question_type, response_policy, allowed_fact_refs, hidden_fact_refs, difficulty_overrides').eq('suspect_id', suspectId).eq('question_type', questionType).limit(1),
       content.from('suspect_emotion_rules').select('trigger_type, condition, to_emotion, priority').eq('suspect_id', suspectId).order('priority', { ascending: false }).limit(3),
       needsRelationships
-        ? content.from('suspect_relationships').select('target_suspect_id, relation_type, public_description').eq('source_suspect_id', suspectId).eq('disclosure_level', 'PUBLIC_PROFILE').limit(3)
+        ? content.from('suspect_relationships').select('source_suspect_id, target_suspect_id, target_victim_id, relation_type, public_description').eq('episode_id', session.episode_id).eq('disclosure_level', 'PUBLIC_PROFILE').limit(12)
         : Promise.resolve({ data: [], error: null }),
       serviceRoleClient.from('session_suspect_states').select('current_emotion, questions_used').eq('session_id', session.id).eq('suspect_id', suspectId).maybeSingle(),
       content.from('episodes').select('region_id, location').eq('id', session.episode_id).maybeSingle(),
       content.from('episode_difficulty_configs').select('difficulty, dialect_level').eq('id', session.difficulty_config_id).eq('episode_id', session.episode_id).maybeSingle(),
       serviceRoleClient.from('interrogation_messages').select('user_question, npc_response, revealed_fact_refs, claimed_fact_refs').eq('session_id', session.id).eq('suspect_id', suspectId).order('created_at', { ascending: false }).limit(3),
-      content.from('victims').select('name').eq('episode_id', session.episode_id).maybeSingle()
+      content.from('victims').select('id, name').eq('episode_id', session.episode_id).maybeSingle(),
+      content.from('suspects').select('id, code, name, occupation, victim_relation').eq('episode_id', session.episode_id).eq('is_active', true).order('display_order')
     ]);
-    for (const result of [suspectResult, factsResult, responseRuleResult, emotionRulesResult, relationshipsResult, stateResult, episodeResult, configResult, previousResult, victimResult]) throwIfError(result.error);
+    for (const result of [suspectResult, factsResult, responseRuleResult, emotionRulesResult, relationshipsResult, stateResult, episodeResult, configResult, previousResult, victimResult, charactersResult]) throwIfError(result.error);
     if (!suspectResult.data || !stateResult.data || !episodeResult.data || !configResult.data) return null;
     const state = stateResult.data;
     const config = configResult.data;
@@ -92,7 +93,7 @@ export const interrogationRepository = {
     const revealed = previousRows.flatMap((row) => stringArray(row.revealed_fact_refs));
     const claimed = previousRows.flatMap((row) => stringArray(row.claimed_fact_refs));
     const knownEntities = [
-      suspectResult.data.name,
+      ...(charactersResult.data ?? []).map((character) => character.name),
       victimResult.data?.name,
       episodeResult.data.location
     ].filter((value): value is string => Boolean(value));
@@ -137,7 +138,10 @@ export const interrogationRepository = {
       effectiveRuleType,
       emotionRules: (emotionRulesResult.data ?? []).map((row) => ({ triggerType: row.trigger_type, trigger: row.condition, emotion: row.to_emotion, intensity: row.priority })),
       dialectExpressions,
-      relationships: (relationshipsResult.data ?? []).map((row) => ({ targetSuspectId: row.target_suspect_id ?? '', relationshipType: row.relation_type, publicDescription: row.public_description })),
+      relationships: (relationshipsResult.data ?? []).filter((row) => row.source_suspect_id === suspectId).map((row) => ({ targetSuspectId: row.target_suspect_id ?? '', relationshipType: row.relation_type, publicDescription: row.public_description })),
+      publicRelationships: (relationshipsResult.data ?? []).map((row) => ({ sourceSuspectId: row.source_suspect_id, targetSuspectId: row.target_suspect_id, targetVictimId: row.target_victim_id, relationshipType: row.relation_type, publicDescription: row.public_description })),
+      characters: (charactersResult.data ?? []).map((row) => ({ id: row.id, code: row.code, name: row.name, occupation: row.occupation, victimRelation: row.victim_relation })),
+      victim: victimResult.data ? { id: victimResult.data.id, name: victimResult.data.name } : null,
       previousMessages: previousRows.map((row) => ({ question: row.user_question, response: row.npc_response })),
       currentEmotion: state.current_emotion,
       difficulty: config.difficulty,

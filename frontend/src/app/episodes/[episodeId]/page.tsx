@@ -9,7 +9,7 @@ import { AuthGuard } from '@/features/auth/AuthProvider';
 import { useApiResource } from '@/features/api/useApiResource';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/ApiState';
 import type { EpisodeDetail, PublicSuspect, Scene } from '@/types/content';
-import type { SessionView } from '@/types/session';
+import type { CreateSessionRequest, SessionView } from '@/types/session';
 import { ApiError } from '@/types/api';
 import { SuspectImage } from '@/features/suspect/components/SuspectImage';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -29,7 +29,7 @@ export default function EpisodePage() {
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [starting, setStarting] = useState(false); const [startError, setStartError] = useState<ApiError | null>(null);
   useEffect(() => { if (detail.data && episodeId !== detail.data.code) { const query = searchParams.toString(); router.replace(`/episodes/${detail.data.code}${query ? `?${query}` : ''}`); } }, [detail.data, episodeId, router, searchParams]);
-  async function start() { if (starting) return; playSfx('select', sfxEnabled); setStarting(true); setStartError(null); try { const session = await api.post<SessionView>('/sessions', { episodeId, difficulty }); router.push(`/game/${session.episodeCode}`); } catch (cause) { setStartError(cause as ApiError); setStarting(false); } }
+  async function start() { if (starting || !detail.data) return; playSfx('select', sfxEnabled); setStarting(true); setStartError(null); try { const payload: CreateSessionRequest = { episodeId: detail.data.id, difficulty }; const session = await api.post<SessionView>('/sessions', payload); router.push(`/game/${session.episodeCode}`); } catch (cause) { setStartError(cause as ApiError); setStarting(false); } }
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-3xl space-y-7">
     <AppHeader />
     <Link href="/regions" className="text-sm opacity-70">← 지역 목록</Link>
@@ -39,7 +39,7 @@ export default function EpisodePage() {
       <section className="border border-brass-600/30 bg-noir-900/70 p-5"><h2 className="font-bold text-brass-400">피해자</h2><p className="mt-2">{detail.data.victim.name} · {detail.data.victim.age ?? '나이 미상'}세 · {detail.data.victim.occupation ?? '직업 미상'}</p></section>
       {scene.data && <section><h2 className="mb-3 font-display text-2xl">초기 현장 증거</h2>{scene.data.evidence.length ? <div className="grid gap-3 md:grid-cols-2">{scene.data.evidence.map((item) => <div key={item.id} className="border border-brass-600/30 p-4"><b>{item.title}</b><p className="mt-1 text-sm opacity-60">{item.description}</p></div>)}</div> : <EmptyState label="공개된 초기 증거가 없습니다." />}</section>}
       {suspects.data && <section><h2 className="mb-3 font-display text-2xl">용의자 {suspects.data.length}명</h2><div className="grid grid-cols-2 gap-3 md:grid-cols-4">{suspects.data.map((item) => <div key={item.id} className="overflow-hidden border border-brass-600/30 bg-noir-900/70"><SuspectImage imageUrl={item.imageUrl} name={item.name} sizes="(min-width: 768px) 25vw, 50vw" className="aspect-square w-full" /><p className="px-3 py-2 text-center font-display">{item.name}</p></div>)}</div><Link className="mt-3 inline-block text-sm text-brass-400" href={`/episodes/${detail.data.code}/suspects`}>용의자 공개 정보 보기 →</Link></section>}
-      <section className="border-t border-brass-600/30 pt-6"><div className="flex flex-wrap gap-2">{detail.data.difficulties.map((item) => <button key={item.difficulty} onClick={() => setDifficulty(item.difficulty)} className={`border px-4 py-2 ${difficulty === item.difficulty ? 'border-evidence-red bg-evidence-red' : 'border-brass-600/40'}`}>{difficultyLabel(item.difficulty)} · 총 {item.totalQuestions}회</button>)}</div>{startError && <div className="mt-4"><ErrorState error={startError} /></div>}<button onClick={start} disabled={starting} className="mt-5 w-full bg-evidence-red py-4 font-display text-lg font-bold disabled:opacity-50">{starting ? '세션 생성 중...' : '사건 조사 시작'}</button></section>
+      <section className="border-t border-brass-600/30 pt-6"><div className="flex flex-wrap gap-2">{detail.data.difficulties.map((item) => <button key={item.difficulty} onClick={() => setDifficulty(item.difficulty)} className={`border px-4 py-2 ${difficulty === item.difficulty ? 'border-evidence-red bg-evidence-red' : 'border-brass-600/40'}`}>{difficultyLabel(item.difficulty)} · 총 {item.totalQuestions}회</button>)}</div>{startError && <div className="mt-4"><ErrorState error={startError} message={startError.category === 'validation' ? '사건 시작 요청을 확인하지 못했습니다. 사건 정보를 새로고침한 뒤 다시 시도해 주세요.' : startError.category === 'conflict' ? '이미 진행 중인 사건이 있습니다. 진행 중인 사건을 먼저 확인해 주세요.' : '사건 조사를 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.'} /></div>}<button data-sfx="custom" onClick={start} disabled={starting} className="mt-5 w-full bg-evidence-red py-4 font-display text-lg font-bold disabled:opacity-50">{starting ? '세션 생성 중...' : '사건 조사 시작'}</button></section>
     </> : null}
   </div></main></AuthGuard>;
 }

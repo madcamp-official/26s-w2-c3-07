@@ -43,6 +43,9 @@ function fixture(type: QuestionType): SuspectKnowledge {
     emotionRules: Array.from({ length: 6 }, () => ({ triggerType: 'QUESTION', trigger: { text: paragraph }, emotion: 'NERVOUS', intensity: 2 })),
     dialectExpressions: selectDialectExpressions(dialect, type, 'NEUTRAL', 'normal', 3),
     relationships: Array.from({ length: 5 }, (_, index) => ({ targetSuspectId: uuid(index + 100), relationshipType: '지인', publicDescription: paragraph })),
+    publicRelationships: [],
+    characters: [{ id: uuid(1), code: 'GS-01-S1', name: '김용의', occupation: '상인', victimRelation: '피해자의 지인' }],
+    victim: { id: uuid(2), name: '김피해' },
     previousMessages: Array.from({ length: 12 }, (_, index) => ({ question: `이전 질문 ${index} ${paragraph}`, response: `이전 답변 ${index} ${paragraph}` })),
     currentEmotion: 'NEUTRAL', difficulty: 'normal', dialectLevel: 3,
     revealedFactIds: [], claimedFactIds: [], knownEntities: ['종가', '마을회관', '피해자']
