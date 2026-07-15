@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AuthGuard } from '@/features/auth/AuthProvider';
 import { useApiResource } from '@/features/api/useApiResource';
 import { api } from '@/lib/api-client';
@@ -23,18 +23,13 @@ export default function DeductionPage() {
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
-  const sessionStatus = session.data?.status;
-  const reloadSession = session.reload;
-
-  useEffect(() => {
-    if (sessionStatus && !['DEDUCTION', 'COMPLETED'].includes(sessionStatus)) {
-      void api.post(`/sessions/${sessionId}/enter-deduction`).then(() => reloadSession()).catch((cause) => setError(cause));
-    }
-  }, [reloadSession, sessionId, sessionStatus]);
-
   async function submit() {
     if (!selected || busy) return;
-    if (!confirm) { setConfirm(true); return; }
+    setConfirm(true);
+  }
+
+  async function confirmSubmit() {
+    if (!selected || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -56,6 +51,7 @@ export default function DeductionPage() {
         <div className="p-5"><h2 className="font-display text-2xl">{suspect.name}</h2><p className="text-sm opacity-60">{suspect.occupation}</p></div>
       </button>)}
     </div>}
-    <button onClick={submit} disabled={!selected || busy} className="w-full bg-evidence-red py-4 font-bold disabled:opacity-40">{busy ? '판정 중...' : confirm ? '최종 제출' : '이 용의자 지목'}</button>
+    <button onClick={submit} disabled={!selected || busy} className="w-full bg-evidence-red py-4 font-bold disabled:opacity-40">{busy ? '판정 중...' : '이 용의자 지목'}</button>
+    {confirm && <div role="dialog" aria-modal="true" aria-label="최종 범인 제출 확인" className="fixed inset-0 z-50 grid place-items-center bg-noir-950/90 p-6"><div className="w-full max-w-md border border-brass-600/40 bg-noir-900 p-6"><h2 className="font-display text-2xl">최종 선택 확인</h2><p className="mt-4 whitespace-pre-line">이 용의자를 최종 범인으로 지목하시겠습니까?{`\n`}제출 후에는 심문으로 돌아갈 수 없습니다.</p><div className="mt-6 grid grid-cols-2 gap-3"><button type="button" disabled={busy} onClick={() => setConfirm(false)} className="border border-brass-600/40 py-3">취소</button><button type="button" disabled={busy} onClick={() => void confirmSubmit()} className="bg-evidence-red py-3 font-bold">{busy ? '제출 중...' : '최종 제출'}</button></div></div></div>}
   </div></main></AuthGuard>;
 }

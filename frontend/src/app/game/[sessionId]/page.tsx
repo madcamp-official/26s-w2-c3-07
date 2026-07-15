@@ -79,9 +79,8 @@ export default function GamePage() {
   }
 
   async function deduction() {
-    setBusy('deduction'); setActionError(null);
-    try { await api.post(`/sessions/${sessionId}/enter-deduction`); router.push(`/game/${sessionId}/deduction`); }
-    catch (cause) { console.error('최종 추리 진입 실패', cause); setActionError(cause as ApiError); setBusy(''); }
+    if (busy) return;
+    router.push(`/game/${sessionId}/deduction`);
   }
 
   if (session.loading) return <LoadingState label="게임 세션을 복구하는 중..." />;
