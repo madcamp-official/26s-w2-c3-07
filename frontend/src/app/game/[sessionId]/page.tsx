@@ -15,6 +15,7 @@ import type { EpisodeDetail, PublicSuspect } from '@/types/content';
 import type { Clue, Evidence, EvidenceViewResult } from '@/types/clue';
 import type { SessionView } from '@/types/session';
 import { ApiError } from '@/types/api';
+import { difficultyLabel, sessionStatusLabel } from '@/lib/game-labels';
 
 const terminalMessage: Partial<Record<SessionView['status'], string>> = { EXPIRED: '세션 시간이 만료되었습니다.', ABANDONED: '포기한 세션입니다.', COMPLETED: '이미 완료된 세션입니다.' };
 export default function GamePage() {
@@ -33,9 +34,9 @@ export default function GamePage() {
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-5xl space-y-7">
     <AppHeader />
     {session.error ? <ErrorState error={session.error} retry={session.reload} /> : session.data && <>
-      <header className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-evidence-red">{session.data.status} · {session.data.difficulty}</p><h1 className="font-display text-4xl">{episode.data?.title ?? '사건 수사'}</h1></div><Link href={`/game/${sessionId}/records`} className="border border-brass-600/40 px-4 py-2">사건 기록</Link></header>
+      <header className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-evidence-red">{sessionStatusLabel(session.data.status)} · {difficultyLabel(session.data.difficulty)}</p><h1 className="font-display text-4xl">{episode.data?.title ?? '사건 수사'}</h1></div><Link href={`/game/${sessionId}/records`} className="border border-brass-600/40 px-4 py-2">사건 기록</Link></header>
       {terminalMessage[session.data.status] && <div className="border border-evidence-red/50 bg-evidence-red/10 p-4">{terminalMessage[session.data.status]} {session.data.status === 'COMPLETED' && <Link className="ml-2 underline" href={`/game/${sessionId}/result`}>결과 보기</Link>}</div>}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4"><div className="border p-3">남은 질문 <b>{session.data.remainingQuestions}</b></div><div className="border p-3">남은 시간 <b>{session.data.remainingSeconds}초</b></div><div className="border p-3">단서 <b>{session.data.acquiredClueCount}</b></div><div className="border p-3">상태 <b>{session.data.status}</b></div></section>
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4"><div className="border p-3">남은 질문 <b>{session.data.remainingQuestions}</b></div><div className="border p-3">남은 시간 <b>{session.data.remainingSeconds}초</b></div><div className="border p-3">단서 <b>{session.data.acquiredClueCount}</b></div><div className="border p-3">상태 <b>{sessionStatusLabel(session.data.status)}</b></div></section>
       {notice && <p role="status" className="border border-brass-400 bg-brass-600/10 p-3">{notice}</p>}{actionError && <ErrorState error={actionError} />}
       <section><h2 className="mb-3 font-display text-2xl">열람 가능한 증거</h2>{!evidence.data?.length ? <EmptyState label="현재 열람 가능한 증거가 없습니다." /> : <div className="grid gap-3 md:grid-cols-2">{evidence.data.map((item) => { const image = resolveEvidenceImage(item.code); return <div key={item.id} className="flex gap-3 border border-brass-600/30 p-4">{image && <button onClick={() => setPreviewEvidence(item)} className="relative h-20 w-20 shrink-0 overflow-hidden border border-brass-600/30"><Image src={image} alt={item.title} fill sizes="80px" className="object-cover" /></button>}<button onClick={() => view(item)} disabled={Boolean(busy) || Boolean(terminalMessage[session.data!.status])} className="flex-1 text-left disabled:opacity-50"><b>{item.title}</b><span className="float-right text-xs">{item.viewedAt ? '열람 완료' : '열람 가능'}</span><p className="mt-2 text-sm opacity-60">{item.description}</p></button></div>; })}</div>}</section>
       {previewEvidence && <EvidenceModal title={previewEvidence.title} description={previewEvidence.description} image={resolveEvidenceImage(previewEvidence.code)} onClose={() => setPreviewEvidence(null)} />}
