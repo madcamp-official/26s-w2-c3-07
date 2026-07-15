@@ -43,6 +43,27 @@ const condition = (groupNo: number, conditionType: string, targetRef: string) =>
 });
 
 describe('data-driven clue condition evaluation', () => {
+  it('unlocks a FACT_USED condition without requiring a revealed fact', () => {
+    expect(evaluateClueConditions(
+      [condition(1, 'FACT_USED', 'fact-alibi')],
+      context({ usedFactIds: new Set(['fact-alibi']), revealedFactIds: new Set() })
+    )).toBe(true);
+  });
+
+  it('does not unlock a FACT_USED condition from an unrelated fact', () => {
+    expect(evaluateClueConditions(
+      [condition(1, 'FACT_USED', 'fact-alibi')],
+      context({ usedFactIds: new Set(['different-fact']) })
+    )).toBe(false);
+  });
+
+  it('still requires every condition in a FACT_USED AND group', () => {
+    expect(evaluateClueConditions([
+      condition(1, 'QUESTION_TYPE_ASKED', 'Q-TIME'),
+      condition(1, 'FACT_USED', 'fact-alibi')
+    ], context({ usedFactIds: new Set(['fact-alibi']) }))).toBe(false);
+  });
+
   it.each([
     ['GS-01', 'GS-01-E1', 'GS-01-F1'],
     ['JL-01', 'JL-01-E6', 'JL-01-F1'],
@@ -165,6 +186,7 @@ describe('clue SQL enforcement', () => {
   const sql = readFileSync(new URL('../supabase/migrations/20260714074318_llm_clue_unlock_integration.sql', import.meta.url), 'utf8');
   const progressionSql = readFileSync(new URL('../supabase/migrations/20260714103128_initial_evidence_clue_progression.sql', import.meta.url), 'utf8');
   const viewedAtTypeSql = readFileSync(new URL('../supabase/migrations/20260714103355_fix_clue_evidence_viewed_at_type.sql', import.meta.url), 'utf8');
+  const factUsedFixSql = readFileSync(new URL('../supabase/migrations/20260715123107_fix_clue_unlock_fact_used_conditions.sql', import.meta.url), 'utf8');
 
   it('queries only columns present in the live session evidence schema', () => {
     expect(repositorySource).toContain(".select('evidence_id, source_type, viewed_at')");
@@ -183,6 +205,15 @@ describe('clue SQL enforcement', () => {
     expect(sql).toContain('message.revealed_fact_refs');
     expect(sql).toContain("v_condition.condition_type = 'CLAIM_RECORDED'");
     expect(sql).toContain('message.claimed_fact_refs');
+  });
+
+  it('moves progression clues to used facts and reevaluates prior session turns', () => {
+    expect(factUsedFixSql).toContain("set condition_type = 'FACT_USED'");
+    expect(factUsedFixSql).toContain("condition.condition_type = 'FACT_REVEALED'");
+    expect(factUsedFixSql).toContain('message.used_fact_refs');
+    expect(factUsedFixSql).toContain("v_condition.condition_type = 'FACT_REVEALED'");
+    expect(factUsedFixSql).toContain('message.revealed_fact_refs');
+    expect(factUsedFixSql.match(/p_current_message_id is null or message\.id = p_current_message_id/g)).toHaveLength(3);
   });
 
   it('supports all declared condition types and never accepts an LLM clue-id list', () => {

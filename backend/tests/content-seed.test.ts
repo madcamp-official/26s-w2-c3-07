@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { episodeCodes, runContentSeed, tableOrder, validateContent, type ContentSeedWriter, type SeedRow, type SeedTables } from '../src/seeds/content-seed.js';
+import { episodeCodes, migrationManagedTables, runContentSeed, tableOrder, validateContent, type ContentSeedWriter, type SeedRow, type SeedTables } from '../src/seeds/content-seed.js';
 import { fourEpisodeContent } from '../src/seeds/four-episode-content.js';
 
 const uuid = (value: number) => `00000000-0000-4000-8000-${value.toString().padStart(12, '0')}`;
@@ -117,6 +117,12 @@ describe('content seed', () => {
     expect(first.inserted).toBeGreaterThan(0);
     expect(second.inserted).toBe(0);
     expect(writer.rows.size).toBe(rowCount);
+  });
+  it('leaves the migration-owned clue condition graph unchanged', async () => {
+    const writer = new MemoryWriter();
+    await runContentSeed(fixture(), writer);
+    expect(migrationManagedTables.has('clue_unlock_conditions')).toBe(true);
+    expect([...writer.rows.keys()].some((key) => key.startsWith('clue_unlock_conditions:'))).toBe(false);
   });
   it('persists dialect references while stripping seed-only metadata', async () => {
     const tables = fixture();

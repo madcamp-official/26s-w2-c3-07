@@ -27,9 +27,9 @@ const schema = {
     response: { type: 'string', maxLength: 120 },
     emotion: { type: 'string', enum: ['CALM', 'NEUTRAL', 'NERVOUS', 'DEFENSIVE', 'ANGRY', 'FEARFUL', 'GUILTY', 'SAD', 'BREAKDOWN', 'MOCKING', 'AGGRESSIVE_DEFENSIVE'] },
     evasion: { type: ['string', 'null'], enum: ['NONE', 'PARTIAL_ANSWER', 'DENIAL', 'DEFLECTION', 'UNKNOWN', 'PROMPT_REJECTION', null] },
-    usedFacts: { type: 'array', items: { type: 'string', pattern: '^F[1-9]\\d*$' }, maxItems: 7 },
-    revealedFacts: { type: 'array', items: { type: 'string', pattern: '^F[1-9]\\d*$' }, maxItems: 7 },
-    claimedFacts: { type: 'array', items: { type: 'string', pattern: '^F[1-9]\\d*$' }, maxItems: 7 }
+    usedFacts: { description: 'Fact keys actually used and reflected in the final response.', type: 'array', items: { type: 'string', pattern: '^F[1-9]\\d*$' }, maxItems: 7 },
+    revealedFacts: { description: 'Previously undisclosed fact keys clearly newly revealed in this response.', type: 'array', items: { type: 'string', pattern: '^F[1-9]\\d*$' }, maxItems: 7 },
+    claimedFacts: { description: 'Fact keys asserted by the NPC as a claim or alibi, regardless of truth.', type: 'array', items: { type: 'string', pattern: '^F[1-9]\\d*$' }, maxItems: 7 }
   }
 } as const;
 

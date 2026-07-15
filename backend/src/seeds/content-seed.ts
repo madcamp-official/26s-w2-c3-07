@@ -170,6 +170,7 @@ const stripSeedMetadata = (row: SeedRow, table: ContentTable): SeedRow => {
   return stored;
 };
 const codeTables = new Set<ContentTable>(['regions', 'episodes', 'suspects', 'evidence', 'clues', 'dialect_expressions', 'endings']);
+export const migrationManagedTables = new Set<ContentTable>(['clue_unlock_conditions']);
 
 export const runContentSeed = async (tables: SeedTables, writer: ContentSeedWriter) => {
   const validation = validateContent(tables);
@@ -177,6 +178,9 @@ export const runContentSeed = async (tables: SeedTables, writer: ContentSeedWrit
   let inserted = 0;
   let updated = 0;
   for (const table of tableOrder) {
+    // The complete clue graph is migration-owned. Skipping it prevents the
+    // compact fallback content from overwriting or duplicating deployed rules.
+    if (migrationManagedTables.has(table)) continue;
     const result = await writer.upsert(table, tables[table].map((row) => stripSeedMetadata(row, table)), codeTables.has(table) ? 'code' : 'id');
     inserted += result.inserted;
     updated += result.updated;
