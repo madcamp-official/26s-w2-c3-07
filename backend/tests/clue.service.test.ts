@@ -161,9 +161,15 @@ describe('server-side clue service', () => {
 });
 
 describe('clue SQL enforcement', () => {
+  const repositorySource = readFileSync(new URL('../src/modules/clue/clue.repository.ts', import.meta.url), 'utf8');
   const sql = readFileSync(new URL('../supabase/migrations/20260714072622_llm_clue_unlock_integration.sql', import.meta.url), 'utf8');
   const progressionSql = readFileSync(new URL('../supabase/migrations/20260714101403_initial_evidence_clue_progression.sql', import.meta.url), 'utf8');
   const viewedAtTypeSql = readFileSync(new URL('../supabase/migrations/20260714193200_fix_clue_evidence_viewed_at_type.sql', import.meta.url), 'utf8');
+
+  it('queries only columns present in the live session evidence schema', () => {
+    expect(repositorySource).toContain(".select('evidence_id, source_type, viewed_at')");
+    expect(repositorySource).not.toContain('source_type, discovered_at');
+  });
 
   it('deduplicates clue acquisition and implements AND/OR grouping', () => {
     expect(sql).toContain('bool_and');
