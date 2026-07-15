@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/ApiState';
 import { SuspectImage } from '@/features/suspect/components/SuspectImage';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { EvidenceModal } from '@/components/ui/EvidenceModal';
+import { ClueModal } from '@/components/ui/ClueModal';
 import { resolveEvidenceImage } from '@/features/episode/utils/evidenceImage';
 import { difficultyLabel, emotionLabel, sessionStatusLabel } from '@/lib/game-labels';
 import type { EpisodeDetail, PublicSuspect } from '@/types/content';
@@ -37,6 +38,9 @@ export default function GamePage() {
   const [previewEvidence, setPreviewEvidence] = useState<Evidence | null>(null);
   const [viewingEvidenceId, setViewingEvidenceId] = useState<string | null>(null);
   const [presentedEvidenceId, setPresentedEvidenceId] = useState<string | null>(null);
+  const [clueModalOpen, setClueModalOpen] = useState(false);
+  const [selectedClueId, setSelectedClueId] = useState<string | null>(null);
+  const [newClueIds, setNewClueIds] = useState<string[]>([]);
 
   async function choose(suspectId: string) {
     if (busy) return;
@@ -60,7 +64,9 @@ export default function GamePage() {
       const newEvidence = Array.isArray(result?.newlyUnlockedEvidence) ? result.newlyUnlockedEvidence : [];
       setPreviewEvidence(result?.evidence ?? item);
       setPresentedEvidenceId(item.id);
-      const notices = [newClues.length ? `새 단서 ${newClues.length}개` : '', newEvidence.length ? `새 증거 ${newEvidence.length}개` : ''].filter(Boolean);
+      setNewClueIds(newClues.map((clue) => clue.id));
+      setSelectedClueId(newClues[0]?.id ?? null);
+      const notices = [newClues.length ? `새로운 단서를 획득했습니다. 단서: ${newClues.map((clue) => clue.title).join(', ')}` : '', newEvidence.length ? `새 증거 ${newEvidence.length}개` : ''].filter(Boolean);
       setNotice(notices.length ? `${notices.join(', ')}를 획득했습니다.` : '증거를 확인했습니다.');
       await Promise.all([evidence.reload(), clues.reload(), session.reload()]);
     } catch (cause) {
@@ -83,8 +89,8 @@ export default function GamePage() {
     {session.error ? <ErrorState error={session.error} retry={session.reload} message="게임 정보를 불러오지 못했습니다." /> : session.data && <>
       <header className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-evidence-red">{sessionStatusLabel(session.data.status)} · {difficultyLabel(session.data.difficulty)}</p><h1 className="font-display text-4xl">{episode.data?.title ?? '사건 수사'}</h1></div><Link href={`/game/${sessionId}/records`} className="border border-brass-600/40 px-4 py-2">사건 기록</Link></header>
       {terminalMessage[session.data.status] && <div className="border border-evidence-red/50 bg-evidence-red/10 p-4">{terminalMessage[session.data.status]} {session.data.status === 'COMPLETED' && <Link className="ml-2 underline" href={`/game/${sessionId}/result`}>결과 보기</Link>}</div>}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4"><div className="border p-3">남은 질문 <b>{session.data.remainingQuestions}</b></div><div className="border p-3">남은 시간 <b>{session.data.remainingSeconds}초</b></div><div className="border p-3">단서 <b>{session.data.acquiredClueCount}</b></div><div className="border p-3">상태 <b>{sessionStatusLabel(session.data.status)}</b></div></section>
-      {notice && <p role="status" className="border border-brass-400 bg-brass-600/10 p-3">{notice}</p>}
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4"><div className="border p-3">남은 질문 <b>{session.data.remainingQuestions}</b></div><div className="border p-3">남은 시간 <b>{session.data.remainingSeconds}초</b></div><button onClick={() => { setSelectedClueId(null); setClueModalOpen(true); }} className="border p-3 text-left">단서 <b>{session.data.acquiredClueCount}</b><span className="ml-2 text-xs opacity-60">목록 보기</span></button><div className="border p-3">상태 <b>{sessionStatusLabel(session.data.status)}</b></div></section>
+      {notice && <button type="button" role="status" onClick={() => { if (newClueIds.length) setClueModalOpen(true); }} className="w-full border border-brass-400 bg-brass-600/10 p-3 text-left">{notice}</button>}
       {actionError && <ErrorState error={actionError} />}
       <section><h2 className="mb-3 font-display text-2xl">열람 가능한 증거</h2>
         {evidence.loading ? <LoadingState label="증거 정보를 불러오는 중..." /> : evidence.error ? <ErrorState error={evidence.error} retry={evidence.reload} message="증거 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." /> : !evidence.data?.length ? <EmptyState label="현재 열람 가능한 증거가 없습니다." /> : <div className="grid gap-3 md:grid-cols-2">
@@ -96,6 +102,7 @@ export default function GamePage() {
       </section>
       {previewEvidence && <EvidenceModal title={previewEvidence.title} description={previewEvidence.description} image={resolveEvidenceImage(previewEvidence.code)} discoveredAt={previewEvidence.discoveredAt} viewedAt={previewEvidence.viewedAt} source={previewEvidence.source} loading={viewingEvidenceId === previewEvidence.id} onClose={() => { setPreviewEvidence(null); setEvidenceError(null); }} />}
       {evidenceError && <ErrorState error={evidenceError} retry={previewEvidence ? () => void view(previewEvidence) : undefined} message="증거 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." />}
+      {clueModalOpen && <ClueModal clues={Array.isArray(clues.data) ? clues.data : []} highlightedIds={newClueIds} initialSelectedId={selectedClueId} onClose={() => setClueModalOpen(false)} />}
       <section><h2 className="mb-3 font-display text-2xl">심문할 용의자</h2>
         {suspects.loading ? <LoadingState /> : !suspects.data?.length ? <EmptyState label="용의자 정보가 없습니다." /> : <div className="grid gap-4 md:grid-cols-2">{suspects.data.map((suspect) => { const state = session.data!.suspectStates.find((item) => item.suspectId === suspect.id); return <button key={suspect.id} onClick={() => void choose(suspect.id)} disabled={Boolean(busy) || Boolean(terminalMessage[session.data!.status]) || session.data!.remainingQuestions === 0} className="overflow-hidden border border-brass-600/30 bg-noir-900/70 text-left disabled:opacity-40"><SuspectImage imageUrl={suspect.imageUrl} name={suspect.name} sizes="(min-width: 768px) 50vw, 100vw" className="aspect-[16/10] w-full" /><div className="p-5"><h3 className="font-display text-xl">{suspect.name}</h3><p className="text-sm opacity-60">{suspect.occupation}</p><p className="mt-2 text-xs">감정 {emotionLabel(state?.emotion ?? suspect.initialEmotion)} · 질문 {state?.questionsAsked ?? 0}회</p></div></button>; })}</div>}
       </section>

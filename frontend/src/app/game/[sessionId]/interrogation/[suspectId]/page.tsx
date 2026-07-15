@@ -15,6 +15,7 @@ import type { Clue } from '@/types/clue';
 import { ApiError } from '@/types/api';
 import { SuspectPortrait } from '@/features/interrogation/components/SuspectPortrait';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { ClueModal } from '@/components/ui/ClueModal';
 
 export default function InterrogationPage() {
   const { sessionId, suspectId } = useParams<{ sessionId: string; suspectId: string }>();
@@ -28,6 +29,8 @@ export default function InterrogationPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [notice, setNotice] = useState('');
+  const [clueModalOpen, setClueModalOpen] = useState(false);
+  const [newClueIds, setNewClueIds] = useState<string[]>([]);
   const state = session.data?.suspectStates.find((item) => item.suspectId === suspectId);
   const disabled = sending || !session.data || session.data.remainingQuestions <= 0 || !['READY', 'INVESTIGATING', 'INTERROGATING'].includes(session.data.status);
 
@@ -42,8 +45,10 @@ export default function InterrogationPage() {
       const result = await api.post<InterrogationResponse>(`/sessions/${sessionId}/interrogations`, {
         requestId: id, suspectId, question: question.trim(), presentedEvidenceIds: evidenceId ? [evidenceId] : []
       });
+      const unlockedClues = Array.isArray(result.newlyUnlockedClues) ? result.newlyUnlockedClues : [];
+      setNewClueIds(unlockedClues.map((clue) => clue.id));
       const notices = [
-        result.newlyUnlockedClues.length ? `새 단서 ${result.newlyUnlockedClues.length}개` : '',
+        unlockedClues.length ? `새로운 단서를 획득했습니다. 단서: ${unlockedClues.map((clue) => clue.title).join(', ')}` : '',
         result.newlyUnlockedEvidence.length ? `새 증거 ${result.newlyUnlockedEvidence.length}개` : ''
       ].filter(Boolean);
       setNotice(notices.length ? `${notices.join(', ')}를 획득했습니다.` : '');
@@ -68,7 +73,8 @@ export default function InterrogationPage() {
         <p className="opacity-60">{suspect.data.occupation} · 감정 {emotionLabel(state?.emotion ?? suspect.data.initialEmotion)}</p>
         <p className="mt-2">전체 남은 질문 {session.data.remainingQuestions}회</p>
       </header>
-      {notice && <p role="status" className="border border-brass-400 p-3">{notice}</p>}
+      <button type="button" onClick={() => setClueModalOpen(true)} className="w-full border border-brass-600/30 p-3 text-left">획득한 단서 {clues.data?.length ?? 0}개 <span className="float-right text-xs opacity-60">목록 보기</span></button>
+      {notice && <button type="button" role="status" onClick={() => setClueModalOpen(true)} className="w-full border border-brass-400 p-3 text-left">{notice}</button>}
       <section aria-label="심문 기록" className="space-y-4">
         {!messages.data?.length ? <EmptyState label="아직 심문 기록이 없습니다." /> : messages.data.map((message) => <article key={message.id} className="space-y-2">
           <div className="ml-auto max-w-[85%] bg-[#e9dfc7] p-3 text-noir-900">{message.question}</div>
@@ -83,6 +89,7 @@ export default function InterrogationPage() {
         <input aria-label="질문" value={question} onChange={(event) => setQuestion(event.target.value)} disabled={disabled} maxLength={500} className="flex-1 border border-brass-600/40 bg-noir-900 px-4 py-3" placeholder={session.data.remainingQuestions ? '질문을 입력하세요' : '질문 횟수를 모두 사용했습니다'} />
         <button disabled={disabled || question.trim().length < 2} className="bg-evidence-red px-6 font-bold disabled:opacity-40">{sending ? '전송 중...' : '질문'}</button>
       </form>
+      {clueModalOpen && <ClueModal clues={Array.isArray(clues.data) ? clues.data : []} highlightedIds={newClueIds} initialSelectedId={newClueIds[0] ?? null} onClose={() => setClueModalOpen(false)} />}
     </>}
   </div></main></AuthGuard>;
 }

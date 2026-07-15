@@ -9,6 +9,9 @@ export type ClueDto = {
   importance: string;
   unlockedAt: string;
   source: string | null;
+  sourceSuspect: string | null;
+  sourceQuestion: string | null;
+  sourceAnswer: string | null;
 };
 
 export type EvidenceDto = {

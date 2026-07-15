@@ -24,12 +24,28 @@ export const clueRepository = {
       .eq('episode_id', episodeId).in('id', acquired.map((row) => row.clue_id)).order('display_order');
     throwIfError(cluesError);
     const acquiredById = new Map(acquired.map((row) => [row.clue_id, row]));
+    const sourceRefs = acquired.map((row) => row.acquired_from_ref).filter((ref): ref is string => typeof ref === 'string');
+    const { data: messages, error: messageError } = sourceRefs.length
+      ? await serviceRoleClient.from('interrogation_messages').select('id, suspect_id, user_question, npc_response').in('id', sourceRefs)
+      : { data: [], error: null };
+    throwIfError(messageError);
+    const suspectIds = [...new Set((messages ?? []).map((message) => message.suspect_id))];
+    const { data: suspects, error: suspectError } = suspectIds.length
+      ? await serviceRoleClient.schema('game_content').from('suspects').select('id, name').eq('episode_id', episodeId).in('id', suspectIds)
+      : { data: [], error: null };
+    throwIfError(suspectError);
+    const messagesById = new Map((messages ?? []).map((message) => [message.id, message]));
+    const suspectNames = new Map((suspects ?? []).map((suspect) => [suspect.id, suspect.name]));
     return (clues ?? []).map((clue) => {
       const state = acquiredById.get(clue.id)!;
+      const message = state.acquired_from_ref ? messagesById.get(state.acquired_from_ref) : undefined;
       return {
         id: clue.id, code: clue.code, title: clue.title, content: clue.content,
         description: clue.content, recordSummary: clue.record_summary, clueType: clue.clue_type,
-        importance: clue.importance, unlockedAt: state.acquired_at, source: state.acquired_from_type
+        importance: clue.importance, unlockedAt: state.acquired_at, source: state.acquired_from_type,
+        sourceSuspect: message ? suspectNames.get(message.suspect_id) ?? null : null,
+        sourceQuestion: message?.user_question ?? null,
+        sourceAnswer: message?.npc_response ?? null
       };
     });
   },
