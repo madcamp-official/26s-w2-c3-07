@@ -1,19 +1,24 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { AuthGuard } from '@/features/auth/AuthProvider';
 import { useApiResource } from '@/features/api/useApiResource';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/ApiState';
-import type { PublicSuspect } from '@/types/content';
+import type { EpisodeDetail, PublicSuspect } from '@/types/content';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { SuspectImage } from '@/features/suspect/components/SuspectImage';
 
 export default function SuspectsPage() {
   const { episodeId } = useParams<{ episodeId: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const episode = useApiResource<EpisodeDetail>(`/episodes/${episodeId}`);
   const resource = useApiResource<PublicSuspect[]>(`/episodes/${episodeId}/suspects`);
+  useEffect(() => { if (episode.data && episodeId !== episode.data.code) { const query = searchParams.toString(); router.replace(`/episodes/${episode.data.code}/suspects${query ? `?${query}` : ''}`); } }, [episode.data, episodeId, router, searchParams]);
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-4xl space-y-6">
-    <AppHeader /><Link href={`/episodes/${episodeId}`}>← 사건 개요</Link><h1 className="font-display text-4xl">용의자 공개 정보</h1>
+    <AppHeader /><Link href={`/episodes/${episode.data?.code ?? episodeId}`}>← 사건 개요</Link><h1 className="font-display text-4xl">용의자 공개 정보</h1>
     {resource.loading ? <LoadingState /> : resource.error ? <ErrorState error={resource.error} retry={resource.reload} message="용의자 정보를 불러오지 못했습니다." /> : !resource.data?.length ? <EmptyState label="용의자가 없습니다." /> : <div className="grid gap-5 md:grid-cols-2">
       {resource.data.map((suspect) => <article key={suspect.id} className="overflow-hidden border border-brass-600/30 bg-noir-900/70">
         <SuspectImage imageUrl={suspect.imageUrl} name={suspect.name} sizes="(min-width: 768px) 50vw, 100vw" className="aspect-[16/10] w-full" />

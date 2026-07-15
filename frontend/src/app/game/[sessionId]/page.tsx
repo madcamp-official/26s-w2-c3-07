@@ -22,6 +22,7 @@ import { useSessionExpiry } from '@/features/session/useSessionExpiry';
 import { ExpiryNotice } from '@/features/session/components/ExpiryNotice';
 import { playSfx } from '@/features/settings/audio';
 import { useSfxEnabled } from '@/features/settings/useBgm';
+import { useResolvedSessionRoute } from '@/features/session/useResolvedSessionRoute';
 
 const terminalMessage: Partial<Record<SessionView['status'], string>> = {
   EXPIRED: '세션 시간이 만료되었습니다.', ABANDONED: '포기한 세션입니다.', COMPLETED: '이미 완료된 세션입니다.'
@@ -32,7 +33,10 @@ export default function GamePage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const router = useRouter();
   const sfxEnabled = useSfxEnabled();
-  const session = useApiResource<SessionView>(`/sessions/${sessionId}`);
+  const route = useResolvedSessionRoute(sessionId);
+  const actualSessionId = route.data?.sessionId;
+  const gamePath = `/game/${route.data?.episodeCode ?? sessionId}`;
+  const session = useApiResource<SessionView>(actualSessionId ? `/sessions/${actualSessionId}` : null);
   const episode = useApiResource<EpisodeDetail>(session.data ? `/episodes/${session.data.episodeId}` : null);
   const suspects = useApiResource<PublicSuspect[]>(session.data ? `/episodes/${session.data.episodeId}/suspects` : null);
   const evidence = useApiResource<Evidence[]>(session.data ? `/sessions/${session.data.sessionId}/evidence` : null);
@@ -47,16 +51,17 @@ export default function GamePage() {
   const [clueModalOpen, setClueModalOpen] = useState(false);
   const [selectedClueId, setSelectedClueId] = useState<string | null>(null);
   const [newClueIds, setNewClueIds] = useState<string[]>([]);
-  const expiry = useSessionExpiry(session.data, sessionId, false);
+  const expiry = useSessionExpiry(session.data, actualSessionId ?? sessionId, false);
 
-  async function choose(suspectId: string) {
+  async function choose(suspect: PublicSuspect) {
+    if (!actualSessionId) return;
     if (busy) return;
-    setBusy(suspectId); setActionError(null);
+    setBusy(suspect.id); setActionError(null);
     try {
       playSfx('select', sfxEnabled);
-      await api.patch(`/sessions/${sessionId}/current-suspect`, { suspectId });
+      await api.patch(`/sessions/${actualSessionId}/current-suspect`, { suspectId: suspect.id });
       const query = presentedEvidenceId ? `?evidenceId=${encodeURIComponent(presentedEvidenceId)}` : '';
-      router.push(`/game/${sessionId}/interrogation/${suspectId}${query}`);
+      router.push(`${gamePath}/interrogation/${suspect.code}${query}`);
     } catch (cause) {
       console.error('용의자 선택 실패', cause);
       setActionError(cause as ApiError); setBusy('');
@@ -64,11 +69,12 @@ export default function GamePage() {
   }
 
   async function view(item: Evidence) {
+    if (!actualSessionId) return;
     if (viewingEvidenceId) return;
     setPreviewEvidence(item); setViewingEvidenceId(item.id); setEvidenceError(null);
     try {
       playSfx('evidence', sfxEnabled);
-      const result = await api.post<EvidenceViewResult>(`/sessions/${sessionId}/evidence/${item.id}/view`);
+      const result = await api.post<EvidenceViewResult>(`/sessions/${actualSessionId}/evidence/${item.id}/view`);
       const newClues = Array.isArray(result?.newClues) ? result.newClues : [];
       const newEvidence = Array.isArray(result?.newlyUnlockedEvidence) ? result.newlyUnlockedEvidence : [];
       setPreviewEvidence(result?.evidence ?? item);
@@ -89,15 +95,17 @@ export default function GamePage() {
   async function deduction() {
     if (busy) return;
     playSfx('submit', sfxEnabled);
-    router.push(`/game/${sessionId}/deduction`);
+    router.push(`${gamePath}/deduction`);
   }
 
+  if (route.loading) return <LoadingState label="게임 주소를 확인하는 중..." />;
+  if (route.error) return <ErrorState error={route.error} retry={route.reload} message="게임 세션을 찾을 수 없습니다." />;
   if (session.loading) return <LoadingState label="게임 세션을 복구하는 중..." />;
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-5xl space-y-7">
     <AppHeader />
     {session.error ? <ErrorState error={session.error} retry={session.reload} message="게임 정보를 불러오지 못했습니다." /> : session.data && <>
-      <header className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-evidence-red">{sessionStatusLabel(session.data.status)} · {difficultyLabel(session.data.difficulty)}</p><h1 className="font-display text-4xl">{episode.data?.title ?? '사건 수사'}</h1></div><Link href={`/game/${sessionId}/records`} className="border border-brass-600/40 px-4 py-2">사건 기록</Link></header>
-      {terminalMessage[session.data.status] && <div className="border border-evidence-red/50 bg-evidence-red/10 p-4">{terminalMessage[session.data.status]} {session.data.status === 'COMPLETED' && <Link className="ml-2 underline" href={`/game/${sessionId}/result`}>결과 보기</Link>}</div>}
+      <header className="flex flex-wrap justify-between gap-3"><div><p className="text-xs text-evidence-red">{sessionStatusLabel(session.data.status)} · {difficultyLabel(session.data.difficulty)}</p><h1 className="font-display text-4xl">{episode.data?.title ?? '사건 수사'}</h1></div><Link href={`${gamePath}/records`} className="border border-brass-600/40 px-4 py-2">사건 기록</Link></header>
+      {terminalMessage[session.data.status] && <div className="border border-evidence-red/50 bg-evidence-red/10 p-4">{terminalMessage[session.data.status]} {session.data.status === 'COMPLETED' && <Link className="ml-2 underline" href={`${gamePath}/result`}>결과 보기</Link>}</div>}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4"><div className="border p-3">남은 질문 <b>{session.data.remainingQuestions}</b></div><div className="border p-3">남은 시간 <b>{expiry.remainingSeconds}초</b></div><button onClick={() => { setSelectedClueId(null); setClueModalOpen(true); }} className="border p-3 text-left">단서 <b>{session.data.acquiredClueCount}</b><span className="ml-2 text-xs opacity-60">목록 보기</span></button><div className="border p-3">상태 <b>{expiry.remainingSeconds === 0 ? '시간 만료' : sessionStatusLabel(session.data.status)}</b></div></section>
       {notice && <button type="button" role="status" onClick={() => { if (newClueIds.length) setClueModalOpen(true); }} className="w-full border border-brass-400 bg-brass-600/10 p-3 text-left">{notice}</button>}
       {actionError && <ErrorState error={actionError} />}
@@ -113,7 +121,7 @@ export default function GamePage() {
       {evidenceError && <ErrorState error={evidenceError} retry={previewEvidence ? () => void view(previewEvidence) : undefined} message="증거 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." />}
       {clueModalOpen && <ClueModal clues={Array.isArray(clues.data) ? clues.data : []} highlightedIds={newClueIds} initialSelectedId={selectedClueId} onClose={() => setClueModalOpen(false)} />}
       <section><h2 className="mb-3 font-display text-2xl">심문할 용의자</h2>
-        {suspects.loading ? <LoadingState /> : !suspects.data?.length ? <EmptyState label="용의자 정보가 없습니다." /> : <div className="grid gap-4 md:grid-cols-2">{suspects.data.map((suspect) => { const state = session.data!.suspectStates.find((item) => item.suspectId === suspect.id); const remaining = state?.questionsRemaining ?? session.data!.questionsPerSuspect; return <button key={suspect.id} onClick={() => void choose(suspect.id)} disabled={Boolean(busy) || Boolean(terminalMessage[session.data!.status]) || session.data!.remainingQuestions === 0 || remaining === 0} className="overflow-hidden border border-brass-600/30 bg-noir-900/70 text-left disabled:opacity-40"><SuspectImage imageUrl={suspect.imageUrl} name={suspect.name} sizes="(min-width: 768px) 50vw, 100vw" className="aspect-[16/10] w-full" /><div className="p-5"><h3 className="font-display text-xl">{suspect.name}</h3><p className="text-sm opacity-60">{suspect.occupation}</p><p className="mt-2 text-xs">감정 {emotionLabel(state?.emotion)} · {suspectQuestionLabel(remaining)}</p>{remaining === 0 && <p className="mt-1 text-xs text-evidence-red">더 이상 질문할 수 없음</p>}</div></button>; })}</div>}
+        {suspects.loading ? <LoadingState /> : !suspects.data?.length ? <EmptyState label="용의자 정보가 없습니다." /> : <div className="grid gap-4 md:grid-cols-2">{suspects.data.map((suspect) => { const state = session.data!.suspectStates.find((item) => item.suspectId === suspect.id); const remaining = state?.questionsRemaining ?? session.data!.questionsPerSuspect; return <button key={suspect.id} onClick={() => void choose(suspect)} disabled={Boolean(busy) || Boolean(terminalMessage[session.data!.status]) || session.data!.remainingQuestions === 0 || remaining === 0} className="overflow-hidden border border-brass-600/30 bg-noir-900/70 text-left disabled:opacity-40"><SuspectImage imageUrl={suspect.imageUrl} name={suspect.name} sizes="(min-width: 768px) 50vw, 100vw" className="aspect-[16/10] w-full" /><div className="p-5"><h3 className="font-display text-xl">{suspect.name}</h3><p className="text-sm opacity-60">{suspect.occupation}</p><p className="mt-2 text-xs">감정 {emotionLabel(state?.emotion)} · {suspectQuestionLabel(remaining)}</p>{remaining === 0 && <p className="mt-1 text-xs text-evidence-red">더 이상 질문할 수 없음</p>}</div></button>; })}</div>}
       </section>
       <button onClick={() => void deduction()} disabled={Boolean(busy) || ['COMPLETED', 'ABANDONED'].includes(session.data.status)} className="w-full bg-evidence-red py-4 font-display text-lg font-bold disabled:opacity-40">최종 추리로 이동</button>
       {expiry.showExpiryNotice && <ExpiryNotice />}

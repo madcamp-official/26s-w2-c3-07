@@ -13,11 +13,14 @@ import type { DeductionResult, Ending } from '@/types/deduction';
 import { ApiError } from '@/types/api';
 import { playSfx } from '@/features/settings/audio';
 import { useSfxEnabled } from '@/features/settings/useBgm';
+import { useResolvedSessionRoute } from '@/features/session/useResolvedSessionRoute';
 
 export default function ResultPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const result = useApiResource<DeductionResult>(`/sessions/${sessionId}/result`);
-  const ending = useApiResource<Ending>(`/sessions/${sessionId}/ending`);
+  const route = useResolvedSessionRoute(sessionId, 'completed');
+  const actualSessionId = route.data?.sessionId;
+  const result = useApiResource<DeductionResult>(actualSessionId ? `/sessions/${actualSessionId}/result` : null);
+  const ending = useApiResource<Ending>(actualSessionId ? `/sessions/${actualSessionId}/ending` : null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const sfxEnabled = useSfxEnabled();
@@ -28,14 +31,17 @@ export default function ResultPage() {
     playSfx(result.data.isCorrect ? 'success' : 'failure', sfxEnabled);
   }, [result.data, sfxEnabled]);
   async function report() {
+    if (!actualSessionId) return;
     setGenerating(true); setError(null);
-    try { await api.post(`/sessions/${sessionId}/ending/report`); await ending.reload(); }
+    try { await api.post(`/sessions/${actualSessionId}/ending/report`); await ending.reload(); }
     catch (cause) { console.error('보고서 생성 실패', cause); setError(cause as ApiError); }
     finally { setGenerating(false); }
   }
   const endingImage = result.data && ending.data
     ? resolveEndingImage(ending.data.selectedSuspect.code, result.data.isCorrect)
     : null;
+  if (route.loading) return <LoadingState label="게임 주소를 확인하는 중..." />;
+  if (route.error) return <ErrorState error={route.error} retry={route.reload} message="완료된 게임 세션을 찾을 수 없습니다." />;
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-12 text-parchment-100"><div className="mx-auto max-w-3xl space-y-6"><AppHeader />
     {result.loading || ending.loading ? <LoadingState label="판정과 엔딩을 불러오는 중..." /> : result.error ? <ErrorState error={result.error} message="추리 결과를 불러오지 못했습니다." /> : ending.error ? <ErrorState error={ending.error} message="사건 결말을 불러오지 못했습니다." /> : result.data && ending.data && <>
       {endingImage && <div className="relative aspect-[4/3] w-full overflow-hidden border border-brass-600/30"><Image src={endingImage} alt={ending.data.title} fill sizes="(min-width: 768px) 768px, 100vw" className="object-cover" /></div>}
