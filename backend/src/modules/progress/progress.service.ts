@@ -31,6 +31,8 @@ export const progressService = {
       playedEpisodeCount: episodes.filter((episode) => episode.state !== 'NOT_STARTED').length,
       completedEpisodeCount: stats.completedEpisodeIds.length,
       solvedEpisodeCount: solvedEpisodeIds.size,
+      unresolvedEpisodeCount: Math.max(0, 4 - solvedEpisodeIds.size),
+      currentStreak: stats.currentStreak,
       correctCount: stats.correctCount,
       fullResolutionCount: stats.fullResolutionCount,
       regionProgress: regionSummary(episodes, solvedEpisodeIds),

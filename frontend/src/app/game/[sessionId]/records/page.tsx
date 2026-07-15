@@ -13,13 +13,16 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { EvidenceModal } from '@/components/ui/EvidenceModal';
 import { resolveEvidenceImage } from '@/features/episode/utils/evidenceImage';
 import { noteTypeLabel } from '@/lib/game-labels';
+import { useResolvedSessionRoute } from '@/features/session/useResolvedSessionRoute';
 
 type Tab = 'overview' | 'testimonies' | 'timeline' | 'notes';
 type NoteType = Note['noteType'];
 
 export default function RecordsPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const record = useApiResource<InvestigationRecord>(`/sessions/${sessionId}/records`);
+  const route = useResolvedSessionRoute(sessionId);
+  const actualSessionId = route.data?.sessionId;
+  const record = useApiResource<InvestigationRecord>(actualSessionId ? `/sessions/${actualSessionId}/records` : null);
   const [tab, setTab] = useState<Tab>('overview');
   const [error, setError] = useState<ApiError | null>(null);
   const [saving, setSaving] = useState(false);
@@ -38,14 +41,14 @@ export default function RecordsPage() {
 
   async function saveNote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (saving || !content.trim()) return;
+    if (saving || !actualSessionId || !content.trim()) return;
     const form = event.currentTarget;
     const payload = { noteType, content: content.trim(), suspectId: null, relatedRef: {} };
     setSaving(true); setError(null); setNotice('');
     try {
       const saved = editingId
-        ? await api.patch<Note>(`/sessions/${sessionId}/notes/${editingId}`, payload)
-        : await api.post<Note>(`/sessions/${sessionId}/notes`, payload);
+        ? await api.patch<Note>(`/sessions/${actualSessionId}/notes/${editingId}`, payload)
+        : await api.post<Note>(`/sessions/${actualSessionId}/notes`, payload);
       if (!saved?.id) throw new ApiError(500, 'NOTE_RESPONSE_INVALID', 'Saved note was not returned', 'server');
       updateNoteState(saved);
       setContent(''); setNoteType('FREE'); setEditingId(null);
@@ -64,9 +67,9 @@ export default function RecordsPage() {
   }
 
   async function remove(noteId: string) {
-    if (saving) return;
+    if (saving || !actualSessionId) return;
     try {
-      await api.delete(`/sessions/${sessionId}/notes/${noteId}`);
+      await api.delete(`/sessions/${actualSessionId}/notes/${noteId}`);
       record.setData((current) => current ? { ...current, notes: current.notes.filter((note) => note.id !== noteId) } : current);
     } catch (cause) {
       console.error('메모 삭제 실패', cause);
@@ -75,9 +78,11 @@ export default function RecordsPage() {
   }
 
   const tabs: Array<[Tab, string]> = [['overview', '전체 기록'], ['testimonies', '증언'], ['timeline', '타임라인'], ['notes', '메모']];
+  if (route.loading) return <LoadingState label="게임 주소를 확인하는 중..." />;
+  if (route.error) return <ErrorState error={route.error} retry={route.reload} message="게임 세션을 찾을 수 없습니다." />;
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-5xl space-y-6">
     <AppHeader />
-    <header className="flex justify-between"><div><p className="text-xs text-evidence-red">사건 기록</p><h1 className="font-display text-4xl">사건 기록</h1></div><Link href={`/game/${sessionId}`}>게임으로 →</Link></header>
+    <header className="flex justify-between"><div><p className="text-xs text-evidence-red">사건 기록</p><h1 className="font-display text-4xl">사건 기록</h1></div><Link href={`/game/${route.data?.episodeCode ?? sessionId}`}>게임으로 →</Link></header>
     <nav className="flex flex-wrap gap-2">{tabs.map(([id, label]) => <button key={id} onClick={() => setTab(id)} className={`border px-4 py-2 ${tab === id ? 'bg-evidence-red' : 'border-brass-600/30'}`}>{label}</button>)}</nav>
     {notice && <p role="status" className="border border-brass-400 bg-brass-600/10 p-3">{notice}</p>}
     {error && <ErrorState error={error} message="메모를 저장하지 못했습니다. 다시 시도해 주세요." />}

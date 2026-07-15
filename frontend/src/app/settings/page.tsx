@@ -24,7 +24,6 @@ export default function SettingsPage() {
     local.update({
       soundEnabled: serverSettings.data.soundEnabled,
       musicEnabled: serverSettings.data.musicEnabled,
-      textSpeed: serverSettings.data.textSpeed,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverSettings.data]);
@@ -39,10 +38,9 @@ export default function SettingsPage() {
     try {
       const soundEnabled = data.get('soundEnabled') === 'on';
       const musicEnabled = data.get('musicEnabled') === 'on';
-      const textSpeed = data.get('textSpeed') as 'slow' | 'normal' | 'fast';
       await api.patch('/auth/me', { displayName: data.get('displayName') });
-      await api.patch('/auth/settings', { soundEnabled, musicEnabled, textSpeed });
-      local.update({ soundEnabled, musicEnabled, textSpeed });
+      await api.patch('/auth/settings', { soundEnabled, musicEnabled });
+      local.update({ soundEnabled, musicEnabled });
       await Promise.all([refreshProfile(), serverSettings.reload()]);
       setSaved(true);
     } catch (cause) {
@@ -87,14 +85,6 @@ export default function SettingsPage() {
                   <input name="musicEnabled" type="checkbox" defaultChecked={serverSettings.data.musicEnabled} /> 음악
                 </label>
               </div>
-              <label className="block">
-                텍스트 속도
-                <select name="textSpeed" defaultValue={serverSettings.data.textSpeed} className="ml-3 bg-noir-900 p-2">
-                  <option value="slow">느림</option>
-                  <option value="normal">보통</option>
-                  <option value="fast">빠름</option>
-                </select>
-              </label>
               {saved && <p className="text-sm text-brass-400">저장되었습니다.</p>}
               {error && <ErrorState error={error} />}
               <button disabled={saving} className="w-full bg-evidence-red px-5 py-2 font-bold">
@@ -122,18 +112,6 @@ export default function SettingsPage() {
                   /> 음악
                 </label>
               </div>
-              <label className="block">
-                텍스트 속도
-                <select
-                  value={local.settings.textSpeed}
-                  onChange={(event) => local.update({ textSpeed: event.target.value as 'slow' | 'normal' | 'fast' })}
-                  className="ml-3 bg-noir-900 p-2"
-                >
-                  <option value="slow">느림</option>
-                  <option value="normal">보통</option>
-                  <option value="fast">빠름</option>
-                </select>
-              </label>
               <Link href="/login" className="block bg-evidence-red py-3 text-center font-bold">
                 로그인하고 더 많은 설정 사용하기
               </Link>

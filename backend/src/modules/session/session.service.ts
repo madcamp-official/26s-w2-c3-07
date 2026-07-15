@@ -1,6 +1,9 @@
 import { sessionRepository as repo } from './session.repository.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import type { DbSessionStatus, SessionStatus, SessionView } from './session.types.js';
+import { episodeRepository } from '../episode/episode.repository.js';
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const terminal = new Set<DbSessionStatus>(['COMPLETED', 'ABANDONED', 'EXPIRED', 'ERROR']);
 const active = ['CREATED', 'INTRO_VIEWING', 'INTERROGATING', 'READY_TO_DEDUCE', 'SUBMITTED'] satisfies DbSessionStatus[];
@@ -33,12 +36,13 @@ async function view(row: Record<string, unknown>, userId: string): Promise<Sessi
   const difficultyRequest = typeof row.difficulty === 'string'
     ? Promise.resolve(row.difficulty)
     : repo.difficulty(String(row.difficulty_config_id));
-  const [states, evidence, count, difficulty, questionsPerSuspect] = await Promise.all([
+  const [states, evidence, count, difficulty, questionsPerSuspect, episodeCode] = await Promise.all([
     repo.states(String(row.id)), repo.evidence(String(row.id)), repo.clueCount(String(row.id)),
-    difficultyRequest, repo.questionsPerSuspect(String(row.difficulty_config_id))
+    difficultyRequest, repo.questionsPerSuspect(String(row.difficulty_config_id)), repo.episodeCode(String(row.episode_id))
   ]);
+  if (!episodeCode) throw new AppError(500, 'Session episode is missing', 'SESSION_EPISODE_MISSING');
   return {
-    sessionId: String(row.id), episodeId: String(row.episode_id), difficulty, status: toApiSessionStatus(databaseStatus),
+    sessionId: String(row.id), episodeId: String(row.episode_id), episodeCode, difficulty, status: toApiSessionStatus(databaseStatus),
     startedAt: String(row.started_at), expiresAt: String(row.expires_at), remainingSeconds: seconds,
     remainingQuestions: Number(row.remaining_questions), currentSuspectId: row.current_suspect_id as string | null,
     questionsPerSuspect,
@@ -55,8 +59,22 @@ async function owned(id: string, userId: string) {
 
 export const sessionService = {
   async create(userId: string, input: { episodeId: string; difficulty: string }) {
-    const id = await repo.initialize(userId, input.episodeId, input.difficulty);
+    const episode = await episodeRepository.findByKey(input.episodeId);
+    if (!episode) throw new AppError(404, 'Episode not found', 'EPISODE_NOT_FOUND');
+    const id = await repo.initialize(userId, episode.id, input.difficulty);
     return view(await owned(id, userId), userId);
+  },
+  async resolve(sessionKey: string, userId: string, scope: 'active' | 'completed') {
+    const row = uuidPattern.test(sessionKey)
+      ? await repo.findOwned(sessionKey, userId)
+      : await (async () => {
+          const episode = await episodeRepository.findByKey(sessionKey);
+          return episode ? repo.findLatestByEpisode(userId, episode.id, scope) : null;
+        })();
+    if (!row) throw new AppError(404, 'Session not found', 'SESSION_NOT_FOUND');
+    const episodeCode = await repo.episodeCode(row.episode_id);
+    if (!episodeCode) throw new AppError(500, 'Session episode is missing', 'SESSION_EPISODE_MISSING');
+    return { sessionId: row.id, episodeId: row.episode_id, episodeCode };
   },
   async get(id: string, userId: string) { return view(await owned(id, userId), userId); },
   async active(userId: string) {

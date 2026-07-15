@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AuthGuard } from '@/features/auth/AuthProvider';
 import { useApiResource } from '@/features/api/useApiResource';
 import { api } from '@/lib/api-client';
@@ -19,17 +19,22 @@ import { ClueModal } from '@/components/ui/ClueModal';
 import { useSessionExpiry } from '@/features/session/useSessionExpiry';
 import { ExpiryNotice } from '@/features/session/components/ExpiryNotice';
 import { playSfx } from '@/features/settings/audio';
-import { useBgm, useSfxEnabled } from '@/features/settings/useBgm';
+import { useSfxEnabled } from '@/features/settings/useBgm';
+import { useResolvedSessionRoute } from '@/features/session/useResolvedSessionRoute';
 
 export default function InterrogationPage() {
   const { sessionId, suspectId } = useParams<{ sessionId: string; suspectId: string }>();
-  const evidenceId = useSearchParams().get('evidenceId');
-  useBgm('interrogation');
+  const searchParams = useSearchParams();
+  const evidenceId = searchParams.get('evidenceId');
+  const router = useRouter();
+  const pathname = usePathname();
+  const route = useResolvedSessionRoute(sessionId);
+  const actualSessionId = route.data?.sessionId;
   const sfxEnabled = useSfxEnabled();
-  const session = useApiResource<SessionView>(`/sessions/${sessionId}`);
-  const suspect = useApiResource<PublicSuspect>(session.data ? `/episodes/${session.data.episodeId}/suspects/${suspectId}` : null);
-  const messages = useApiResource<InterrogationMessage[]>(`/sessions/${sessionId}/suspects/${suspectId}/interrogations`);
-  const clues = useApiResource<Clue[]>(`/sessions/${sessionId}/clues`);
+  const session = useApiResource<SessionView>(actualSessionId ? `/sessions/${actualSessionId}` : null);
+  const suspect = useApiResource<PublicSuspect>(route.data ? `/episodes/${route.data.episodeCode}/suspects/${suspectId}` : null);
+  const messages = useApiResource<InterrogationMessage[]>(actualSessionId && suspect.data ? `/sessions/${actualSessionId}/suspects/${suspect.data.id}/interrogations` : null);
+  const clues = useApiResource<Clue[]>(actualSessionId ? `/sessions/${actualSessionId}/clues` : null);
   const [question, setQuestion] = useState('');
   const [requestId, setRequestId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -37,22 +42,29 @@ export default function InterrogationPage() {
   const [notice, setNotice] = useState('');
   const [clueModalOpen, setClueModalOpen] = useState(false);
   const [newClueIds, setNewClueIds] = useState<string[]>([]);
-  const expiry = useSessionExpiry(session.data, sessionId, true);
-  const state = session.data?.suspectStates.find((item) => item.suspectId === suspectId);
+  const expiry = useSessionExpiry(session.data, route.data?.episodeCode ?? sessionId, true);
+  const state = session.data?.suspectStates.find((item) => item.suspectId === suspect.data?.id);
   const suspectQuestionsRemaining = state?.questionsRemaining ?? session.data?.questionsPerSuspect ?? 0;
   const disabled = sending || !session.data || expiry.remainingSeconds <= 0 || session.data.remainingQuestions <= 0 || suspectQuestionsRemaining <= 0 || !['READY', 'INVESTIGATING', 'INTERROGATING'].includes(session.data.status);
 
+  useEffect(() => {
+    if (!route.data || !suspect.data || suspectId === suspect.data.code) return;
+    const canonical = pathname.replace(`/interrogation/${suspectId}`, `/interrogation/${suspect.data.code}`);
+    const query = searchParams.toString();
+    router.replace(query ? `${canonical}?${query}` : canonical);
+  }, [pathname, route.data, router, searchParams, suspect.data, suspectId]);
+
   async function send(event: FormEvent) {
     event.preventDefault();
-    if (disabled || question.trim().length < 2) return;
+    if (disabled || !actualSessionId || !suspect.data || question.trim().length < 2) return;
     playSfx('keyboard', sfxEnabled);
     const id = requestId ?? crypto.randomUUID();
     setRequestId(id);
     setSending(true);
     setError(null);
     try {
-      const result = await api.post<InterrogationResponse>(`/sessions/${sessionId}/interrogations`, {
-        requestId: id, suspectId, question: question.trim(), presentedEvidenceIds: evidenceId ? [evidenceId] : []
+      const result = await api.post<InterrogationResponse>(`/sessions/${actualSessionId}/interrogations`, {
+        requestId: id, suspectId: suspect.data.id, question: question.trim(), presentedEvidenceIds: evidenceId ? [evidenceId] : []
       });
       const unlockedClues = Array.isArray(result.newlyUnlockedClues) ? result.newlyUnlockedClues : [];
       setNewClueIds(unlockedClues.map((clue) => clue.id));
@@ -72,8 +84,10 @@ export default function InterrogationPage() {
     }
   }
 
+  if (route.loading) return <LoadingState label="게임 주소를 확인하는 중..." />;
+  if (route.error) return <ErrorState error={route.error} retry={route.reload} message="게임 세션을 찾을 수 없습니다." />;
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-3xl space-y-6">
-    <AppHeader /><Link href={`/game/${sessionId}`}>← 용의자 목록</Link>
+    <AppHeader /><Link href={`/game/${route.data?.episodeCode ?? sessionId}`}>← 용의자 목록</Link>
     {suspect.loading || session.loading ? <LoadingState /> : suspect.error ? <ErrorState error={suspect.error} message="용의자 정보를 불러오지 못했습니다." /> : suspect.data && session.data && <>
       <SuspectPortrait suspect={suspect.data} />
       <header className="text-center">

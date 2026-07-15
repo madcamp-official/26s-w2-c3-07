@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sessionRepository as repository } from '../src/modules/session/session.repository.js';
 import { remainingSeconds, sessionService, toApiSessionStatus } from '../src/modules/session/session.service.js';
 import { createSessionSchema } from '../src/modules/session/session.schema.js';
+import { episodeRepository } from '../src/modules/episode/episode.repository.js';
 
 const row = (overrides: Record<string, unknown> = {}) => ({
   id: 'session-1',
@@ -27,6 +28,7 @@ const mockViewDependencies = () => {
   vi.spyOn(repository, 'clueCount').mockResolvedValue(0);
   vi.spyOn(repository, 'difficulty').mockResolvedValue('hard');
   vi.spyOn(repository, 'questionsPerSuspect').mockResolvedValue(2);
+  vi.spyOn(repository, 'episodeCode').mockResolvedValue('JJ-01');
 };
 
 afterEach(() => vi.restoreAllMocks());
@@ -60,6 +62,7 @@ describe('session lifecycle', () => {
     mockViewDependencies();
     vi.spyOn(repository, 'initialize').mockResolvedValue('session-1');
     vi.spyOn(repository, 'findOwned').mockResolvedValue(row());
+    vi.spyOn(episodeRepository, 'findByKey').mockResolvedValue({ id: 'episode-1', code: 'JJ-01', title: '제주의 밤', location: null, incidentType: null, synopsis: null, estimatedPlayMinutes: 15, status: 'published', imageUrl: null, progressStatus: null, sceneDescription: null });
     const view = await sessionService.create('user-1', { episodeId: 'episode-1', difficulty: 'hard' });
     expect(repository.initialize).toHaveBeenCalledWith('user-1', 'episode-1', 'hard');
     expect(view).toMatchObject({ status: 'READY', difficulty: 'hard', remainingQuestions: 6, questionsPerSuspect: 2 });

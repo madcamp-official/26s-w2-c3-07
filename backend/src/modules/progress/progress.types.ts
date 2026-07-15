@@ -49,6 +49,8 @@ export type ProgressSummary = {
   playedEpisodeCount: number;
   completedEpisodeCount: number;
   solvedEpisodeCount: number;
+  unresolvedEpisodeCount: number;
+  currentStreak: number;
   correctCount: number;
   fullResolutionCount: number;
   regionProgress: Array<{ region: RegionRef; totalEpisodes: number; playedEpisodes: number; solvedEpisodes: number }>;
@@ -56,4 +58,4 @@ export type ProgressSummary = {
   unlockedDialectCount: number;
 };
 
-export type ResultStats = { correctCount: number; fullResolutionCount: number; completedEpisodeIds: string[]; solvedEpisodeIds: string[] };
+export type ResultStats = { correctCount: number; fullResolutionCount: number; completedEpisodeIds: string[]; solvedEpisodeIds: string[]; currentStreak: number };

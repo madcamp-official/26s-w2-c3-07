@@ -13,28 +13,36 @@ import type { PublicSuspect } from '@/types/content';
 import type { SessionView } from '@/types/session';
 import type { DeductionResult } from '@/types/deduction';
 import { ApiError } from '@/types/api';
+import { playSfx } from '@/features/settings/audio';
+import { useSfxEnabled } from '@/features/settings/useBgm';
+import { useResolvedSessionRoute } from '@/features/session/useResolvedSessionRoute';
 
 export default function DeductionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const router = useRouter();
-  const session = useApiResource<SessionView>(`/sessions/${sessionId}`);
+  const sfxEnabled = useSfxEnabled();
+  const route = useResolvedSessionRoute(sessionId);
+  const actualSessionId = route.data?.sessionId;
+  const gamePath = `/game/${route.data?.episodeCode ?? sessionId}`;
+  const session = useApiResource<SessionView>(actualSessionId ? `/sessions/${actualSessionId}` : null);
   const suspects = useApiResource<PublicSuspect[]>(session.data ? `/episodes/${session.data.episodeId}/suspects` : null);
   const [selected, setSelected] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   async function submit() {
-    if (!selected || busy) return;
+    if (!selected || busy || !actualSessionId) return;
     setConfirm(true);
   }
 
   async function confirmSubmit() {
-    if (!selected || busy) return;
+    if (!selected || busy || !actualSessionId) return;
     setBusy(true);
     setError(null);
+    playSfx('submit', sfxEnabled);
     try {
-      await api.post<DeductionResult>(`/sessions/${sessionId}/deduction`, { suspectId: selected });
-      router.replace(`/game/${sessionId}/result`);
+      await api.post<DeductionResult>(`/sessions/${actualSessionId}/deduction`, { suspectId: selected });
+      router.replace(`${gamePath}/result`);
     } catch (cause) {
       console.error('최종 추리 제출 실패', cause);
       setError(cause as ApiError);
@@ -42,8 +50,10 @@ export default function DeductionPage() {
     }
   }
 
+  if (route.loading) return <LoadingState label="게임 주소를 확인하는 중..." />;
+  if (route.error) return <ErrorState error={route.error} retry={route.reload} message="게임 세션을 찾을 수 없습니다." />;
   return <AuthGuard><main className="min-h-screen bg-noir-950 px-6 py-10 text-parchment-100"><div className="mx-auto max-w-3xl space-y-7">
-    <AppHeader /><Link href={`/game/${sessionId}`}>← 사건으로</Link>
+    <AppHeader /><Link href={gamePath}>← 사건으로</Link>
     <header className="text-center"><p className="text-xs text-evidence-red">최종 추리</p><h1 className="font-display text-4xl">범인을 지목하세요</h1><p className="mt-2 opacity-60">정답 판정은 서버에서 한 번만 수행됩니다.</p></header>
     {session.loading || suspects.loading ? <LoadingState /> : error ? <ErrorState error={error} message="최종 추리를 진행하지 못했습니다. 다시 시도해 주세요." /> : <div className="grid gap-4 md:grid-cols-2">
       {suspects.data?.map((suspect) => <button key={suspect.id} onClick={() => { setSelected(suspect.id); setConfirm(false); }} className={`overflow-hidden border text-left ${selected === suspect.id ? 'border-evidence-red bg-evidence-red/20' : 'border-brass-600/30'}`}>

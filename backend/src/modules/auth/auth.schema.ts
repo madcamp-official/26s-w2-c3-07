@@ -17,7 +17,6 @@ export const updateProfileSchema = z.object({
 export const updateSettingsSchema = z.object({
   soundEnabled: z.boolean().optional(),
   musicEnabled: z.boolean().optional(),
-  textSpeed: z.enum(['slow', 'normal', 'fast']).optional(),
   locale: z.enum(['ko', 'en']).optional()
 }).refine((value) => Object.keys(value).length > 0, 'At least one settings field is required');
 
